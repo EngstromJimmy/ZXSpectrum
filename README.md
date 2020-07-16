@@ -25,7 +25,7 @@ If you ever see me present, chances are that I will mention the ZX Spectrum.
 The naming of the project might seem strange, I originally developed the emulator for Xbox so ZXBox made sense at the time.  
 I have chosen to keep the name think of is as a ZX(Spectrum) in an other box =).
 
-I did a talk about Blazor at Microsoft Ignite 2019 where I demoed my ZX Spectrum emulator running on Blazor Web assembly. After doing a talk on Blazor and Blutooth at Live Coders Conf, I got a lot of comments on my ZX Spectrum so I decided to publish it =)  
+I did a talk about Blazor at Microsoft Ignite 2019 where I demoed my ZX Spectrum emulator running on Blazor WebAssembly. After doing a talk on Blazor and Blutooth at Live Coders Conf, I got a lot of comments on my ZX Spectrum so I decided to publish it =)  
 You can find the Blazor implementation here https://zxspectrum.azurewebsites.net/ .  
 I got a lot of amazing feedback and many wanted to see the code so I decided to share that as well.
 
@@ -36,7 +36,7 @@ It supports SNA and Z80-formats and you can connect an XBox gamepad to emulate K
 Thanks to
 Jessica Engström - For loving me and letting me have a storage room filled with old computers =D  
 Mikael Engström - For teaching me how to program  
-Mats Sjöblom - For explaining some of the internals in te ZX Spectrum  
+Mats Sjöblom - For explaining some of the internals in the ZX Spectrum  
 Rodnay Zaks - For writing the book I used to implement all the Z80 Assembler instructions.  
 
 
