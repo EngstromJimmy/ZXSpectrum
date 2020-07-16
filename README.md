@@ -33,7 +33,8 @@ There are still things left to do for example implementing sound (for Blazor) an
 
 It supports SNA and Z80-formats and you can connect an XBox gamepad to emulate Kempston Joystick.
 
-Thanks to
+## Thanks to
+
 Jessica Engström - For loving me and letting me have a storage room filled with old computers =D  
 Mikael Engström - For teaching me how to program  
 Mats Sjöblom - For explaining some of the internals in the ZX Spectrum  
