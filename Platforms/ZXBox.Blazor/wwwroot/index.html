@@ -1,0 +1,125 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>ZX Spectrum emulator running on Blazor</title>
+    <base href="/" />
+    <link href="css/bootstrap/bootstrap.min.css" rel="stylesheet" />
+    <link href="css/app.css" rel="stylesheet" />
+</head>
+
+<body>
+    <script>
+        //Sound
+        var audiobuffer = [];
+        var nextStartTime = 0;
+        var lastcall = performance.now()
+
+        
+        function addAudioBuffer(dataPtr) {
+            
+            var buffersize = 960;
+            var myArrayBuffer = audiocontext.createBuffer(1, buffersize, audiocontext.sampleRate);
+            var nowBuffering = myArrayBuffer.getChannelData(0);
+           
+            for (var d = 0; d < buffersize; d++) {
+                nowBuffering[d] =  Module.HEAPU8[dataPtr + d] == 128 ? -1 : 1;
+            }
+            let source = audiocontext.createBufferSource();
+            source.buffer = myArrayBuffer;
+            source.connect(audiocontext.destination);
+            if (nextStartTime == 0) nextStartTime = audiocontext.currentTime + (myArrayBuffer.length / myArrayBuffer.sampleRate) ;
+            source.start(nextStartTime);
+            nextStartTime += myArrayBuffer.length / myArrayBuffer.sampleRate;
+        }
+
+
+        var audiocontext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        //function play() {
+        //    console.log("Playing sound");
+        //    soundon = true;
+        //    //end of stream has been reached
+        //    if (audiobuffer.length === 0)
+        //    {
+        //        console.log("To slow");
+        //        soundon = false;
+        //        return;
+        //    }
+        //    let source = audiocontext.createBufferSource();
+        //    //get the latest buffer that should play next
+        //    source.buffer = audiobuffer.shift();
+        //    source.connect(audiocontext.destination);
+
+        //    //add this function as a callback to play next buffer
+        //    //when current buffer has reached its end 
+        //    source.onended = play;
+        //    source.start();
+        //}
+
+
+
+        var pressedKeys = [];
+        window.onkeyup = function (e) {
+            const index = pressedKeys.indexOf(e.key);
+            if (index > -1) {
+                pressedKeys.splice(index, 1);
+            }
+            event.preventDefault();
+            console.log(pressedKeys);
+        }
+        window.onkeydown = function (e) {
+            const index = pressedKeys.indexOf(e.key);
+            if (index == -1) {
+                pressedKeys.push(e.key);
+            }
+            event.preventDefault();
+            console.log(pressedKeys);
+        }
+
+        window.getKeyStatus = function () {
+            return pressedKeys;
+        }
+
+        var canvas;
+        var context;
+        var imageData;
+        window.InitCanvas = function InitCanvas() {
+
+            canvas = document.getElementById('emulatorCanvas');
+            context = canvas.getContext('2d');
+            context.mozImageSmoothingEnabled = false;
+            context.webkitImageSmoothingEnabled = false;
+            context.msImageSmoothingEnabled = false;
+            context.imageSmoothingEnabled = false;
+            imageData = context.createImageData(256 + 20 + 20, 192 + 20 + 20);
+            return true;
+        }
+
+        window.PaintCanvas = function PaintCanvas(dataPtr) {
+
+            lastcall = performance.now();
+            imageData.data.set(Uint8ClampedArray.from(Module.HEAPU8.subarray(dataPtr, dataPtr + imageData.data.length)));
+            context.putImageData(imageData, 0, 0);
+            context.drawImage(canvas, 0, 0,  canvas.width,  canvas.height);
+            console.log((lastcall - performance.now()).toFixed(2));      
+            return true;
+        }
+    </script>
+    <app>
+        <div style="height:100vh;text-align:center;padding-top:200px;">Loading...</div>
+    </app>
+
+    <div id="blazor-error-ui">
+        An unhandled error has occurred.
+        <a href="" class="reload">Reload</a>
+        <a class="dismiss">🗙</a>
+    </div>
+    <script src="/JavaScript.js"></script>
+    <script src="_framework/blazor.webassembly.js"></script>
+
+</body>
+
+</html>

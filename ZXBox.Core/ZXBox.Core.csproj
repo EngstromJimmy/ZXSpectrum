@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <Optimize>true</Optimize>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Hardware\Input\Joystick\Kempston.cs" />
+    <Compile Remove="Hardware\Input\Keyboard.cs" />
+    <Compile Remove="Z80\Z80DDPrefixInstructions.cs" />
+    <Compile Remove="Z80\Z80FDPrefixInstructions.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Hardware\Input\Joystick\" />
+    <Folder Include="Properties\" />
+  </ItemGroup>
+
+</Project>
