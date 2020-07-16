@@ -1,0 +1,51 @@
+﻿@inject NavigationManager navmanager;
+@using System.ComponentModel.DataAnnotations;
+
+
+<nav class="navbar navbar-dark bg-dark navbar-expand-lg">
+    <a class="navbar-brand" href="#"><img src="/Images/48.png" height="35" /> ZX Spectrum</a>
+
+
+    <button class="navbar-toggler" type="button" @onclick="ToggleNavMenu">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="@NavMenuCssClass navbar-collapse">
+        <ul class="navbar-nav mr-auto">
+
+            <li class="nav-item">
+                <NavLink class="nav-link" href="/games">Games</NavLink>
+            </li>
+
+            <li class="nav-item">
+                <NavLink class="nav-link" href="/about">About</NavLink>
+            </li>
+        </ul>
+    </div>
+</nav>
+
+@code {
+
+    SearchModel model = new SearchModel();
+    private bool collapseNavMenu = true;
+
+    private string NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    private string SocialCssClass => collapseNavMenu ? "" : "collapse";
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+
+    private void Search()
+    {
+        navmanager.NavigateTo($"/posts/{model.SearchTerm}", true);
+    }
+
+    protected class SearchModel
+    {
+        [Required]
+        public string SearchTerm { get; set; }
+    }
+}

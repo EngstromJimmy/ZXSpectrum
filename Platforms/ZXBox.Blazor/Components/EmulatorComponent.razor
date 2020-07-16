@@ -1,0 +1,24 @@
+﻿@using ZXBox.Blazor.Pages
+@using BlazorInputFile
+@using ZXBox.Snapshot
+@using System.Timers
+@using Toolbelt.Blazor.Gamepad;
+@using Microsoft.AspNetCore.Components
+@inject Toolbelt.Blazor.Gamepad.GamepadList GamePadList;
+@inherits EmulatorComponentModel
+
+@*<canvas id="emulatorCanvas" width="592" height="464"></canvas>*@
+<canvas id="emulatorCanvas" width="296" height="232"></canvas>
+
+
+<div style="text-align:center; color:white">
+    Load a game (supported formats: Z80 and SNA)<br />
+    <InputFile OnChange="HandleFileSelected" /><br />
+    Use a gamepad for Kempston joystick<br />
+    @((MarkupString)Instructions)<br />
+    <button @onclick="@(()=>LoadGame("ManicMiner.z80","left - q<br/>right - w<br/>jump - space"))">Load Manic Miner (1983)(Bug-Byte Software)</button>
+</div>
+
+@*<img style="position:absolute;right:0px;bottom:0px;" src="/images/Atari2600/JoystickBase.png"/>
+    <img style="position:absolute;right:100px;bottom:100px;" src="/images/Atari2600/JoystickStick.png" />*@
+
