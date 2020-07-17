@@ -4,12 +4,7 @@ using System.Drawing;
 using ZXBox.Hardware.Interfaces;
 namespace ZXBox.Hardware.Output
 {
-    public class Screen : 
-#if NETFX_CORE
-    ZXBox_Core.IOutput   
-#else
-    IOutput
-#endif
+    public class Screen : IOutput
     {
         public void SwitchColors(bool switchColors)
         {
@@ -44,6 +39,22 @@ namespace ZXBox.Hardware.Output
             }
         }
 
+        public void SetPixels(int xpos, int ypos, byte b)
+        {
+
+            int x = xpos + bordersides;
+            int y = (ypos+bordertop) * (256+bordersides+bordersides) ;
+
+            
+            screen[x + y] =   (b & 0x80)==0x80?0xFF0000ff: 0xFF000000;
+            screen[x + y+1] = (b & 0x40) == 0x40 ? 0xFF0000ff : 0xFF000000;
+            screen[x + y+2] = (b & 0x20) == 0x20 ? 0xFF0000ff : 0xFF000000;
+            screen[x + y+3] = (b & 0x10) == 0x10 ? 0xFF0000ff : 0xFF000000;
+            screen[x + y+4] = (b & 0x08) == 0x08 ? 0xFF0000ff : 0xFF000000;
+            screen[x + y+5] = (b & 0x04) == 0x04 ? 0xFF0000ff : 0xFF000000;
+            screen[x + y+6] = (b & 0x02) == 0x02 ? 0xFF0000ff : 0xFF000000;
+            screen[x + y+7] = (b & 0x01) == 0x01 ? 0xFF0000ff : 0xFF000000;
+        }
 
         public Screen(Zilog.Z80 cpu,bool renderBorder,bool switchColors,int borderTop=48,int borderBottom=56,int borderSide=64)
         {
@@ -145,6 +156,8 @@ namespace ZXBox.Hardware.Output
             
         public uint[] drawScreen(bool flash)
         {
+            return screen;
+
             /* RGB palette entries for Spectrums 8 colours in normal and bright mode */
             tstate = 0;
             pixmapIndex = 0;

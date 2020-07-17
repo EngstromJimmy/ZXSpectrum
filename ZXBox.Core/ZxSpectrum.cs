@@ -5,6 +5,7 @@ using ZXBox.Hardware.Interfaces;
 using ZXBox.Hardware.Input;
 using ZXBox.Hardware.Output;
 using System.Threading.Tasks;
+using System.Diagnostics;
 
 namespace ZXBox
 {
@@ -41,6 +42,8 @@ namespace ZXBox
                 this.WriteByteToMemoryOverridden(a++, b);
             }
         }
+
+
 
 
         uint[] screenints; 
@@ -86,6 +89,25 @@ namespace ZXBox
             for (int o = 0; o < OutputHardware.Count;o++ )
             {
                 OutputHardware[o].Output(Port, ByteValue, tStates);
+            }
+        }
+
+        public override void WriteByteToMemory(int address, int bytetowrite)
+        {
+            base.WriteByteToMemory(address, bytetowrite);
+
+            if ((address & 0xffff) >= 0x4000 && (address & 0xffff) < 0x5800)
+            {
+                int x = (address & 0x1F) * 8;
+                int y = ((address & 0x700) >> 8) + ((address & 0xE0) >> 2) + ((address & 0x1800) >> 5);
+
+                //Update pixels
+                speccyscreen.SetPixels(x, y, (byte)(bytetowrite & 0xFF));
+            }
+
+            if ((address & 0xffff) >= 0x5800 && (address & 0xffff) <= 0x5B00)
+            {
+                //Update attributes
             }
         }
     }

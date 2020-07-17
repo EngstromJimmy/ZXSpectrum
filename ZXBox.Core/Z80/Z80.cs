@@ -432,7 +432,7 @@ namespace Zilog
                 
             }
         
-            public void WriteByteToMemory(int address, int bytetowrite)
+            public virtual void WriteByteToMemory(int address, int bytetowrite)
             {
                 //if (address >= 16384)//Write protection
                 //{
