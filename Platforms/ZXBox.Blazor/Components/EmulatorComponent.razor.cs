@@ -99,7 +99,7 @@ namespace ZXBox.Blazor.Pages
             
             speccy.DoIntructions(69888);
             
-            //beeper.GenerateSound();
+           //beeper.GenerateSound();
             
             //}
             
@@ -107,7 +107,7 @@ namespace ZXBox.Blazor.Pages
             sw.Start();
             Paint();
             sw.Stop();
-            Debug.WriteLine(sw.ElapsedMilliseconds);
+            //Debug.WriteLine(sw.ElapsedMilliseconds);
         }
 
         protected async Task BufferSound()
