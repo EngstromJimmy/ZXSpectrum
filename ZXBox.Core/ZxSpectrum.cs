@@ -56,10 +56,10 @@ namespace ZXBox
             return result;
         }
 
-        public void RenderScreen(Span<int> screen,bool flash)
-        {
-            speccyscreen.drawScreen(screen,flash);
-        }
+        //public void RenderScreen(Span<int> screen,bool flash)
+        //{
+        //    speccyscreen.drawScreen(screen,flash);
+        //}
 
         public uint[] GetScreenInUint(bool flash)
         {

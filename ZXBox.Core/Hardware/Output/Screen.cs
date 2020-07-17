@@ -253,103 +253,103 @@ namespace ZXBox.Hardware.Output
         int pixmapIndex = 0;
         int screenIndex = 16 * 1024;
 
-        public void drawScreen(Span<int> screen,bool flash)
-        {
-            tstate = 0;
-            pixmapIndex = 0;
-            /* RGB palette entries for Spectrums 8 colours in normal and bright mode */
-            bordercounter = 0;
+        //public void drawScreen(Span<int> screen,bool flash)
+        //{
+        //    tstate = 0;
+        //    pixmapIndex = 0;
+        //    /* RGB palette entries for Spectrums 8 colours in normal and bright mode */
+        //    bordercounter = 0;
 
-            foreground = colours[0];
-            background = colours[15];
+        //    foreground = colours[0];
+        //    background = colours[15];
 
-            /* Fill in top part of screen with border colour */
-            for (x = Width * bordertop; x-- > 0; )
-                screen[pixmapIndex++] = (int)GetBorderColor(tstate += tstatesperpixel);
+        //    /* Fill in top part of screen with border colour */
+        //    for (x = Width * bordertop; x-- > 0; )
+        //        screen[pixmapIndex++] = (int)GetBorderColor(tstate += tstatesperpixel);
 
-            for (attributeIndex = screenIndex + 24 * 32 * 8, pixelIndex = screenIndex, y = 0; y < 192; )
-            {
-                /* Fill in left part of border with border colour */
+        //    for (attributeIndex = screenIndex + 24 * 32 * 8, pixelIndex = screenIndex, y = 0; y < 192; )
+        //    {
+        //        /* Fill in left part of border with border colour */
 
-                for (x = bordersides; x-- > 0; pixmapIndex++)
-                    screen[pixmapIndex] = (int)GetBorderColor(tstate += tstatesperpixel);
+        //        for (x = bordersides; x-- > 0; pixmapIndex++)
+        //            screen[pixmapIndex] = (int)GetBorderColor(tstate += tstatesperpixel);
 
 
-                /* Calculate start address of pixel row, the Spectrums video ram is
-                 * connected to the screen handler with a few wires crossed, bit order
-                 * is 7621 0543 instead of 7654 3210. */
+        //        /* Calculate start address of pixel row, the Spectrums video ram is
+        //         * connected to the screen handler with a few wires crossed, bit order
+        //         * is 7621 0543 instead of 7654 3210. */
 
-                pixelIndex = screenIndex + ((((y & 0x7) << 3) | ((y & 0x38) >> 3) | (y & 0xc0)) << 5);
+        //        pixelIndex = screenIndex + ((((y & 0x7) << 3) | ((y & 0x38) >> 3) | (y & 0xc0)) << 5);
 
-                /* Loop through the 32 bytes in a pixel row */
+        //        /* Loop through the 32 bytes in a pixel row */
 
-                for (x = 32; x-- > 0; )
-                {
-                    /* Set background and foreground colours for this byte */
+        //        for (x = 32; x-- > 0; )
+        //        {
+        //            /* Set background and foreground colours for this byte */
 
-                    if (!flash || (cpu.ReadByteFromMemory(attributeIndex) & 0x80) == 0)
-                    {
-                        /* Three bit foreground colour is encoded in bits 0..2.
-                         * The "bright" attribute is in bit 6. */
+        //            if (!flash || (cpu.ReadByteFromMemory(attributeIndex) & 0x80) == 0)
+        //            {
+        //                /* Three bit foreground colour is encoded in bits 0..2.
+        //                 * The "bright" attribute is in bit 6. */
 
-                        foreground = colours[(cpu.ReadByteFromMemory(attributeIndex) & 0x7) + (((cpu.ReadByteFromMemory(attributeIndex) & 0x40) != 0) ? 8 : 0)];
+        //                foreground = colours[(cpu.ReadByteFromMemory(attributeIndex) & 0x7) + (((cpu.ReadByteFromMemory(attributeIndex) & 0x40) != 0) ? 8 : 0)];
 
-                        /* Three bit background colour is encoded in bits 3..5.
-                         * "Bright" attribute still in bit 6. */
+        //                /* Three bit background colour is encoded in bits 3..5.
+        //                 * "Bright" attribute still in bit 6. */
 
-                        background = colours[((cpu.ReadByteFromMemory(attributeIndex) >> 3) & 0x7) + (((cpu.ReadByteFromMemory(attributeIndex) & 0x40) != 0) ? 8 : 0)];
-                    }
-                    else
-                    {
-                        /* Three bit foreground colour is encoded in bits 0..2.
-                         * However, we are in the inverse flash phase... */
+        //                background = colours[((cpu.ReadByteFromMemory(attributeIndex) >> 3) & 0x7) + (((cpu.ReadByteFromMemory(attributeIndex) & 0x40) != 0) ? 8 : 0)];
+        //            }
+        //            else
+        //            {
+        //                /* Three bit foreground colour is encoded in bits 0..2.
+        //                 * However, we are in the inverse flash phase... */
 
-                        background = colours[(cpu.ReadByteFromMemory(attributeIndex) & 0x7) + (((cpu.ReadByteFromMemory(attributeIndex) & 0x40) != 0) ? 8 : 0)];
+        //                background = colours[(cpu.ReadByteFromMemory(attributeIndex) & 0x7) + (((cpu.ReadByteFromMemory(attributeIndex) & 0x40) != 0) ? 8 : 0)];
 
-                        /* Three bit background colour is encoded in bits 3..5.
-                         * The inverse flash phase makes this the foreground. */
+        //                /* Three bit background colour is encoded in bits 3..5.
+        //                 * The inverse flash phase makes this the foreground. */
 
-                        foreground = colours[((cpu.ReadByteFromMemory(attributeIndex) >> 3) & 0x7) + (((cpu.ReadByteFromMemory(attributeIndex) & 0x40) != 0) ? 8 : 0)];
-                    }
+        //                foreground = colours[((cpu.ReadByteFromMemory(attributeIndex) >> 3) & 0x7) + (((cpu.ReadByteFromMemory(attributeIndex) & 0x40) != 0) ? 8 : 0)];
+        //            }
 
-                    /* We are done with this attribute, advance to next byte */
+        //            /* We are done with this attribute, advance to next byte */
 
-                    attributeIndex++;
+        //            attributeIndex++;
 
-                    /* Loop through the pixels in the current pixel byte and add them to the
-                     * output pixmap*/
+        //            /* Loop through the pixels in the current pixel byte and add them to the
+        //             * output pixmap*/
 
-                    for (pixelMask = 0x80, pixelByte = cpu.ReadByteFromMemory(pixelIndex++); pixelMask != 0; pixelMask >>= 1)
-                    {
-                        screen[pixmapIndex++] = (int)(((pixelMask & pixelByte) != 0) ? foreground : background);
-                        //pixmapIndex += 2;
-                        tstate += tstatesperpixel;
-                    }
-                }
+        //            for (pixelMask = 0x80, pixelByte = cpu.ReadByteFromMemory(pixelIndex++); pixelMask != 0; pixelMask >>= 1)
+        //            {
+        //                screen[pixmapIndex++] = (int)(((pixelMask & pixelByte) != 0) ? foreground : background);
+        //                //pixmapIndex += 2;
+        //                tstate += tstatesperpixel;
+        //            }
+        //        }
 
-                /* Add 32 pixels of border colour to both pixel rows */
+        //        /* Add 32 pixels of border colour to both pixel rows */
 
-                for (x = bordersides; x-- > 0; pixmapIndex++)
-                    screen[pixmapIndex] = (int)GetBorderColor(tstate += tstatesperpixel);
+        //        for (x = bordersides; x-- > 0; pixmapIndex++)
+        //            screen[pixmapIndex] = (int)GetBorderColor(tstate += tstatesperpixel);
 
-                /* Skip next pixel row as we have already filled it */
+        //        /* Skip next pixel row as we have already filled it */
 
-                //pixmapIndex += width;
+        //        //pixmapIndex += width;
 
-                /* Unless the next row is a multiple of 8, we need to rewind the attribute
-                 * pointer to the beginning of the pixel row. */
+        //        /* Unless the next row is a multiple of 8, we need to rewind the attribute
+        //         * pointer to the beginning of the pixel row. */
 
-                if ((++y & 0x7) != 0)
-                    attributeIndex -= 32;
-            }
+        //        if ((++y & 0x7) != 0)
+        //            attributeIndex -= 32;
+        //    }
 
-            /* Fill in bottom part of screen with border colour */
+        //    /* Fill in bottom part of screen with border colour */
 
-            for (x = Width * borderbottom; x-- > 0; )
-                screen[pixmapIndex++] = (int)GetBorderColor(tstate += tstatesperpixel);
+        //    for (x = Width * borderbottom; x-- > 0; )
+        //        screen[pixmapIndex++] = (int)GetBorderColor(tstate += tstatesperpixel);
 
-            border.Clear();
-            border.Add(new Border(LastBorderColor, 0));
-        }
+        //    border.Clear();
+        //    border.Add(new Border(LastBorderColor, 0));
+        //}
     }
 }
