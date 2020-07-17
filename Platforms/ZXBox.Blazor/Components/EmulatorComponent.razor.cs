@@ -13,6 +13,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
+using System.Xml.Schema;
 using Toolbelt.Blazor.Gamepad;
 using ZXBox.Hardware.Input;
 using ZXBox.Hardware.Input.Joystick;
@@ -39,7 +40,7 @@ namespace ZXBox.Blazor.Pages
         protected IJSRuntime JSRuntime { get; set; }
         public EmulatorComponentModel()
         {
-            speccy = new ZXSpectrum(true, true);
+            speccy = new ZXSpectrum(true, true,20,20,20);
             gameLoop = new System.Timers.Timer(20);
             gameLoop.Elapsed += GameLoop_Elapsed;
         }
@@ -71,14 +72,6 @@ namespace ZXBox.Blazor.Pages
         }
 
 
-        //public async void Start()
-        //{
-        //    gameLoop.Start();
-        //    speccy.InputHardware.Add(Keyboard);
-        //    speccy.Reset();
-        //}
-
-
         protected async override Task OnInitializedAsync()
         {
             gameLoop.Start();
@@ -87,8 +80,8 @@ namespace ZXBox.Blazor.Pages
             kempston = new Kempston();
             speccy.InputHardware.Add(kempston);
 
-            beeper = new Beeper<byte>(128, 255, 48000/50, 1);
-            speccy.OutputHardware.Add(beeper);
+            //beeper = new Beeper<byte>(128, 255, 48000/50, 1);
+            //speccy.OutputHardware.Add(beeper);
 
             speccy.Reset();
             await base.OnInitializedAsync();
@@ -103,18 +96,18 @@ namespace ZXBox.Blazor.Pages
 
             //for (int i= 0;i < 1;i++)
             //{
-            sw.Start();
+            
             speccy.DoIntructions(69888);
-            sw.Stop();
+            
             //beeper.GenerateSound();
             
             //}
             
             //await BufferSound();
-            
+            sw.Start();
             Paint();
-            
-            Debug.WriteLine(sw.ElapsedMilliseconds);
+            sw.Stop();
+            //Debug.WriteLine(sw.ElapsedMilliseconds);
         }
 
         protected async Task BufferSound()
@@ -133,7 +126,7 @@ namespace ZXBox.Blazor.Pages
             base.OnAfterRender(firstRender);
         }
 
-
+        uint[] screen = new uint[68672]; //Height * width (256+20+20)*(192+20+20)
         public async void Paint()
         {
             if (flashcounter == 0)
@@ -145,10 +138,12 @@ namespace ZXBox.Blazor.Pages
             {
                 flashcounter--;
             }
-            var bytes = speccy.GetScreenInBytes(flash);
 
+
+            screen = speccy.GetScreenInUint(flash);
+           
             //Allocate memory
-            var gch = GCHandle.Alloc(bytes, GCHandleType.Pinned);
+            var gch = GCHandle.Alloc(screen, GCHandleType.Pinned);
             var pinned = gch.AddrOfPinnedObject();
             var mono = JSRuntime as WebAssemblyJSRuntime;
             mono.InvokeUnmarshalled<IntPtr,string>("PaintCanvas",pinned);

@@ -45,21 +45,17 @@ namespace ZXBox.Hardware.Output
         }
 
 
-#if !NETFX_CORE
-        public Screen(Zilog.Z80 cpu,bool renderBorder,bool switchColors)
+        public Screen(Zilog.Z80 cpu,bool renderBorder,bool switchColors,int borderTop=48,int borderBottom=56,int borderSide=64)
         {
             SwitchColors(switchColors);
             RenderBorder = renderBorder;
 
             if (renderBorder)
             {
-                //bordertop = 48;
-                //borderbottom = 56;
-                //bordersides = 64;
-
-                bordertop = 20;
-                borderbottom =20;
-                bordersides = 20;
+               
+                this.bordertop = borderTop;
+                this.borderbottom = borderBottom;
+                this.bordersides = borderSide;
 
             }
             else
@@ -75,60 +71,7 @@ namespace ZXBox.Hardware.Output
 
             this.cpu = cpu;
         }
-#endif
 
-#if NETFX_CORE
-        public Screen(ZXBox_Core.ZXSpectrum48 cpu, bool renderBorder, bool switchColors)
-        {
-            SwitchColors(switchColors);
-            RenderBorder = renderBorder;
-
-            if (renderBorder)
-            {
-                //bordertop = 48;
-                //borderbottom = 56;
-                //bordersides = 64;
-
-                bordertop = 5;
-                borderbottom = 5;
-                bordersides = 5;
-
-            }
-            else
-            {
-                bordertop = 0;
-                borderbottom = 0;
-                bordersides = 0;
-            }
-
-            Height = 192 + (bordertop + borderbottom);
-            Width = 256 + (bordersides * 2);
-            screen = new uint[Height * Width];
-
-            this.cpu = cpu;
-        }
-#else
-
-#endif
-        //static int[] colours = new int[16]
-        //{
-        //    0x000000, 0x0000c0, 0xc00000, 0xc000c0,
-        //    0x00c000, 0x00c0c0, 0xc0c000, 0xc0c0c0,
-        //    0x000000, 0x0000ff, 0xff0000, 0xff00ff,
-        //    0x00ff00, 0x00ffff, 0xffff00, 0xffffff
-        //};
-
-
-        //Image render
-        //static uint[] colours = new uint[16]
-        //{
-        //    0xFF000000, 0xFF0000cd, 0xFFcd0000, 0xFFcd00cd,
-        //    0xFF00cd00, 0xFF00cdcd, 0xFFcdcd00, 0xFFcdcdcd,
-        //    0xFF000000, 0xFF0000ff, 0xFFff0000, 0xFFff00ff,
-        //    0xFF00ff00, 0xFF00ffff, 0xFFffff00, 0xFFffffff
-        //};
-
-        //XNA render
         uint[] colours;
 
 
@@ -310,7 +253,7 @@ namespace ZXBox.Hardware.Output
         int pixmapIndex = 0;
         int screenIndex = 16 * 1024;
 
-        public void drawScreen(int[] screen,bool flash)
+        public void drawScreen(Span<int> screen,bool flash)
         {
             tstate = 0;
             pixmapIndex = 0;
@@ -408,18 +351,5 @@ namespace ZXBox.Hardware.Output
             border.Clear();
             border.Add(new Border(LastBorderColor, 0));
         }
-
-
-
-#if NETFX_CORE
-        void ZXBox_Core.IOutput.Output(int Port, int ByteValue, int tState)
-        {
-            if ((Port & 0x0001) == 0)
-            {
-                border.Add(new Border(((uint)ByteValue & 0x07), tState));
-            }
-        }
-#endif
     }
-
 }

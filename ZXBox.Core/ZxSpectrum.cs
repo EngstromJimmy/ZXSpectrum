@@ -13,9 +13,9 @@ namespace ZXBox
         Screen speccyscreen;
         byte[] romBytes;
         
-        public ZXSpectrum(bool renderBorder=true,bool loadRom=true)
+        public ZXSpectrum(bool renderBorder=true,bool loadRom=true, int borderTop = 48, int borderBottom = 56, int borderSide = 64)
         {
-            speccyscreen = new Screen(this, renderBorder,false);
+            speccyscreen = new Screen(this, renderBorder,false, borderTop, borderBottom, borderSide);
             this.OutputHardware.Add(speccyscreen);
 
             if (loadRom)
@@ -54,6 +54,11 @@ namespace ZXBox
             }
             Buffer.BlockCopy(screenints, 0, result, 0, result.Length);
             return result;
+        }
+
+        public void RenderScreen(Span<int> screen,bool flash)
+        {
+            speccyscreen.drawScreen(screen,flash);
         }
 
         public uint[] GetScreenInUint(bool flash)
