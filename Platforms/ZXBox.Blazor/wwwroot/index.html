@@ -104,7 +104,7 @@
             imageData.data.set(Uint8ClampedArray.from(Module.HEAPU8.subarray(dataPtr, dataPtr + imageData.data.length)));
             context.putImageData(imageData, 0, 0);
             context.drawImage(canvas, 0, 0,  canvas.width,  canvas.height);
-            //console.log((performance.now() - lastcall).toFixed(2));      
+            console.log((performance.now() - lastcall).toFixed(2));      
             lastcall = performance.now();
             return true;
         }

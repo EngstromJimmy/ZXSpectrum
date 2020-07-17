@@ -107,7 +107,7 @@ namespace ZXBox.Blazor.Pages
             sw.Start();
             Paint();
             sw.Stop();
-            //Debug.WriteLine(sw.ElapsedMilliseconds);
+            Debug.WriteLine(sw.ElapsedMilliseconds);
         }
 
         protected async Task BufferSound()
@@ -126,7 +126,7 @@ namespace ZXBox.Blazor.Pages
             base.OnAfterRender(firstRender);
         }
 
-        uint[] screen = new uint[68672]; //Height * width (256+20+20)*(192+20+20)
+        //uint[] screen = new uint[68672]; //Height * width (256+20+20)*(192+20+20)
         public async void Paint()
         {
             if (flashcounter == 0)
@@ -140,7 +140,7 @@ namespace ZXBox.Blazor.Pages
             }
 
 
-            screen = speccy.GetScreenInUint(flash);
+            var screen = speccy.GetScreenInUint(flash);
            
             //Allocate memory
             var gch = GCHandle.Alloc(screen, GCHandleType.Pinned);
