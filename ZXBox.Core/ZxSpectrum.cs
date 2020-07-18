@@ -105,7 +105,7 @@ namespace ZXBox
 
             if ((address & 0xffff) >= 0x5800 && (address & 0xffff) <= 0x5AFF)
             {
-                speccyscreen.SetAttribute(address, ((bytetowrite & 0x80) >> 7) == 1, ((bytetowrite & 0x40)>>6)==1,(bytetowrite&0x07), (bytetowrite >>3)&0x07);
+                speccyscreen.SetAttribute(address, (((bytetowrite & 0x80) >> 7) & 0x01) == 1, (((bytetowrite & 0x40) >> 6) & 0x01) == 1, (bytetowrite&0x07), (bytetowrite >>3)&0x07);
                 
             }
         }

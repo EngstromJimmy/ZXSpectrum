@@ -92,8 +92,10 @@ namespace ZXBox.Hardware.Output
 
             var attr = ScreenAttributes[(xpos / 8) + ((ypos / 8) * 32)];
 
-            //Debug.WriteLine($"xpos: {xpos} ypos: {ypos} attr:{(xpos / 8) + ((ypos / 8) * 32)} ink:{attr.Ink} paper:{attr.Paper}");
-
+            if (attr.Flash)
+            {
+                Debug.WriteLine($"xpos: {xpos} ypos: {ypos} attr:{(xpos / 8) + ((ypos / 8) * 32)} ink:{attr.Ink} paper:{attr.Paper}");
+            }
             var ink = colours[attr.Ink + (attr.Bright ? 8 : 0)];
             var paper = colours[attr.Paper + (attr.Bright ? 8 : 0)];
 
@@ -136,7 +138,8 @@ namespace ZXBox.Hardware.Output
         
             Height = 192 + (bordertop + borderbottom);
             Width = 256 + (bordersides * 2);
-            screen=screenflash = new uint[Height * Width];
+            screen = new uint[Height * Width];
+            screenflash = new uint[Height * Width];
             pixels = new bool[Height * Width];
             this.cpu = cpu;
         }
