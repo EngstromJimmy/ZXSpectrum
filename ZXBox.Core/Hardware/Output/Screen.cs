@@ -1,11 +1,22 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using ZXBox.Hardware.Interfaces;
 namespace ZXBox.Hardware.Output
 {
+    public class ScreenAttribute
+    {
+        public bool Flash { get; set; }
+        public bool Bright { get; set; }
+        public int Ink { get; set; } = 0;
+        public int Paper { get; set; } = 7;
+    }
+
     public class Screen : IOutput
     {
+        //32*24
+        public ScreenAttribute[] ScreenAttributes { get; set; } = new ScreenAttribute[768];
         public void SwitchColors(bool switchColors)
         {
             if (switchColors)
@@ -39,25 +50,72 @@ namespace ZXBox.Hardware.Output
             }
         }
 
+        public void SetAttribute(int pos,bool flash,bool bright,int ink,int paper)
+        {
+            
+            
+            pos = pos - 0x5800;
+
+            if (ScreenAttributes[pos].Bright != bright || ScreenAttributes[pos].Flash != flash|| ScreenAttributes[pos].Ink != ink || ScreenAttributes[pos].Paper != paper)
+            {
+                ScreenAttributes[pos].Bright = bright;
+                ScreenAttributes[pos].Flash = flash;
+                ScreenAttributes[pos].Ink = ink;
+                ScreenAttributes[pos].Paper = paper;
+
+                int y = (pos / 32) * 8;
+                int x = (pos * 8) - (y * 32);
+
+                for (int yi = y; yi < y + 8; yi++)
+                {
+                    for (int xi = x; xi < x + 8; xi++)
+                    {
+                        UpdatePixel(xi, yi);
+                    }
+                }
+            }
+        }
+
         public void SetPixels(int xpos, int ypos, byte b)
         {
+            for (int i = 0; i < 8; i++)
+            {
+                pixels[(xpos + (ypos*256))+i] = (b>>7-i & 0x01) != 0 ? true : false;
+                UpdatePixel(xpos + i, ypos);
+            }
+        }
 
+        private void UpdatePixel(int xpos, int ypos)
+        {
             int x = xpos + bordersides;
-            int y = (ypos+bordertop) * (256+bordersides+bordersides) ;
+            int y = (ypos + bordertop) * (256 + bordersides + bordersides);
 
-            
-            screen[x + y] =   (b & 0x80)==0x80?0xFF0000ff: 0xFF000000;
-            screen[x + y+1] = (b & 0x40) == 0x40 ? 0xFF0000ff : 0xFF000000;
-            screen[x + y+2] = (b & 0x20) == 0x20 ? 0xFF0000ff : 0xFF000000;
-            screen[x + y+3] = (b & 0x10) == 0x10 ? 0xFF0000ff : 0xFF000000;
-            screen[x + y+4] = (b & 0x08) == 0x08 ? 0xFF0000ff : 0xFF000000;
-            screen[x + y+5] = (b & 0x04) == 0x04 ? 0xFF0000ff : 0xFF000000;
-            screen[x + y+6] = (b & 0x02) == 0x02 ? 0xFF0000ff : 0xFF000000;
-            screen[x + y+7] = (b & 0x01) == 0x01 ? 0xFF0000ff : 0xFF000000;
+            var attr = ScreenAttributes[(xpos / 8) + ((ypos / 8) * 32)];
+
+            //Debug.WriteLine($"xpos: {xpos} ypos: {ypos} attr:{(xpos / 8) + ((ypos / 8) * 32)} ink:{attr.Ink} paper:{attr.Paper}");
+
+            var ink = colours[attr.Ink + (attr.Bright ? 8 : 0)];
+            var paper = colours[attr.Paper + (attr.Bright ? 8 : 0)];
+
+            screen[x+y] = pixels[xpos+(ypos*256)] ? ink : paper;
+            if (attr.Flash)
+            {
+                screenflash[x + y] = pixels[xpos + (ypos * 256)] ? paper : ink;
+            }
+            else
+            {
+                screenflash[x + y] = pixels[xpos + (ypos * 256)] ? ink : paper;
+            }
         }
 
         public Screen(Zilog.Z80 cpu,bool renderBorder,bool switchColors,int borderTop=48,int borderBottom=56,int borderSide=64)
         {
+            for(int a=0;a<ScreenAttributes.Length;a++)
+            {
+                ScreenAttributes[a] = new ScreenAttribute();
+            }
+
+
             SwitchColors(switchColors);
             RenderBorder = renderBorder;
 
@@ -78,8 +136,8 @@ namespace ZXBox.Hardware.Output
         
             Height = 192 + (bordertop + borderbottom);
             Width = 256 + (bordersides * 2);
-            screen = new uint[Height * Width];
-
+            screen=screenflash = new uint[Height * Width];
+            pixels = new bool[Height * Width];
             this.cpu = cpu;
         }
 
@@ -120,11 +178,8 @@ namespace ZXBox.Hardware.Output
         }
 
         
-#if NETFX_CORE
-        private ZXBox_Core.ZXSpectrum48 cpu;
-#else
+
         private Zilog.Z80 cpu;
-#endif
         private int bordertop = 20;
         private int borderbottom = 20;
         private int bordersides = 20;
@@ -137,6 +192,8 @@ namespace ZXBox.Hardware.Output
         public double tstatesperpixel =  0.58; 
 
         private uint[] screen = null;
+        private uint[] screenflash = null;
+        private bool[] pixels = null;
         //private int border;
         private List<Border> border = new List<Border>();
         public uint LastBorderColor;
@@ -154,10 +211,26 @@ namespace ZXBox.Hardware.Output
        *   flash - flash state, 0 for normal, non-zero for inverted.
       */
             
+        
         public uint[] drawScreen(bool flash)
         {
-            return screen;
 
+
+            //for (int yi = 0; yi < 192; yi++)
+            //{
+            //    for (int xi = 0; xi < 256; xi++)
+            //    {
+            //        UpdatePixel(xi, yi);
+            //    }
+            //}
+            if (flash)
+            {
+                return screenflash;
+            }
+            else
+            {
+                return screen;
+            }
             /* RGB palette entries for Spectrums 8 colours in normal and bright mode */
             tstate = 0;
             pixmapIndex = 0;

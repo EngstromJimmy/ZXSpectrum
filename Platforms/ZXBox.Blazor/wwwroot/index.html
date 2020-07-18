@@ -99,8 +99,6 @@
         }
 
         window.PaintCanvas = function PaintCanvas(dataPtr) {
-
-            
             imageData.data.set(Uint8ClampedArray.from(Module.HEAPU8.subarray(dataPtr, dataPtr + imageData.data.length)));
             context.putImageData(imageData, 0, 0);
             context.drawImage(canvas, 0, 0,  canvas.width,  canvas.height);

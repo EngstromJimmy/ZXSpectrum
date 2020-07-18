@@ -752,7 +752,8 @@ namespace Zilog
 
             do
             {
-                Memory[ldirdest] = Memory[ldirfrom];
+                WriteByteToMemory(ldirdest, ReadByteFromMemory(ldirfrom));
+                //Memory[ldirdest] = Memory[ldirfrom];
                 ldirfrom = INC16(ldirfrom, 0);
                 ldirdest = INC16(ldirdest, 0);
               ldircount = DEC16(ldircount, 0);
