@@ -43,9 +43,7 @@ namespace ZXBox
             }
         }
 
-
-
-
+        
         uint[] screenints; 
         byte[] result;
         public byte[] GetScreenInBytes(bool flash)
@@ -94,6 +92,7 @@ namespace ZXBox
 
         public override void WriteByteToMemory(int address, int bytetowrite)
         {
+
             base.WriteByteToMemory(address, bytetowrite);
 
             if ((address & 0xffff) >= 0x4000 && (address & 0xffff) < 0x5800)
@@ -101,14 +100,21 @@ namespace ZXBox
                 int x = (address & 0x1F) * 8;
                 int y = ((address & 0x700) >> 8) + ((address & 0xE0) >> 2) + ((address & 0x1800) >> 5);
 
-                //Update pixels
                 speccyscreen.SetPixels(x, y, (byte)(bytetowrite & 0xFF));
             }
 
-            if ((address & 0xffff) >= 0x5800 && (address & 0xffff) <= 0x5B00)
+            if ((address & 0xffff) >= 0x5800 && (address & 0xffff) <= 0x5AFF)
             {
-                //Update attributes
+                speccyscreen.SetAttribute(address, ((bytetowrite & 0x80) >> 7) == 1, ((bytetowrite & 0x40)>>6)==1,(bytetowrite&0x07), (bytetowrite >>3)&0x07);
+                
             }
+        }
+
+        public override void WriteWordToMemory(int address, int word)
+        {
+            WriteByteToMemory(address, word & 0xff);
+            address++;
+            WriteByteToMemory(address, word >> 8);
         }
     }
 }

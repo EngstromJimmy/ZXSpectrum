@@ -416,7 +416,7 @@ namespace Zilog
         #endregion
 
         #region Memory
-            public void WriteWordToMemory(int address, int word)
+            public virtual void WriteWordToMemory(int address, int word)
             {
 
                 if (address >= 16384) //Write protection
@@ -537,7 +537,9 @@ namespace Zilog
 
             //Clear Memory
             for (int a = 16384; a < Memory.Length; a++)
-                Memory[a] = 0;
+            {
+                WriteByteToMemory(a, 0);
+            }
         }
 
         //System.Text.StringBuilder sb = new StringBuilder();
