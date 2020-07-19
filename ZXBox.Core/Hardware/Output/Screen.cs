@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.Runtime.InteropServices;
 using ZXBox.Hardware.Interfaces;
 namespace ZXBox.Hardware.Output
 {
@@ -154,30 +155,26 @@ namespace ZXBox.Hardware.Output
         int bordercounter;
         private uint GetBorderColor(double tState)
         {
-            if (RenderBorder)
+            if (tState == 0)
             {
-                if (tState == 0)
-                {
-                    bordercounter = 0;
-                }
-                if ((border.Count - 1) > bordercounter)
-                {
-                    if (border[bordercounter + 1].tState <= tState)
-                        bordercounter++;
-                }
-                if (bordercounter > border.Count - 1 )
-                    bordercounter = border.Count - 1;
-                if (bordercounter > 0)
-                {
-                    LastBorderColor = border[bordercounter].ColorByte;
-                }
-                if (tState == 69887)
-                    border.Clear();
-                if (border.Count == 0)
-                    return LastBorderColor;
-                return colours[LastBorderColor];
+                bordercounter = 0;
             }
-            return colours[0];
+            if ((border.Count - 1) > bordercounter)
+            {
+                if (border[bordercounter + 1].tState <= tState)
+                    bordercounter++;
+            }
+            if (bordercounter > border.Count - 1 )
+                bordercounter = border.Count - 1;
+            if (bordercounter > 0)
+            {
+                LastBorderColor = border[bordercounter].ColorByte;
+            }
+            if (tState == 69887)
+                border.Clear();
+            if (border.Count == 0)
+                return LastBorderColor;
+            return colours[LastBorderColor];
         }
 
         
@@ -213,19 +210,51 @@ namespace ZXBox.Hardware.Output
        *   screen - bitmap of the rendered screen
        *   flash - flash state, 0 for normal, non-zero for inverted.
       */
-            
-        
+
+        int p = 0;
         public uint[] drawScreen(bool flash)
         {
 
+            //Update border top
+            for(p=0;p<(bordertop*Width);p++)
+            {
+                screen[p] = GetBorderColor(p * tstatesperpixel);
+                screenflash[p]= GetBorderColor(p * tstatesperpixel);
+            }
 
-            //for (int yi = 0; yi < 192; yi++)
-            //{
-            //    for (int xi = 0; xi < 256; xi++)
-            //    {
-            //        UpdatePixel(xi, yi);
-            //    }
-            //}
+
+            for (int py = bordertop; py < Height;py++)
+            {
+                for (int px = 0; px < bordersides; px++)
+                {
+                    var pixel = ((py * Width) + px);
+                    screen[pixel] = GetBorderColor(pixel * tstatesperpixel);
+                    screenflash[pixel] = GetBorderColor(pixel * tstatesperpixel);
+                }
+
+            }
+
+            for (int py = bordertop; py < Height; py++)
+            {
+                for (int px = Width-bordersides; px < Width; px++)
+                {
+                    var pixel = ((py * Width) + px);
+                    screen[pixel] = GetBorderColor(pixel * tstatesperpixel);
+                    screenflash[pixel] = GetBorderColor(pixel * tstatesperpixel);
+                }
+
+            }
+
+            for (p = (Width*(Height -borderbottom)); p < (Height*Width); p++)
+            {
+                screen[p] = GetBorderColor(p * tstatesperpixel);
+                screenflash[p] = GetBorderColor(p * tstatesperpixel);
+            }
+
+            border.Clear();
+            border.Add(new Border(LastBorderColor, 0));
+
+
             if (flash)
             {
                 return screenflash;
