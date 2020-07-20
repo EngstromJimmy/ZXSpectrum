@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.Linq.Expressions;
 using ZXBox.Hardware.Interfaces;
 namespace ZXBox.Hardware.Output
 {
@@ -17,6 +18,8 @@ namespace ZXBox.Hardware.Output
     {
         //32*24
         public ScreenAttribute[] ScreenAttributes { get; set; } = new ScreenAttribute[768];
+
+        bool dirtyborder = true;
         public void SwitchColors(bool switchColors)
         {
             if (switchColors)
