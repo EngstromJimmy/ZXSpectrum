@@ -1,0 +1,128 @@
+    0 MC 0000
+    4 MR 0000 ed
+    4 MC 0001
+    8 MR 0001 b2
+    8 PR 0a40 ff
+    9 PC 0a40
+   13 MC 37ce
+   16 MW 37ce ff
+   16 MC 37cf
+   17 MC 37cf
+   18 MC 37cf
+   19 MC 37cf
+   20 MC 37cf
+   21 MC 0000
+   25 MR 0000 ed
+   25 MC 0001
+   29 MR 0001 b2
+   29 PR 0940 ff
+   30 PC 0940
+   34 MC 37cf
+   37 MW 37cf ff
+   37 MC 37d0
+   38 MC 37d0
+   39 MC 37d0
+   40 MC 37d0
+   41 MC 37d0
+   42 MC 0000
+   46 MR 0000 ed
+   46 MC 0001
+   50 MR 0001 b2
+   50 PR 0840 ff
+   51 PC 0840
+   55 MC 37d0
+   58 MW 37d0 ff
+   58 MC 37d1
+   59 MC 37d1
+   60 MC 37d1
+   61 MC 37d1
+   62 MC 37d1
+   63 MC 0000
+   67 MR 0000 ed
+   67 MC 0001
+   71 MR 0001 b2
+   71 PR 0740 ff
+   72 PC 0740
+   76 MC 37d1
+   79 MW 37d1 ff
+   79 MC 37d2
+   80 MC 37d2
+   81 MC 37d2
+   82 MC 37d2
+   83 MC 37d2
+   84 MC 0000
+   88 MR 0000 ed
+   88 MC 0001
+   92 MR 0001 b2
+   92 PR 0640 ff
+   93 PC 0640
+   97 MC 37d2
+  100 MW 37d2 ff
+  100 MC 37d3
+  101 MC 37d3
+  102 MC 37d3
+  103 MC 37d3
+  104 MC 37d3
+  105 MC 0000
+  109 MR 0000 ed
+  109 MC 0001
+  113 MR 0001 b2
+  113 PR 0540 ff
+  114 PC 0540
+  118 MC 37d3
+  121 MW 37d3 ff
+  121 MC 37d4
+  122 MC 37d4
+  123 MC 37d4
+  124 MC 37d4
+  125 MC 37d4
+  126 MC 0000
+  130 MR 0000 ed
+  130 MC 0001
+  134 MR 0001 b2
+  134 PR 0440 ff
+  135 PC 0440
+  139 MC 37d4
+  142 MW 37d4 ff
+  142 MC 37d5
+  143 MC 37d5
+  144 MC 37d5
+  145 MC 37d5
+  146 MC 37d5
+  147 MC 0000
+  151 MR 0000 ed
+  151 MC 0001
+  155 MR 0001 b2
+  155 PR 0340 ff
+  156 PC 0340
+  160 MC 37d5
+  163 MW 37d5 ff
+  163 MC 37d6
+  164 MC 37d6
+  165 MC 37d6
+  166 MC 37d6
+  167 MC 37d6
+  168 MC 0000
+  172 MR 0000 ed
+  172 MC 0001
+  176 MR 0001 b2
+  176 PR 0240 ff
+  177 PC 0240
+  181 MC 37d6
+  184 MW 37d6 ff
+  184 MC 37d7
+  185 MC 37d7
+  186 MC 37d7
+  187 MC 37d7
+  188 MC 37d7
+  189 MC 0000
+  193 MR 0000 ed
+  193 MC 0001
+  197 MR 0001 b2
+  197 PR 0140 ff
+  198 PC 0140
+  202 MC 37d7
+  205 MW 37d7 ff
+8a57 0040 d98c 37d8 0000 0000 0000 0000 0000 0000 0000 0002
+00 14 0 0 0 0 205
+37ce ff ff ff ff ff ff ff ff ff ff -1

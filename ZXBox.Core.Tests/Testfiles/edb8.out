@@ -1,0 +1,118 @@
+    0 MC 0000
+    4 MR 0000 ed
+    4 MC 0001
+    8 MR 0001 b8
+    8 MR 4dcf 0a
+    8 MC 4dcf
+   11 MC 68e8
+   14 MC 68e8
+   15 MC 68e8
+   16 MW 68e8 0a
+   16 MC 68e7
+   17 MC 68e7
+   18 MC 68e7
+   19 MC 68e7
+   20 MC 68e7
+   21 MC 0000
+   25 MR 0000 ed
+   25 MC 0001
+   29 MR 0001 b8
+   29 MR 4dce 23
+   29 MC 4dce
+   32 MC 68e7
+   35 MC 68e7
+   36 MC 68e7
+   37 MW 68e7 23
+   37 MC 68e6
+   38 MC 68e6
+   39 MC 68e6
+   40 MC 68e6
+   41 MC 68e6
+   42 MC 0000
+   46 MR 0000 ed
+   46 MC 0001
+   50 MR 0001 b8
+   50 MR 4dcd 74
+   50 MC 4dcd
+   53 MC 68e6
+   56 MC 68e6
+   57 MC 68e6
+   58 MW 68e6 74
+   58 MC 68e5
+   59 MC 68e5
+   60 MC 68e5
+   61 MC 68e5
+   62 MC 68e5
+   63 MC 0000
+   67 MR 0000 ed
+   67 MC 0001
+   71 MR 0001 b8
+   71 MR 4dcc 55
+   71 MC 4dcc
+   74 MC 68e5
+   77 MC 68e5
+   78 MC 68e5
+   79 MW 68e5 55
+   79 MC 68e4
+   80 MC 68e4
+   81 MC 68e4
+   82 MC 68e4
+   83 MC 68e4
+   84 MC 0000
+   88 MR 0000 ed
+   88 MC 0001
+   92 MR 0001 b8
+   92 MR 4dcb c3
+   92 MC 4dcb
+   95 MC 68e4
+   98 MC 68e4
+   99 MC 68e4
+  100 MW 68e4 c3
+  100 MC 68e3
+  101 MC 68e3
+  102 MC 68e3
+  103 MC 68e3
+  104 MC 68e3
+  105 MC 0000
+  109 MR 0000 ed
+  109 MC 0001
+  113 MR 0001 b8
+  113 MR 4dca a7
+  113 MC 4dca
+  116 MC 68e3
+  119 MC 68e3
+  120 MC 68e3
+  121 MW 68e3 a7
+  121 MC 68e2
+  122 MC 68e2
+  123 MC 68e2
+  124 MC 68e2
+  125 MC 68e2
+  126 MC 0000
+  130 MR 0000 ed
+  130 MC 0001
+  134 MR 0001 b8
+  134 MR 4dc9 85
+  134 MC 4dc9
+  137 MC 68e2
+  140 MC 68e2
+  141 MC 68e2
+  142 MW 68e2 85
+  142 MC 68e1
+  143 MC 68e1
+  144 MC 68e1
+  145 MC 68e1
+  146 MC 68e1
+  147 MC 0000
+  151 MR 0000 ed
+  151 MC 0001
+  155 MR 0001 b8
+  155 MR 4dc8 29
+  155 MC 4dc8
+  158 MC 68e1
+  161 MC 68e1
+  162 MC 68e1
+  163 MW 68e1 29
+e569 0000 68e0 4dc7 0000 0000 0000 0000 0000 0000 0000 0002
+00 10 0 0 0 0 163
+68e1 29 85 a7 c3 55 74 23 0a -1
