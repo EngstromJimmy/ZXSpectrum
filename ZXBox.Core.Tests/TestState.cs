@@ -8,6 +8,6 @@ namespace ZXBox.Core.Tests
         public int i, r, im;
         public bool iff1, iff2,halted;
         public int end_tstates2;
-        public int[] Memory=new int[64 * 1024];
+        public int[] Memory=new int[4*16 * 1024];
     }
 }

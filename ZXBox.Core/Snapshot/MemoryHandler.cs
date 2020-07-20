@@ -13,7 +13,7 @@ namespace ZXBox.Snapshot
 
         public static void LoadBytesintoMemory(Byte[] bytes, int ByteArrayStartIndex, int MemoryStartIndex, Zilog.Z80 cpu)
         {
-            for (int a = ByteArrayStartIndex; a < bytes.Length && MemoryStartIndex < cpu.Memory.Length; a++)
+            for (int a = ByteArrayStartIndex; a < bytes.Length && MemoryStartIndex < bytes.Length; a++)
             {
                 cpu.WriteByteToMemory(MemoryStartIndex++, bytes[a]);
             }
