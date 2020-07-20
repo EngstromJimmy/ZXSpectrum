@@ -96,10 +96,7 @@ namespace ZXBox.Hardware.Output
 
             var attr = ScreenAttributes[(xpos / 8) + ((ypos / 8) * 32)];
 
-            if (attr.Flash)
-            {
-                Debug.WriteLine($"xpos: {xpos} ypos: {ypos} attr:{(xpos / 8) + ((ypos / 8) * 32)} ink:{attr.Ink} paper:{attr.Paper}");
-            }
+            
             var ink = colours[attr.Ink + (attr.Bright ? 8 : 0)];
             var paper = colours[attr.Paper + (attr.Bright ? 8 : 0)];
 
