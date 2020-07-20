@@ -1,5 +1,7 @@
 using System;
 using System.IO;
+using System.Linq;
+
 namespace ZXBox.Core.Tests
 {
     public class TestfileHandler
@@ -8,7 +10,7 @@ namespace ZXBox.Core.Tests
         {
             TextReader tr = new StreamReader(Path);
             string file = tr.ReadToEnd();
-            string[] rows = file.Split('\n');
+            string[] rows = file.Split('\n').Select(r=>r.Replace("\r","")).ToArray();
 
             
             TestState ts = new TestState();
@@ -69,7 +71,7 @@ namespace ZXBox.Core.Tests
         {
             TextReader tr = new StreamReader(Path);
             string file = tr.ReadToEnd();
-            string[] rows = file.Split('\n');
+            string[] rows = file.Split('\n').Select(r => r.Replace("\r", "")).ToArray();
             int LineToStarttRead = 0;
             while (rows[LineToStarttRead].IndexOf("M") > 0 || rows[LineToStarttRead].IndexOf("P") > 0)
                 LineToStarttRead++;

@@ -23,7 +23,7 @@ namespace ZXBox.Core.Tests
         public static bool TestInstruction(string file)
         {
             file = $"{Directory.GetParent(Directory.GetCurrentDirectory()).Parent.Parent.FullName}\\Testfiles\\" + file;
-            Zilog.Z80 z80 = new Zilog.Z80();
+            ZXSpectrum z80 = new ZXSpectrum();
             z80.Reset();
 
             TestState ts = TestfileHandler.ReadINFile(file);
@@ -41,7 +41,12 @@ namespace ZXBox.Core.Tests
             z80.IM = ts.im;
             z80.IX = ts.ix; 
             z80.IY = ts.iy;
-            z80.Memory = ts.Memory;
+
+            //z80.Memory = ts.Memory;
+            for(int m=0;m< ts.Memory.Length; m++)
+            {
+                z80.WriteByteToMemory(m, ts.Memory[m]);
+            }
             z80.PC = ts.pc;
             z80.R = ts.r;
             z80.SP = ts.sp;
@@ -188,7 +193,10 @@ namespace ZXBox.Core.Tests
             ts.im = z80.IM;
             ts.ix = z80.IX;
             ts.iy = z80.IY;
-            ts.Memory = z80.Memory;
+            for (int m = 0; m < ts.Memory.Length; m++)
+            {
+                ts.Memory[m] = z80.ReadByteFromMemory(m);
+            }
             ts.pc = z80.PC;
             ts.r = z80.R;
             ts.sp = z80.SP;

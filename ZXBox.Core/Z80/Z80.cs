@@ -5,13 +5,13 @@ using System.Text;
 
 namespace Zilog
 {
-    public  partial class Z80
+    public abstract partial class Z80
     {
 
 
         public void WriteByteToMemoryOverridden(int address, int b)
         {
-            this.Memory[address] = b;
+            this.WriteByteToMemory(address, b);
         }
 
         public  Z80()
@@ -416,46 +416,22 @@ namespace Zilog
         #endregion
 
         #region Memory
-            public virtual void WriteWordToMemory(int address, int word)
-            {
+        public abstract void WriteWordToMemory(int address, int word);
 
-                if (address >= 16384) //Write protection
-                {
-                    Memory[address] = word & 0xff;
-                    address++;
-                    Memory[address & 0xffff] = word >> 8;
-                }
-                else
-                {
-                    Debug.WriteLine("Trying to write to " + address);
-                }
-                
-            }
-        
-            public virtual void WriteByteToMemory(int address, int bytetowrite)
-            {
-                //if (address >= 16384)//Write protection
-                //{
-                    Memory[address & 0xffff] = bytetowrite & 0xff;
-                //}
-                //else
-                //{
-                //    Debug.WriteLine("Trying to write to " + address);
-                //}
-            }
-        
-            public int ReadByteFromMemory(int address)
-            {
-                return Memory[address & 0xffff] & 0xff;    
-            }
 
-            public int ReadWordFromMemory(int address)
-            {
-                return (Memory[address+1 & 0xffff] << 8 | Memory[address  & 0xffff]) & 0xffff;
-            }
+        public abstract void WriteByteToMemory(int address, int bytetowrite);
+            
+
+        public abstract int ReadByteFromMemory(int address);
+            
+
+        public int ReadWordFromMemory(int address)
+        {
+            return (ReadByteFromMemory(address+1 & 0xffff) << 8 | ReadByteFromMemory(address  & 0xffff)) & 0xffff;
+        }
         #endregion
 
-            //Program Counter
+        //Program Counter
         public int PC;
         //Stack Pointer
         public int SP = 0x10000;
@@ -500,9 +476,6 @@ namespace Zilog
             //NumberOfTStatesLeft -= 1;
         }
 
-        public int[] Memory = new int[64 * 1024];
-
-
         public void Reset()
         {
             PC=0;
@@ -536,7 +509,7 @@ namespace Zilog
             this.Out(254, 5, 0); //Border Color
 
             //Clear Memory
-            for (int a = 16384; a < Memory.Length; a++)
+            for (int a = 16384; a < 3* 16384; a++)
             {
                 WriteByteToMemory(a, 0);
             }
@@ -545,7 +518,7 @@ namespace Zilog
         //System.Text.StringBuilder sb = new StringBuilder();
         public void NextOpcode()
         {
-            opcode = (Memory[PC] & 0xff);
+            opcode = (ReadByteFromMemory(PC) & 0xff);
             PC = (PC + 1) & 0xffff;
         }
 
