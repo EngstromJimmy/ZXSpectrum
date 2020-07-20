@@ -214,43 +214,44 @@ namespace ZXBox.Hardware.Output
         int p = 0;
         public uint[] drawScreen(bool flash)
         {
-
-            //Update border top
-            for(p=0;p<(bordertop*Width);p++)
+            if (RenderBorder)
             {
-                screen[p] = GetBorderColor(p * tstatesperpixel);
-                screenflash[p]= GetBorderColor(p * tstatesperpixel);
-            }
-
-
-            for (int py = bordertop; py < Height;py++)
-            {
-                for (int px = 0; px < bordersides; px++)
+                //Update border top
+                for (p = 0; p < (bordertop * Width); p++)
                 {
-                    var pixel = ((py * Width) + px);
-                    screen[pixel] = GetBorderColor(pixel * tstatesperpixel);
-                    screenflash[pixel] = GetBorderColor(pixel * tstatesperpixel);
+                    screen[p] = GetBorderColor(p * tstatesperpixel);
+                    screenflash[p] = GetBorderColor(p * tstatesperpixel);
                 }
 
-            }
 
-            for (int py = bordertop; py < Height; py++)
-            {
-                for (int px = Width-bordersides; px < Width; px++)
+                for (int py = bordertop; py < Height; py++)
                 {
-                    var pixel = ((py * Width) + px);
-                    screen[pixel] = GetBorderColor(pixel * tstatesperpixel);
-                    screenflash[pixel] = GetBorderColor(pixel * tstatesperpixel);
+                    for (int px = 0; px < bordersides; px++)
+                    {
+                        var pixel = ((py * Width) + px);
+                        screen[pixel] = GetBorderColor(pixel * tstatesperpixel);
+                        screenflash[pixel] = GetBorderColor(pixel * tstatesperpixel);
+                    }
+
                 }
 
-            }
+                for (int py = bordertop; py < Height; py++)
+                {
+                    for (int px = Width - bordersides; px < Width; px++)
+                    {
+                        var pixel = ((py * Width) + px);
+                        screen[pixel] = GetBorderColor(pixel * tstatesperpixel);
+                        screenflash[pixel] = GetBorderColor(pixel * tstatesperpixel);
+                    }
 
-            for (p = (Width*(Height -borderbottom)); p < (Height*Width); p++)
-            {
-                screen[p] = GetBorderColor(p * tstatesperpixel);
-                screenflash[p] = GetBorderColor(p * tstatesperpixel);
-            }
+                }
 
+                for (p = (Width * (Height - borderbottom)); p < (Height * Width); p++)
+                {
+                    screen[p] = GetBorderColor(p * tstatesperpixel);
+                    screenflash[p] = GetBorderColor(p * tstatesperpixel);
+                }
+            }
             border.Clear();
             border.Add(new Border(LastBorderColor, 0));
 
