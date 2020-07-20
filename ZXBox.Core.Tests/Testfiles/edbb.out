@@ -1,0 +1,49 @@
+    0 MC 0000
+    4 MR 0000 ed
+    4 MC 0001
+    8 MR 0001 bb
+    9 MC 1dd0
+   12 MR 1dd0 b6
+   12 PC 033b
+   16 PW 033b b6
+   16 MC 1dcf
+   17 MC 1dcf
+   18 MC 1dcf
+   19 MC 1dcf
+   20 MC 1dcf
+   21 MC 0000
+   25 MR 0000 ed
+   25 MC 0001
+   29 MR 0001 bb
+   30 MC 1dcf
+   33 MR 1dcf c5
+   33 PC 023b
+   37 PW 023b c5
+   37 MC 1dce
+   38 MC 1dce
+   39 MC 1dce
+   40 MC 1dce
+   41 MC 1dce
+   42 MC 0000
+   46 MR 0000 ed
+   46 MC 0001
+   50 MR 0001 bb
+   51 MC 1dce
+   54 MR 1dce 71
+   54 PC 013b
+   58 PW 013b 71
+   58 MC 1dcd
+   59 MC 1dcd
+   60 MC 1dcd
+   61 MC 1dcd
+   62 MC 1dcd
+   63 MC 0000
+   67 MR 0000 ed
+   67 MC 0001
+   71 MR 0001 bb
+   72 MC 1dcd
+   75 MR 1dcd f9
+   75 PC 003b
+   79 PW 003b f9
+0942 003b be49 1dcc 0000 0000 0000 0000 0000 0000 0000 0002
+00 08 0 0 0 0 79

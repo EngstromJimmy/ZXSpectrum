@@ -1,0 +1,18 @@
+    0 MC 0000
+    4 MR 0000 fd
+    4 MC 0001
+    8 MR 0001 cb
+    8 MC 0002
+   11 MR 0002 87
+   11 MC 0003
+   14 MR 0003 c1
+   14 MC 0003
+   15 MC 0003
+   16 MC bcee
+   19 MR bcee ee
+   19 MC bcee
+   20 MC bcee
+   23 MW bcee ef
+3902 d4ef af62 9821 0000 0000 0000 0000 48b8 bd67 0000 0004
+00 02 0 0 0 0 23
+bcee ef -1
