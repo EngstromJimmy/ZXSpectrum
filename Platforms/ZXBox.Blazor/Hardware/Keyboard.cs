@@ -179,9 +179,9 @@ namespace ZXBox.Hardware.Input
                             returnvalue &= ~16;
                         break;
                     case 0x70: //SPACE, SYM SHIFT, M, N, B
-                        if (GetKeyStatus(" "))
+                        if (GetKeyStatus("space"))
                             returnvalue &= ~1;
-                        if (GetKeyStatus("altgraph"))
+                        if (GetKeyStatus("alt"))
                         {
                             returnvalue &= ~2;
                         }
