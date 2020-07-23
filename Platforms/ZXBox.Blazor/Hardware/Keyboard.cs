@@ -17,7 +17,11 @@ namespace ZXBox.Hardware.Input
         int NoKeyCounter = 0;
         bool SymbolShift = false;
         int sectionnumber = 1;
-
+        bool up = false;
+        bool down = false;
+        bool left = false;
+        bool right = false;
+        bool fire = false;
         public JoystickTypeEnum JoystickType { get; set; }
 
         
@@ -31,11 +35,34 @@ namespace ZXBox.Hardware.Input
             
             if ((Port & 0xFF) == 0xFE)
             {
-                //Only listen to the keybuffer when on different sections
-                DateTime dt = DateTime.Now;
+                down = false;
+                up = false;
+                right = false;
+                left = false;
 
-                //TimeSpan ts = DateTime.Now - dt;
-                //System.Diagnostics.Debug.WriteLine("Getstate:" + ts.Milliseconds);
+
+                //Joystick
+                if(GetKeyStatus("arrowup"))
+                {
+                    up = true;
+                }
+
+                if (GetKeyStatus("arrowdown"))
+                {
+                    down = true;
+                }
+
+                if (GetKeyStatus("arrowleft"))
+                {
+                    left = true;
+                }
+
+                if (GetKeyStatus("arrowright"))
+                {
+                    right = true;
+                }
+
+
                 bool symbol = false;
                 int returnvalue = 0xFF;
 
@@ -54,7 +81,7 @@ namespace ZXBox.Hardware.Input
                 {
                     case 0x0E: //SHIFT, Z, X, C, V
                         //if (GetKeyStatus("shift") || ks.IsKeyDown(Keys.LeftShift) || ks.IsKeyDown(Keys.Back) || IsNextKey(Keys.Back) || IsNextKey(Keys.LeftShift) || (JoystickType == JoystickTypeEnum.Cursor && (State.DPad.Left == ButtonState.Pressed || State.DPad.Right == ButtonState.Pressed || State.DPad.Up == ButtonState.Pressed || State.DPad.Down == ButtonState.Pressed || State.Buttons.A == ButtonState.Pressed || ks.IsKeyDown(Keys.LeftControl) || ks.IsKeyDown(Keys.RightControl))))
-                        if (GetKeyStatus("shift") || GetKeyStatus("backspace")) 
+                        if (GetKeyStatus("shift") || GetKeyStatus("backspace") || up || down || left || right) 
                             returnvalue &= ~1;
                         if (GetKeyStatus("z") )
                             returnvalue &= ~2;
@@ -94,16 +121,16 @@ namespace ZXBox.Hardware.Input
                         if (GetKeyStatus("1"))
                             returnvalue &= ~1;
                         //if (ks.IsKeyDown(Keys.D2) || IsNextKey(Keys.D2) || (JoystickType == JoystickTypeEnum.Sinclair1 && (State.DPad.Right == ButtonState.Pressed || ks.IsKeyDown(Keys.Right))))
-                        if (GetKeyStatus("2"))
+                        if (GetKeyStatus("2") )
                             returnvalue &= ~2;
                         //if (ks.IsKeyDown(Keys.D3) || IsNextKey(Keys.D3) || (JoystickType == JoystickTypeEnum.Sinclair1 && (State.DPad.Down == ButtonState.Pressed || ks.IsKeyDown(Keys.Down))))
                         if (GetKeyStatus("3"))
                             returnvalue &= ~4;
                         //if (ks.IsKeyDown(Keys.D4) || IsNextKey(Keys.D4) || (JoystickType == JoystickTypeEnum.Sinclair1 && (State.DPad.Up == ButtonState.Pressed || ks.IsKeyDown(Keys.Up))))
-                        if (GetKeyStatus("4"))
+                        if (GetKeyStatus("4") )
                             returnvalue &= ~8;
                         //if (ks.IsKeyDown(Keys.D5) || IsNextKey(Keys.D5) || (JoystickType == JoystickTypeEnum.Sinclair1 && (State.Buttons.A == ButtonState.Pressed || ks.IsKeyDown(Keys.LeftControl) || ks.IsKeyDown(Keys.RightControl))) || (JoystickType == JoystickTypeEnum.Cursor && (State.DPad.Left == ButtonState.Pressed || ks.IsKeyDown(Keys.Left))))
-                        if (GetKeyStatus("5"))
+                        if (GetKeyStatus("5") || left)
                             returnvalue &= ~16;
                         break;
                 }
@@ -118,13 +145,13 @@ namespace ZXBox.Hardware.Input
                         if (GetKeyStatus("9"))
                             returnvalue &= ~2;
                         //if (ks.IsKeyDown(Keys.D8) || IsNextKey(Keys.D8) || (JoystickType == JoystickTypeEnum.Sinclair2 && (State.DPad.Down == ButtonState.Pressed || ks.IsKeyDown(Keys.Down))) || (JoystickType == JoystickTypeEnum.Cursor && (State.DPad.Right == ButtonState.Pressed || ks.IsKeyDown(Keys.Right))))
-                        if (GetKeyStatus("8"))
+                        if (GetKeyStatus("8")|| right)
                             returnvalue &= ~4;
                         //if (ks.IsKeyDown(Keys.D7) || IsNextKey(Keys.D7) || (JoystickType == JoystickTypeEnum.Sinclair2 && (State.DPad.Right == ButtonState.Pressed || ks.IsKeyDown(Keys.Right))) || (JoystickType == JoystickTypeEnum.Cursor && (State.DPad.Up == ButtonState.Pressed || ks.IsKeyDown(Keys.Up))))
-                        if (GetKeyStatus("7"))
+                        if (GetKeyStatus("7") || up)
                             returnvalue &= ~8;
                         //if (ks.IsKeyDown(Keys.D6) || IsNextKey(Keys.D6) || (JoystickType == JoystickTypeEnum.Sinclair2 && (State.DPad.Left == ButtonState.Pressed || ks.IsKeyDown(Keys.Left))) || (JoystickType == JoystickTypeEnum.Cursor && (State.DPad.Down == ButtonState.Pressed || ks.IsKeyDown(Keys.Down))))
-                        if (GetKeyStatus("6"))
+                        if (GetKeyStatus("6") || down)
                             returnvalue &= ~16;
                         break;
                     case 0xD0: //P, O, I, U, Y
