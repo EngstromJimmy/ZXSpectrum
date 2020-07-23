@@ -62,8 +62,53 @@
 
 
         var pressedKeys = [];
+
+        function GetKey(keyCode)
+        {
+            var key = String.fromCharCode(keyCode);
+            console.log(keyCode);
+            switch (keyCode) {
+                case 32:
+                    key = "space";
+                    break;
+                case 16:
+                    key = "backspace";
+                    break;
+                case 16:
+                    key = "shift";
+                    break;
+                case 17:
+                    key = "control";
+                    break;
+                case 17:
+                    key = "tab";
+                    break;
+                case 18:
+                    key = "alt";
+                    break;
+                case 38:
+                    key = "arrowup";
+                    break;
+                case 40:
+                    key = "arrowdown";
+                    break;
+                case 37:
+                    key = "arrowleft";
+                    break;
+                case 39:
+                    key = "arrowright";
+                    break;
+                case 13:
+                    key = "enter";
+                    break;
+
+            }
+            return key;
+        }
+
         window.onkeyup = function (e) {
-            const index = pressedKeys.indexOf(e.key);
+            var key = GetKey(e.keyCode);
+            const index = pressedKeys.indexOf(key);
             if (index > -1) {
                 pressedKeys.splice(index, 1);
             }
@@ -71,9 +116,12 @@
             console.log(pressedKeys);
         }
         window.onkeydown = function (e) {
-            const index = pressedKeys.indexOf(e.key);
+
+
+            var key = GetKey(e.keyCode);
+            const index = pressedKeys.indexOf(key);
             if (index == -1) {
-                pressedKeys.push(e.key);
+                pressedKeys.push(key);
             }
             event.preventDefault();
             console.log(pressedKeys);
@@ -102,7 +150,7 @@
             imageData.data.set(Uint8ClampedArray.from(Module.HEAPU8.subarray(dataPtr, dataPtr + imageData.data.length)));
             context.putImageData(imageData, 0, 0);
             context.drawImage(canvas, 0, 0,  canvas.width,  canvas.height);
-            console.log((performance.now() - lastcall).toFixed(2));      
+            //console.log((performance.now() - lastcall).toFixed(2));      
             lastcall = performance.now();
             return true;
         }
