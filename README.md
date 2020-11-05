@@ -7,6 +7,14 @@ In this repo, you will find:
 * ZX Spectrum emulator written in C#.
 * Blazor implementation of the emulator
 
+## Sponsors
+Thanks you to much to my sponsors!  
+![](https://raw.githubusercontent.com/EngstromJimmy/Blazm.Components/master/TelerikRect.png)
+
+
+Telerik UI for Blazor – Increase productivity and cut cost in half! Use the Telerik truly native Blazor UI components to cover any app scenario. [Give it a try.](https://www.telerik.com/campaigns/blazor/free-trial-1?utm_source=jimmyengstrom&utm_medium=cpm&utm_campaign=blazor-trial-github-zxspectrum-sponsored-message)
+
+
 ## Background
 
 When I was 7 years old I got my first computer, a ZX Spectrum.  
