@@ -17,27 +17,27 @@
         var nextStartTime = 0;
         var lastcall = performance.now()
 
-        
+
         function addAudioBuffer(dataPtr) {
-            
+
             var buffersize = 960;
             var myArrayBuffer = audiocontext.createBuffer(1, buffersize, audiocontext.sampleRate);
             var nowBuffering = myArrayBuffer.getChannelData(0);
-           
+
             for (var d = 0; d < buffersize; d++) {
-                nowBuffering[d] =  Module.HEAPU8[dataPtr + d] == 128 ? -1 : 1;
+                nowBuffering[d] = Module.HEAPU8[dataPtr + d] == 128 ? -1 : 1;
             }
             let source = audiocontext.createBufferSource();
             source.buffer = myArrayBuffer;
             source.connect(audiocontext.destination);
-            if (nextStartTime == 0) nextStartTime = audiocontext.currentTime + (myArrayBuffer.length / myArrayBuffer.sampleRate) ;
+            if (nextStartTime == 0) nextStartTime = audiocontext.currentTime + (myArrayBuffer.length / myArrayBuffer.sampleRate);
             source.start(nextStartTime);
             nextStartTime += myArrayBuffer.length / myArrayBuffer.sampleRate;
         }
 
 
         var audiocontext = new (window.AudioContext || window.webkitAudioContext)();
-        
+
         //function play() {
         //    console.log("Playing sound");
         //    soundon = true;
@@ -54,7 +54,7 @@
         //    source.connect(audiocontext.destination);
 
         //    //add this function as a callback to play next buffer
-        //    //when current buffer has reached its end 
+        //    //when current buffer has reached its end
         //    source.onended = play;
         //    source.start();
         //}
@@ -63,8 +63,7 @@
 
         var pressedKeys = [];
 
-        function GetKey(keyCode)
-        {
+        function GetKey(keyCode) {
             var key = String.fromCharCode(keyCode);
             console.log(keyCode);
             switch (keyCode) {
@@ -149,15 +148,15 @@
         window.PaintCanvas = function PaintCanvas(dataPtr) {
             imageData.data.set(Uint8ClampedArray.from(Module.HEAPU8.subarray(dataPtr, dataPtr + imageData.data.length)));
             context.putImageData(imageData, 0, 0);
-            context.drawImage(canvas, 0, 0,  canvas.width,  canvas.height);
-            //console.log((performance.now() - lastcall).toFixed(2));      
+            context.drawImage(canvas, 0, 0, canvas.width, canvas.height);
+            //console.log((performance.now() - lastcall).toFixed(2));
             lastcall = performance.now();
             return true;
         }
     </script>
-    <app>
+    <div id="app">
         <div style="height:100vh;text-align:center;padding-top:200px;">Loading...</div>
-    </app>
+    </div>
 
     <div id="blazor-error-ui">
         An unhandled error has occurred.

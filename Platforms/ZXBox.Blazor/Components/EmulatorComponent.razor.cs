@@ -1,5 +1,5 @@
-using BlazorInputFile;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.JSInterop;
 using Microsoft.JSInterop.WebAssembly;
 using System;
@@ -45,13 +45,13 @@ namespace ZXBox.Blazor.Pages
             gameLoop.Elapsed += GameLoop_Elapsed;
         }
 
-        public async Task HandleFileSelected(IFileListEntry[] files)
+        public async Task HandleFileSelected(InputFileChangeEventArgs args)
         {
-            var file = files.First();
+            var file = args.File;
 
             var ms = new MemoryStream();
             
-            await file.Data.CopyToAsync(ms);
+            await file.OpenReadStream().CopyToAsync(ms);
 
             var handler = FileFormatFactory.GetSnapShotHandler(file.Name);
             var bytes = ms.ToArray();
@@ -80,8 +80,8 @@ namespace ZXBox.Blazor.Pages
             kempston = new Kempston();
             speccy.InputHardware.Add(kempston);
 
-            //beeper = new Beeper<byte>(128, 255, 48000/50, 1);
-            //speccy.OutputHardware.Add(beeper);
+            beeper = new Beeper<byte>(128, 255, 48000/50, 1);
+            speccy.OutputHardware.Add(beeper);
 
             speccy.Reset();
             await base.OnInitializedAsync();
@@ -98,16 +98,16 @@ namespace ZXBox.Blazor.Pages
             //{
             
             speccy.DoIntructions(69888);
-            
-           //beeper.GenerateSound();
+            sw.Start();
+            beeper.GenerateSound();
             
             //}
             
-            //await BufferSound();
-            sw.Start();
-            Paint();
+            await BufferSound();
             sw.Stop();
-            //Debug.WriteLine(sw.ElapsedMilliseconds);
+            Paint();
+            
+            Debug.WriteLine(sw.ElapsedMilliseconds);
         }
 
         protected async Task BufferSound()
