@@ -22,15 +22,16 @@ using ZXBox.Snapshot;
 
 namespace ZXBox.Blazor.Pages
 {
-    public partial class EmulatorComponentModel:ComponentBase
+    public partial class EmulatorComponentModel : ComponentBase
     {
         private ZXSpectrum speccy;
-        System.Timers.Timer gameLoop;
+        public System.Timers.Timer gameLoop;
         int flashcounter = 16;
-        bool flash=false;
+        bool flash = false;
         JavaScriptKeyboard Keyboard = new JavaScriptKeyboard();
         Kempston kempston;
         Beeper<byte> beeper;
+
         [Inject]
         Toolbelt.Blazor.Gamepad.GamepadList GamePadList { get; set; }
 
@@ -40,9 +41,28 @@ namespace ZXBox.Blazor.Pages
         protected IJSRuntime JSRuntime { get; set; }
         public EmulatorComponentModel()
         {
-            speccy = new ZXSpectrum(true, true,20,20,20);
             gameLoop = new System.Timers.Timer(20);
             gameLoop.Elapsed += GameLoop_Elapsed;
+        }
+
+        public ZXSpectrum GetZXSpectrum(RomEnum rom)
+        {
+            return new ZXSpectrum(true, true, 20, 20, 20,rom);
+        }
+
+        public void StartZXSpectrum(RomEnum rom)
+        {
+            speccy = GetZXSpectrum(rom);
+            speccy.InputHardware.Add(Keyboard);
+
+            kempston = new Kempston();
+            speccy.InputHardware.Add(kempston);
+
+            beeper = new Beeper<byte>(128, 255, 48000 / 50, 1);
+            speccy.OutputHardware.Add(beeper);
+
+            speccy.Reset();
+            gameLoop.Start();
         }
 
         public async Task HandleFileSelected(InputFileChangeEventArgs args)
@@ -72,25 +92,11 @@ namespace ZXBox.Blazor.Pages
         }
 
 
-        protected async override Task OnInitializedAsync()
-        {
-            gameLoop.Start();
-            speccy.InputHardware.Add(Keyboard);
-            
-            kempston = new Kempston();
-            speccy.InputHardware.Add(kempston);
-
-            beeper = new Beeper<byte>(128, 255, 48000/50, 1);
-            speccy.OutputHardware.Add(beeper);
-
-            speccy.Reset();
-            await base.OnInitializedAsync();
-        }
 
         private async void GameLoop_Elapsed(object sender, ElapsedEventArgs e)
         {
             Stopwatch sw = new Stopwatch();
-            
+            sw.Start();
             kempston.Gamepads = await GamePadList.GetGamepadsAsync();
             Keyboard.KeyBuffer = await JSRuntime.InvokeAsync<List<string>>("getKeyStatus");
 
@@ -98,21 +104,28 @@ namespace ZXBox.Blazor.Pages
             //{
             
             speccy.DoIntructions(69888);
-            sw.Start();
+            
             beeper.GenerateSound();
-            
-            //}
-            
             await BufferSound();
-            sw.Stop();
-            Paint();
             
-            Debug.WriteLine(sw.ElapsedMilliseconds);
+
+            Paint();
+            sw.Stop();
+            if (sw.ElapsedMilliseconds > 20)
+            {
+                Console.WriteLine(sw.ElapsedMilliseconds + "ms");
+            }
         }
 
-        protected async Task BufferSound()
+
+
+        
+
+    protected async Task BufferSound()
         {
             var soundbytes = beeper.GetSoundBuffer();
+
+
             var gch = GCHandle.Alloc(soundbytes, GCHandleType.Pinned);
             var pinned = gch.AddrOfPinnedObject();
             var mono = JSRuntime as WebAssemblyJSRuntime;
@@ -122,7 +135,10 @@ namespace ZXBox.Blazor.Pages
 
         protected async override void OnAfterRender(bool firstRender)
         {
-            await JSRuntime.InvokeAsync<bool>("InitCanvas");
+            if (firstRender)
+            {
+                await JSRuntime.InvokeAsync<bool>("InitCanvas");
+            }
             base.OnAfterRender(firstRender);
         }
 
