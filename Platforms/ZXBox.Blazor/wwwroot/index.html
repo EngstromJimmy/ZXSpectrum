@@ -35,7 +35,6 @@
             nextStartTime += myArrayBuffer.length / myArrayBuffer.sampleRate;
         }
 
-
         var audiocontext = new (window.AudioContext || window.webkitAudioContext)();
 
         //function play() {
@@ -112,7 +111,7 @@
                 pressedKeys.splice(index, 1);
             }
             event.preventDefault();
-            console.log(pressedKeys);
+            //console.log(pressedKeys);
         }
         window.onkeydown = function (e) {
 
