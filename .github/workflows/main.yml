@@ -31,6 +31,9 @@ jobs:
         with:
           dotnet-version: '6.0.x'
           include-prerelease: true
+          
+      - name: Install tools
+        run: dotnet workload install wasm-tools
       
       - name: Publish application
         run: dotnet publish -c Release Platforms/ZXBox.Blazor/ZXBox.Blazor.csproj
