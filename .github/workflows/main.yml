@@ -31,13 +31,16 @@ jobs:
         with:
           dotnet-version: '6.0.x'
           include-prerelease: true
+          
+      - name: Install tools
+        run: dotnet workload install wasm-tools
       
       - name: Publish application
         run: dotnet publish -c Release Platforms/ZXBox.Blazor/ZXBox.Blazor.csproj
         
  
       - name: Change base-tag in index.html from / to BlazorGitHubPagesDemo
-        run: sed -i 's/<base href="\/" \/>/<base href="\/ZXSpectrum\/" \/>/g' ${{ env.PUBLISH_DIR }}/index.html
+        run: (Get-content -path '${{ env.PUBLISH_DIR }}/index.html') -replace '<base href="\/" \/>', '<base href="/ZXSpectrum\/" \/>' | Out-File -FilePath '${{ env.PUBLISH_DIR }}/index.html'
  
         # add .nojekyll file to tell GitHub pages to not treat this as a Jekyll project. 
         # Allow files and folders starting with an underscore.
