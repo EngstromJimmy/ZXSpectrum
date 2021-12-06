@@ -53,7 +53,7 @@ jobs:
       
       #Add .giattributes file so all files are handled as binary
       - name: Add .giattributes
-        run:  echo "* binary" > ".gitattributes"
+        run:  echo "* binary" > "${{ env.PUBLISH_DIR }}/.gitattributes"
       
       - name: Commit to GitHub pages Repo
         if: success()
