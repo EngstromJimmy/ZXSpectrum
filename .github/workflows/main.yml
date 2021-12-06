@@ -51,6 +51,10 @@ jobs:
       - name: copy index.html to 404.html
         run: cp ${{ env.PUBLISH_DIR }}/index.html ${{ env.PUBLISH_DIR }}/404.html
       
+      #Add .giattributes file so all files are handled as binary
+      - name: Add .giattributes
+        run:  echo "* binary" > "${{ env.PUBLISH_DIR }}/.gitattributes"
+      
       - name: Commit to GitHub pages Repo
         if: success()
         uses: crazy-max/ghaction-github-pages@v1.5.1
