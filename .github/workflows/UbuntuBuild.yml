@@ -3,6 +3,8 @@
 name: Deploy sample project Ubuntu
 env:
   PUBLISH_DIR: Platforms/ZXBox.Blazor/bin/Release/net6.0/publish/wwwroot
+  PROJECT: Platforms/ZXBox.Blazor/ZXBox.Blazor.csproj
+  SUBFOLDER: ZXSpectrum
 
 # Controls when the workflow will run
 on:
@@ -36,10 +38,10 @@ jobs:
         run: dotnet workload install wasm-tools
       
       - name: Publish application
-        run: dotnet publish -c Release Platforms/ZXBox.Blazor/ZXBox.Blazor.csproj
+        run: dotnet publish -c Release ${{env.PROJECT}}
         
       - name: Change base-tag in index.html from / to BlazorGitHubPagesDemo
-        run: sed -i 's/<base href="\/" \/>/<base href="\/ZXSpectrum\/" \/>/g' ${{ env.PUBLISH_DIR }}/index.html
+        run: sed -i 's/<base href="\/" \/>/<base href="\/${{SUBFOLDER}}\/" \/>/g' ${{ env.PUBLISH_DIR }}/index.html
  
         # add .nojekyll file to tell GitHub pages to not treat this as a Jekyll project. 
         # Allow files and folders starting with an underscore.
