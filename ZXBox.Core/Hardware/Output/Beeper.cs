@@ -79,6 +79,7 @@ namespace ZXBox.Hardware.Output
 
             BufferQueue.Enqueue(returnbuffer);
             lastTstate = 0;
+            buffer = new T[samplesPerFrame];
         }
 
 

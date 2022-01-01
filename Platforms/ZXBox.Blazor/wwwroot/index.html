@@ -16,16 +16,18 @@
         var audiobuffer = [];
         var nextStartTime = 0;
         var lastcall = performance.now()
+        var audiocontext = new (window.AudioContext || window.webkitAudioContext)();
 
-
-        function addAudioBuffer(dataPtr) {
+        function addAudioBuffer
+        (dataPtr) {
 
             var buffersize = 960;
             var myArrayBuffer = audiocontext.createBuffer(1, buffersize, audiocontext.sampleRate);
             var nowBuffering = myArrayBuffer.getChannelData(0);
 
             for (var d = 0; d < buffersize; d++) {
-                nowBuffering[d] = Module.HEAPU8[dataPtr + d] == 128 ? -1 : 1;
+                nowBuffering[d] = Module.HEAPU8[dataPtr + d] ;
+                //console.log(nowBuffering[d]);
             }
             let source = audiocontext.createBufferSource();
             source.buffer = myArrayBuffer;
@@ -33,9 +35,11 @@
             if (nextStartTime == 0) nextStartTime = audiocontext.currentTime + (myArrayBuffer.length / myArrayBuffer.sampleRate);
             source.start(nextStartTime);
             nextStartTime += myArrayBuffer.length / myArrayBuffer.sampleRate;
+
+            console.log(dataPtr);
         }
 
-        var audiocontext = new (window.AudioContext || window.webkitAudioContext)();
+        
 
         //function play() {
         //    console.log("Playing sound");
