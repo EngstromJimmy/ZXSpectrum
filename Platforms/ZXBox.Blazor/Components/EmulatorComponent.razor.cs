@@ -57,8 +57,8 @@ namespace ZXBox.Blazor.Pages
 
             kempston = new Kempston();
             speccy.InputHardware.Add(kempston);
-
-            beeper = new Beeper<byte>(0, 1, 48000 / 50, 1);
+            //48000 samples per second, 50 frames per second (20ms per frame)
+            beeper = new Beeper<byte>(0, 127, 48000 / 50, 1);
             speccy.OutputHardware.Add(beeper);
 
             speccy.Reset();
@@ -97,11 +97,13 @@ namespace ZXBox.Blazor.Pages
         {
             Stopwatch sw = new Stopwatch();
             sw.Start();
+            //Get gamepads
             kempston.Gamepads = await GamePadList.GetGamepadsAsync();
+            
+            //Run JavaScriptInterop to find the currently pressed buttons
             Keyboard.KeyBuffer = await JSRuntime.InvokeAsync<List<string>>("getKeyStatus");
 
-            //for (int i= 0;i < 1;i++)
-            //{
+     
             
             speccy.DoIntructions(69888);
             
@@ -111,10 +113,10 @@ namespace ZXBox.Blazor.Pages
 
             Paint();
             sw.Stop();
-            //if (sw.ElapsedMilliseconds > 20)
-            //{
-            //    Console.WriteLine(sw.ElapsedMilliseconds + "ms");
-            //}
+            if (sw.ElapsedMilliseconds > 20)
+            {
+                Console.WriteLine(sw.ElapsedMilliseconds + "ms");
+            }
         }
 
 
