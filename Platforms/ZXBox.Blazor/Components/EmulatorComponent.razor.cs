@@ -84,7 +84,7 @@ namespace ZXBox.Blazor.Pages
         {
             var ms = new MemoryStream();
             var handler = FileFormatFactory.GetSnapShotHandler(filename);
-            var stream = await httpClient.GetStreamAsync("/Roms/" + filename + ".json");
+            var stream = await httpClient.GetStreamAsync("Roms/" + filename + ".json");
             await stream.CopyToAsync(ms);
             var bytes = ms.ToArray();
             handler.LoadSnapshot(bytes, speccy);
