@@ -27,6 +27,7 @@ namespace ZXBox.Hardware.Input
         
         public bool GetKeyStatus(string key)
         {
+            Console.WriteLine(String.Join(',', KeyBuffer));
             return KeyBuffer.Any(k => k.ToLower() == key.ToLower());
         }
 
