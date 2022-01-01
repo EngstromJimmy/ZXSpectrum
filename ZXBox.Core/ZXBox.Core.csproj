@@ -9,6 +9,10 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <Optimize>False</Optimize>
+  </PropertyGroup>
+
   <ItemGroup>
     <Compile Remove="Hardware\Input\Joystick\Kempston.cs" />
     <Compile Remove="Hardware\Input\Keyboard.cs" />

@@ -58,7 +58,7 @@ namespace ZXBox.Blazor.Pages
             kempston = new Kempston();
             speccy.InputHardware.Add(kempston);
 
-            beeper = new Beeper<byte>(128, 255, 48000 / 50, 1);
+            beeper = new Beeper<byte>(0, 1, 48000 / 50, 1);
             speccy.OutputHardware.Add(beeper);
 
             speccy.Reset();
@@ -111,10 +111,10 @@ namespace ZXBox.Blazor.Pages
 
             Paint();
             sw.Stop();
-            if (sw.ElapsedMilliseconds > 20)
-            {
-                Console.WriteLine(sw.ElapsedMilliseconds + "ms");
-            }
+            //if (sw.ElapsedMilliseconds > 20)
+            //{
+            //    Console.WriteLine(sw.ElapsedMilliseconds + "ms");
+            //}
         }
 
 
