@@ -20,6 +20,7 @@
 
         function addAudioBuffer
         (dataPtr) {
+            
 
             var buffersize = 960;
             var myArrayBuffer = audiocontext.createBuffer(1, buffersize, audiocontext.sampleRate);
@@ -31,8 +32,10 @@
             }
             let source = audiocontext.createBufferSource();
             source.buffer = myArrayBuffer;
+            source.gain.value = 0.01;
             source.connect(audiocontext.destination);
             if (nextStartTime == 0) nextStartTime = audiocontext.currentTime + (myArrayBuffer.length / myArrayBuffer.sampleRate);
+
             source.start(nextStartTime);
             nextStartTime += myArrayBuffer.length / myArrayBuffer.sampleRate;
 
