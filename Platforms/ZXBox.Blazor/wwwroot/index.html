@@ -17,11 +17,11 @@
         var nextStartTime = 0;
         var lastcall = performance.now()
         var audiocontext = new (window.AudioContext || window.webkitAudioContext)();
+        var gainNode = audiocontext.createGain();
+        gainNode.gain.value = 0.01;
 
         function addAudioBuffer
         (dataPtr) {
-            
-
             var buffersize = 960;
             var myArrayBuffer = audiocontext.createBuffer(1, buffersize, audiocontext.sampleRate);
             var nowBuffering = myArrayBuffer.getChannelData(0);
@@ -32,12 +32,17 @@
             }
             let source = audiocontext.createBufferSource();
             source.buffer = myArrayBuffer;
-            source.gain.value = 0.01;
-            source.connect(audiocontext.destination);
-            if (nextStartTime == 0) nextStartTime = audiocontext.currentTime + (myArrayBuffer.length / myArrayBuffer.sampleRate);
 
+            //source.connect(gainNode);
+            
+
+            gainNode.connect(audiocontext.destination);
+            source.connect(gainNode);
+            if (nextStartTime == 0) nextStartTime = audiocontext.currentTime + (myArrayBuffer.length / myArrayBuffer.sampleRate);
+            
             source.start(nextStartTime);
             nextStartTime += myArrayBuffer.length / myArrayBuffer.sampleRate;
+            gainNode.gain.value = 0.0005;
 
             //console.log(dataPtr);
         }
