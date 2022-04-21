@@ -4,17 +4,12 @@ using Microsoft.JSInterop;
 using Microsoft.JSInterop.WebAssembly;
 using System;
 using System.Collections.Generic;
-using System.Data.SqlTypes;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Net.Http;
 using System.Runtime.InteropServices;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
-using System.Xml.Schema;
-using Toolbelt.Blazor.Gamepad;
 using ZXBox.Hardware.Input;
 using ZXBox.Hardware.Input.Joystick;
 using ZXBox.Hardware.Output;
@@ -38,7 +33,7 @@ namespace ZXBox.Blazor.Pages
         [Inject]
         protected HttpClient Http { get; set; }
         [Inject]
-        protected IJSRuntime JSRuntime { get; set; }
+        protected IJSInProcessRuntime JSRuntime { get; set; }
         public EmulatorComponentModel()
         {
             gameLoop = new System.Timers.Timer(20);
@@ -47,7 +42,7 @@ namespace ZXBox.Blazor.Pages
 
         public ZXSpectrum GetZXSpectrum(RomEnum rom)
         {
-            return new ZXSpectrum(true, true, 20, 20, 20,rom);
+            return new ZXSpectrum(true, true, 20, 20, 20, rom);
         }
 
         public void StartZXSpectrum(RomEnum rom)
@@ -70,17 +65,17 @@ namespace ZXBox.Blazor.Pages
             var file = args.File;
 
             var ms = new MemoryStream();
-            
+
             await file.OpenReadStream().CopyToAsync(ms);
 
             var handler = FileFormatFactory.GetSnapShotHandler(file.Name);
             var bytes = ms.ToArray();
             handler.LoadSnapshot(bytes, speccy);
-         }
+        }
         [Inject]
         HttpClient httpClient { get; set; }
         public string Instructions = "";
-        public async Task LoadGame(string filename,string instructions)
+        public async Task LoadGame(string filename, string instructions)
         {
             var ms = new MemoryStream();
             var handler = FileFormatFactory.GetSnapShotHandler(filename);
@@ -91,25 +86,20 @@ namespace ZXBox.Blazor.Pages
             Instructions = instructions;
         }
 
-
-
         private async void GameLoop_Elapsed(object sender, ElapsedEventArgs e)
         {
             Stopwatch sw = new Stopwatch();
             sw.Start();
             //Get gamepads
             kempston.Gamepads = await GamePadList.GetGamepadsAsync();
-            
+
             //Run JavaScriptInterop to find the currently pressed buttons
             Keyboard.KeyBuffer = await JSRuntime.InvokeAsync<List<string>>("getKeyStatus");
 
-     
-            
             speccy.DoIntructions(69888);
-            
+
             beeper.GenerateSound();
             await BufferSound();
-            
 
             Paint();
             sw.Stop();
@@ -119,14 +109,9 @@ namespace ZXBox.Blazor.Pages
             }
         }
 
-
-
-        
-
-    protected async Task BufferSound()
+        protected async Task BufferSound()
         {
             var soundbytes = beeper.GetSoundBuffer();
-
 
             var gch = GCHandle.Alloc(soundbytes, GCHandleType.Pinned);
             var pinned = gch.AddrOfPinnedObject();
@@ -157,14 +142,13 @@ namespace ZXBox.Blazor.Pages
                 flashcounter--;
             }
 
-
             var screen = speccy.GetScreenInUint(flash);
-           
+
             //Allocate memory
             var gch = GCHandle.Alloc(screen, GCHandleType.Pinned);
             var pinned = gch.AddrOfPinnedObject();
             var mono = JSRuntime as WebAssemblyJSRuntime;
-            mono.InvokeUnmarshalled<IntPtr,string>("PaintCanvas",pinned);
+            mono.InvokeUnmarshalled<IntPtr, string>("PaintCanvas", pinned);
             gch.Free();
         }
     }
