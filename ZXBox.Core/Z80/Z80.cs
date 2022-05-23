@@ -1,21 +1,18 @@
 using System;
-using System.Diagnostics;
 using System.Text;
-
 
 namespace Zilog
 {
     public abstract partial class Z80
     {
 
-
         public void WriteByteToMemoryOverridden(int address, int b)
         {
             this.WriteByteToMemory(address, b);
         }
 
-        public  Z80()
-        { 
+        public Z80()
+        {
             //Initiate Parity table
             for (int a = 0; a < 256; a++)
             {
@@ -31,7 +28,6 @@ namespace Zilog
             }
         }
 
-
         #region Ports
         //Override these
         public virtual int In(int port)
@@ -42,7 +38,7 @@ namespace Zilog
         public virtual void Out(int Port, int ByteValue, int tStates)
         {
         }
-        
+
         #endregion
 
         #region Registers and access to them
@@ -71,7 +67,8 @@ namespace Zilog
                     (fN ? F_N : 0) |
                     (fC ? F_C : 0);
             }
-            set {
+            set
+            {
                 fS = (value & F_S) != 0;
                 fZ = (value & F_Z) != 0;
                 f5 = (value & F_5) != 0;
@@ -93,7 +90,7 @@ namespace Zilog
         private static int F_S = 0x80;
 
         #endregion
-        
+
         //Registers
         private static int R_A = 0x07;
         private static int R_B = 0x00;
@@ -107,7 +104,7 @@ namespace Zilog
         public int IX
         {
             get { return IndexRegistry[(int)IndexRegistryEnum.IX]; }
-            set {IndexRegistry[(int)IndexRegistryEnum.IX]=value; }
+            set { IndexRegistry[(int)IndexRegistryEnum.IX] = value; }
         }
         public int IY
         {
@@ -116,12 +113,12 @@ namespace Zilog
         }
 
         //Interrupt Register
-        public  int I=0;
-        public int[] Registers=new int[10]; 
+        public int I = 0;
+        public int[] Registers = new int[10];
 
         //Registers Prim
-        public int[] RegitersPrim=new int[10];
-        public int Fprim=0;
+        public int[] RegitersPrim = new int[10];
+        public int Fprim = 0;
         //8bit
         public int A
         {
@@ -213,7 +210,6 @@ namespace Zilog
             set { Fprim = value; }
         }
 
-
         //16 bit
         public int HL
         {
@@ -223,8 +219,8 @@ namespace Zilog
             }
             set
             {
-                Registers[R_H]= value >> 8;
-                Registers[R_L]= value & 0xff;
+                Registers[R_H] = value >> 8;
+                Registers[R_L] = value & 0xff;
                 //if (value == 23672)
                 //{
                 //    Console.WriteLine("SET hl:" + HL.ToString());
@@ -246,7 +242,6 @@ namespace Zilog
                 RegitersPrim[R_L] = value & 0xff;
             }
         }
-
 
         public int DE
         {
@@ -272,8 +267,7 @@ namespace Zilog
                 RegitersPrim[R_D] = value >> 8;
                 RegitersPrim[R_E] = value & 0xff;
             }
-        } 
-
+        }
 
         public int BC
         {
@@ -283,8 +277,8 @@ namespace Zilog
             }
             set
             {
-                Registers[R_B]= value >> 8;
-                Registers[R_C]= value & 0xff;
+                Registers[R_B] = value >> 8;
+                Registers[R_C] = value & 0xff;
             }
         }
 
@@ -309,8 +303,8 @@ namespace Zilog
             }
             set
             {
-                Registers[R_A]= value >> 8;
-                F= value & 0xff;
+                Registers[R_A] = value >> 8;
+                F = value & 0xff;
             }
         }
 
@@ -322,15 +316,15 @@ namespace Zilog
             }
             set
             {
-                RegitersPrim[R_A]= value >> 8;
-                Fprim= value & 0xff;
+                RegitersPrim[R_A] = value >> 8;
+                Fprim = value & 0xff;
             }
         }
 
         public int IXL
         {
-            get {return IX & 0xff;}
-            set { IX=(IX & 0xff00) | (value); }
+            get { return IX & 0xff; }
+            set { IX = (IX & 0xff00) | (value); }
         }
 
         public int IXH
@@ -374,60 +368,57 @@ namespace Zilog
         #endregion
 
         #region Program Counter
-            //PC Stack call
-            public void PCToStack()
-            {
-                StackpushWord(PC);
-            }
-            public void PCFromStack()
-            {
-                PC = StackpopWord();
-            }
+        //PC Stack call
+        public void PCToStack()
+        {
+            StackpushWord(PC);
+        }
+        public void PCFromStack()
+        {
+            PC = StackpopWord();
+        }
 
-            private int GetNextPCByte()
-            {
-                int b = ReadByteFromMemory(PC);
-                PC = PC+1  & 0xffff;
-                return b;
-            }
-            private int GetNextPCWord()
-            {
-                int w = ReadByteFromMemory(PC++);
-                w |= (ReadByteFromMemory(PC++  & 0xffff) << 8);
-                return w;
-            }
+        private int GetNextPCByte()
+        {
+            int b = ReadByteFromMemory(PC);
+            PC = PC + 1 & 0xffff;
+            return b;
+        }
+        private int GetNextPCWord()
+        {
+            int w = ReadByteFromMemory(PC++);
+            w |= (ReadByteFromMemory(PC++ & 0xffff) << 8);
+            return w;
+        }
         #endregion
 
         #region Stack
         public void StackpushWord(int word)
-            {
-                int sp = ((SP - 2) & 0xffff);
-                SP=sp;
-                WriteWordToMemory(sp, word);
-            }
-            public int StackpopWord()
-            {
-                int w = ReadByteFromMemory(SP);
-                SP++;
-                w |= (ReadByteFromMemory(SP & 0xffff) << 8);
-                SP=(SP+1 & 0xffff);
-                return w;
-            }
+        {
+            int sp = ((SP - 2) & 0xffff);
+            SP = sp;
+            WriteWordToMemory(sp, word);
+        }
+        public int StackpopWord()
+        {
+            int w = ReadByteFromMemory(SP);
+            SP++;
+            w |= (ReadByteFromMemory(SP & 0xffff) << 8);
+            SP = (SP + 1 & 0xffff);
+            return w;
+        }
         #endregion
 
         #region Memory
         public abstract void WriteWordToMemory(int address, int word);
 
-
         public abstract void WriteByteToMemory(int address, int bytetowrite);
-            
 
         public abstract int ReadByteFromMemory(int address);
-            
 
         public int ReadWordFromMemory(int address)
         {
-            return (ReadByteFromMemory(address+1 & 0xffff) << 8 | ReadByteFromMemory(address  & 0xffff)) & 0xffff;
+            return (ReadByteFromMemory(address + 1 & 0xffff) << 8 | ReadByteFromMemory(address & 0xffff)) & 0xffff;
         }
         #endregion
 
@@ -435,21 +426,22 @@ namespace Zilog
         public int PC;
         //Stack Pointer
         public int SP = 0x10000;
-        int opcode=0;
-        public int NumberOfTStatesLeft=0;
+        int opcode = 0;
+        public int NumberOfTStatesLeft = 0;
         public bool[] Parity = new bool[256];
 
         private int _EndTstates2 = 0;
         public int EndTstates2
         {
-            get { 
-                    return _EndTstates2 + (NumberOfTStatesLeft*-1);
-                }
+            get
+            {
+                return _EndTstates2 + (NumberOfTStatesLeft * -1);
+            }
         }
         //Interupts and memory
         public bool BlockINT = true;
         public bool IFF = false;
-        public bool IFF2 = false; 
+        public bool IFF2 = false;
         public int IM = 2;
         public int _R7 = 0;
         public int _R = 0;
@@ -460,8 +452,8 @@ namespace Zilog
         }
 
         public int R
-        { 
-            get{ return (_R & 0x7f) | _R7; }
+        {
+            get { return (_R & 0x7f) | _R7; }
             set
             {
                 _R = value;
@@ -471,45 +463,45 @@ namespace Zilog
 
         public void Refresh(int t)
         {
-//            _R += t;
+            //            _R += t;
             _R = (byte)(((_R + 1) & 0x7F) | (_R & 0x80));
             //NumberOfTStatesLeft -= 1;
         }
 
         public void Reset()
         {
-            PC=0;
-            SP=0;
+            PC = 0;
+            SP = 0;
 
-            A=0;
+            A = 0;
             F = 0;
-            BC=0;
-            DE=0;
-            HL=0;
+            BC = 0;
+            DE = 0;
+            HL = 0;
 
             EXX();
             AFPrim = 0;
 
-            A=0;
-            F=0;
-            BC=0;
-            DE=0;
-            HL=0;
+            A = 0;
+            F = 0;
+            BC = 0;
+            DE = 0;
+            HL = 0;
 
-            IX=0;
-            IY=0;
+            IX = 0;
+            IY = 0;
 
-            R=0;
+            R = 0;
 
-            I=0;
-            IFF=false;
-            IFF2=false;
-            IM=0;
-            NumberOfTStatesLeft=0;
+            I = 0;
+            IFF = false;
+            IFF2 = false;
+            IM = 0;
+            NumberOfTStatesLeft = 0;
             this.Out(254, 5, 0); //Border Color
 
             //Clear Memory
-            for (int a = 16384; a < 3* 16384; a++)
+            for (int a = 16384; a < 3 * 16384; a++)
             {
                 WriteByteToMemory(a, 0);
             }
@@ -521,7 +513,6 @@ namespace Zilog
             opcode = (ReadByteFromMemory(PC) & 0xff);
             PC = (PC + 1) & 0xffff;
         }
-
 
         public int interrupt()
         {
@@ -563,12 +554,12 @@ namespace Zilog
         {
             //sb = new StringBuilder();
             NumberOfTstates = numberOfTStates;
-            NumberOfTStatesLeft+=numberOfTStates;
+            NumberOfTStatesLeft += numberOfTStates;
             _EndTstates2 = numberOfTStates;
             //start = DateTime.Now;
             while (true)
             {
-                
+
                 if (interruptTriggered(NumberOfTStatesLeft))
                 {
                     //NumberOfTStatesLeft += (NumberOfTStates - interrupt());
@@ -577,11 +568,11 @@ namespace Zilog
                 }
 
                 //Refresh(1);
-                
+
                 NextOpcode();
                 if (gameSpecificFunc != null)
                 {
-                   NumberOfTStatesLeft-= gameSpecificFunc(this);
+                    NumberOfTStatesLeft -= gameSpecificFunc(this);
                 }
                 //if(PC==58)
                 //    Debug.WriteLine(PC);
@@ -621,4 +612,3 @@ namespace Zilog
         }
     }
 }
-
