@@ -1,8 +1,7 @@
-﻿namespace ZXBox
+﻿namespace ZXBox;
+
+public enum RomEnum
 {
-    public enum RomEnum
-    {
-        ZXSpectrum48k,
-        ZXSpectrumPlus
-    }
+    ZXSpectrum48k,
+    ZXSpectrumPlus
 }

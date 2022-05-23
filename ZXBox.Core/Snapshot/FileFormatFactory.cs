@@ -1,26 +1,23 @@
-using System;
-using ZXBox.Snapshot;
 using System.IO;
 
-namespace ZXBox.Snapshot
+namespace ZXBox.Snapshot;
+
+public class FileFormatFactory
 {
-    public class FileFormatFactory
+    public static ISnapshot GetSnapShotHandler(string filename)
     {
-        public static ISnapshot GetSnapShotHandler(string filename)
+        if (filename != null)
         {
-            if (filename != null)
+            switch (Path.GetExtension(filename).ToLower())
             {
-                switch (Path.GetExtension(filename).ToLower())
-                {
-                    case ".z80":
-                        return new Z80FileFormat();
-                    case ".sna":
-                        return new SNAFileFormat();
-                    default:
-                        return null;
-                }
+                case ".z80":
+                    return new Z80FileFormat();
+                case ".sna":
+                    return new SNAFileFormat();
+                default:
+                    return null;
             }
-            return null;
         }
+        return null;
     }
 }

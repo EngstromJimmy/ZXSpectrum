@@ -1,24 +1,14 @@
-using System;
-using ZXBox.Snapshot;
-using System.Linq;
 using System.Diagnostics;
 
 namespace ZXBox.Snapshot
 {
-    public class SNAFileFormat:ISnapshot
+    public class SNAFileFormat : ISnapshot
     {
         #region ISnapshot Members
 
-        
-#if NETFX_CORE
-        public void LoadSnapshot(byte[] snapshotbytes, ZXBox_Core.ZXSpectrum48 cpu)
-#else
-
         public void LoadSnapshot(byte[] snapshotbytes, Zilog.Z80 cpu)
-#endif
         {
             cpu.Reset();
-
 
             //cpu.I = snapshotbytes[0];
             //cpu.HLPrim = (ushort)(snapshotbytes[1] + 256 * snapshotbytes[2]);
@@ -35,9 +25,8 @@ namespace ZXBox.Snapshot
             //cpu.AF = (ushort)(snapshotbytes[21] + 256 * snapshotbytes[22]);
             //cpu.SP = (ushort)(snapshotbytes[23] + 256 * snapshotbytes[24]);
 
-            
             cpu.I = snapshotbytes[0];
-            cpu.HLPrim = snapshotbytes[1] | (snapshotbytes[2]<<8);
+            cpu.HLPrim = snapshotbytes[1] | (snapshotbytes[2] << 8);
             cpu.DEPrim = snapshotbytes[3] | (snapshotbytes[4] << 8);
             cpu.BCPrim = snapshotbytes[5] | (snapshotbytes[6] << 8);
             cpu.AFPrim = snapshotbytes[7] | (snapshotbytes[8] << 8);
@@ -46,7 +35,7 @@ namespace ZXBox.Snapshot
             cpu.BC = snapshotbytes[13] | (snapshotbytes[14] << 8);
             cpu.IY = snapshotbytes[15] | (snapshotbytes[16] << 8);
             cpu.IX = snapshotbytes[17] | (snapshotbytes[18] << 8);
-            cpu.IFF= cpu.IFF2 = ((snapshotbytes[19] & 0x04) == 0x04);
+            cpu.IFF = cpu.IFF2 = ((snapshotbytes[19] & 0x04) == 0x04);
             cpu.R = snapshotbytes[20];
             cpu.AF = snapshotbytes[21] | (snapshotbytes[22] << 8);
             cpu.SP = snapshotbytes[23] | (snapshotbytes[24] << 8);
@@ -58,7 +47,7 @@ namespace ZXBox.Snapshot
 
             cpu.Out(254, snapshotbytes[26], 0); //Border Color
             //Memory
-            MemoryHandler.LoadBytesintoMemory(snapshotbytes,27, 0x4000, cpu);
+            MemoryHandler.LoadBytesintoMemory(snapshotbytes, 27, 0x4000, cpu);
 
             int pc = cpu.ReadWordFromMemory(cpu.SP);
             Debug.WriteLine("Load PC:" + pc);
@@ -67,41 +56,38 @@ namespace ZXBox.Snapshot
             cpu.PC = pc;
             cpu.RET(true, 0, 0);
         }
-#if NETFX_CORE
-        public byte[] SaveSnapshot(ZXBox_Core.ZXSpectrum48 cpu)
-#else
-         public byte[] SaveSnapshot(Zilog.Z80 cpu)
-#endif
+
+        public byte[] SaveSnapshot(Zilog.Z80 cpu)
         {
             byte[] snapshotData = new byte[49179];
-            
+
             ushort tsp = (ushort)(cpu.SP - 2);
             snapshotData[0] = (byte)cpu.I;
-            snapshotData[1] = (byte)(cpu.HLPrim & 0xFF); 
+            snapshotData[1] = (byte)(cpu.HLPrim & 0xFF);
             snapshotData[2] = (byte)(cpu.HLPrim >> 8);
-            snapshotData[3] = (byte)(cpu.DEPrim & 0xFF); 
+            snapshotData[3] = (byte)(cpu.DEPrim & 0xFF);
             snapshotData[4] = (byte)(cpu.DEPrim >> 8);
-            snapshotData[5] = (byte)(cpu.BCPrim & 0xFF); 
+            snapshotData[5] = (byte)(cpu.BCPrim & 0xFF);
             snapshotData[6] = (byte)(cpu.BCPrim >> 8);
-            snapshotData[7] = (byte)(cpu.AFPrim & 0xFF); 
+            snapshotData[7] = (byte)(cpu.AFPrim & 0xFF);
             snapshotData[8] = (byte)(cpu.AFPrim >> 8);
 
-            snapshotData[9] = (byte)(cpu.HL & 0xFF); 
+            snapshotData[9] = (byte)(cpu.HL & 0xFF);
             snapshotData[10] = (byte)(cpu.HL >> 8);
             snapshotData[11] = (byte)(cpu.DE & 0xFF);
             snapshotData[12] = (byte)(cpu.DE >> 8);
-            snapshotData[13] = (byte)(cpu.BC & 0xFF); 
+            snapshotData[13] = (byte)(cpu.BC & 0xFF);
             snapshotData[14] = (byte)(cpu.BC >> 8);
 
             snapshotData[15] = (byte)(cpu.IY & 0xFF);
             snapshotData[16] = (byte)(cpu.IY >> 8);
-            snapshotData[17] = (byte)(cpu.IX & 0xFF); 
+            snapshotData[17] = (byte)(cpu.IX & 0xFF);
             snapshotData[18] = (byte)(cpu.IX >> 8);
 
             snapshotData[20] = (byte)cpu.R;
-            snapshotData[21] = (byte)(cpu.AF & 0xFF); 
+            snapshotData[21] = (byte)(cpu.AF & 0xFF);
             snapshotData[22] = (byte)(cpu.AF >> 8);
-            snapshotData[23] = (byte)(tsp & 0xFF); 
+            snapshotData[23] = (byte)(tsp & 0xFF);
             snapshotData[24] = (byte)(tsp >> 8);
 
             snapshotData[25] = (byte)(cpu.IM & 0x03);
@@ -109,13 +95,12 @@ namespace ZXBox.Snapshot
 
             snapshotData[26] = (byte)cpu.In(254);
 
-
             var t1 = cpu.ReadByteFromMemory(tsp);
             cpu.WriteByteToMemory(tsp++, (byte)(cpu.PC & 0xFF));
             var t2 = cpu.ReadByteFromMemory(tsp);
             cpu.WriteByteToMemory(tsp++, (byte)(cpu.PC >> 8));
             tsp -= 2;
- 
+
             var mempos = 27;
 
             for (int a = 0x4001; a < 64 * 1024; a++)
