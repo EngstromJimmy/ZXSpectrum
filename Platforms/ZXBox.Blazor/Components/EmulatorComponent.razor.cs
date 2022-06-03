@@ -55,7 +55,7 @@ namespace ZXBox.Blazor.Pages
             //48000 samples per second, 50 frames per second (20ms per frame)
             beeper = new Beeper<byte>(0, 127, 48000 / 50, 1);
             speccy.OutputHardware.Add(beeper);
-
+            mono = JSRuntime as WebAssemblyJSRuntime;
             speccy.Reset();
             gameLoop.Start();
         }
@@ -109,15 +109,18 @@ namespace ZXBox.Blazor.Pages
             }
         }
 
+        GCHandle gchsound;
+        IntPtr pinnedsound;
+        WebAssemblyJSRuntime mono;
+        byte[] soundbytes;
         protected async Task BufferSound()
         {
-            var soundbytes = beeper.GetSoundBuffer();
+            soundbytes = beeper.GetSoundBuffer();
 
-            var gch = GCHandle.Alloc(soundbytes, GCHandleType.Pinned);
-            var pinned = gch.AddrOfPinnedObject();
-            var mono = JSRuntime as WebAssemblyJSRuntime;
-            mono.InvokeUnmarshalled<IntPtr, string>("addAudioBuffer", pinned);
-            gch.Free();
+            gchsound = GCHandle.Alloc(soundbytes, GCHandleType.Pinned);
+            pinnedsound = gchsound.AddrOfPinnedObject();
+            mono.InvokeUnmarshalled<IntPtr, string>("addAudioBuffer", pinnedsound);
+            gchsound.Free();
         }
 
         protected async override void OnAfterRender(bool firstRender)
@@ -129,6 +132,8 @@ namespace ZXBox.Blazor.Pages
             base.OnAfterRender(firstRender);
         }
 
+        GCHandle gchscreen;
+        IntPtr pinnedscreen;
         //uint[] screen = new uint[68672]; //Height * width (256+20+20)*(192+20+20)
         public async void Paint()
         {
@@ -145,11 +150,10 @@ namespace ZXBox.Blazor.Pages
             var screen = speccy.GetScreenInUint(flash);
 
             //Allocate memory
-            var gch = GCHandle.Alloc(screen, GCHandleType.Pinned);
-            var pinned = gch.AddrOfPinnedObject();
-            var mono = JSRuntime as WebAssemblyJSRuntime;
-            mono.InvokeUnmarshalled<IntPtr, string>("PaintCanvas", pinned);
-            gch.Free();
+            gchscreen = GCHandle.Alloc(screen, GCHandleType.Pinned);
+            pinnedscreen = gchscreen.AddrOfPinnedObject();
+            mono.InvokeUnmarshalled<IntPtr, string>("PaintCanvas", pinnedscreen);
+            gchscreen.Free();
         }
     }
 }

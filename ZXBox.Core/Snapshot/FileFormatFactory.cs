@@ -14,6 +14,8 @@ public class FileFormatFactory
                     return new Z80FileFormat();
                 case ".sna":
                     return new SNAFileFormat();
+                case ".gb":
+                    return new GBFileFormat();
                 default:
                     return null;
             }

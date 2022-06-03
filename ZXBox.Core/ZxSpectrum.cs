@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using ZXBox.Hardware.Interfaces;
 using ZXBox.Hardware.Output;
 
@@ -68,10 +67,11 @@ public class ZXSpectrum : Zilog.Z80
 
     public int bordercolor = 1;
     int retvalue = 0xFF;
+    int i = 0;
     public override int In(int port)
     {
         retvalue = 0xFF;
-        for (int i = 0; i < InputHardware.Count; i++)
+        for (i = 0; i < InputHardware.Count; i++)
         {
             retvalue &= InputHardware[i].Input(port, NumberOfTstates);
         }
@@ -84,12 +84,10 @@ public class ZXSpectrum : Zilog.Z80
         //128k
         if (Port == 0x7ffd)
         {
-
             bank = ByteValue & 0x03;
             rom = (ByteValue >> 4) & 0x01;
             activescreen = (ByteValue >> 3) & 0x01;
             disablepaging = ((ByteValue >> 5) & 0x01) == 1;
-            Debug.WriteLine($"Bank: {bank} rom:{rom} screen: {activescreen}");
         }
 
         for (int o = 0; o < OutputHardware.Count; o++)
