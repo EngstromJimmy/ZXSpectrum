@@ -1,10 +1,15 @@
 using System;
-using System.Diagnostics;
 
 namespace Zilog;
 
 public partial class Z80
 {
+
+    int tmpw;
+    int tmpAF;
+    int tmpDE;
+    int tmphaltsToInterrupt;
+    int tmpport;
 
     public void DoNoPrefixInstruction()
     {
@@ -171,19 +176,19 @@ public partial class Z80
                 NumberOfTStatesLeft -= 4;
                 break;
             case 0xE3:		//EX (SP),HL
-                int tmp = ReadWordFromMemory(SP);
+                tmpw = ReadWordFromMemory(SP);
                 WriteWordToMemory(SP, HL);
-                HL = tmp;
+                HL = tmpw;
                 NumberOfTStatesLeft -= 19;
                 break;
             case 0x08:
-                int tmpAF = AF;
+                tmpAF = AF;
                 AF = AFPrim;
                 AFPrim = tmpAF;
                 NumberOfTStatesLeft -= 4;
                 break;
             case 0xEB:      //EX DE,HL
-                int tmpDE = DE;
+                tmpDE = DE;
                 DE = HL;
                 HL = tmpDE;
                 NumberOfTStatesLeft -= 4;
@@ -192,15 +197,14 @@ public partial class Z80
                 EXX();
                 break;
             case 0x76:      //Halt
-                int haltsToInterrupt = (((NumberOfTStatesLeft - 1) / 4) + 1);
-                NumberOfTStatesLeft -= (haltsToInterrupt * 4);
-                Refresh(haltsToInterrupt - 1);
+                tmphaltsToInterrupt = (((NumberOfTStatesLeft - 1) / 4) + 1);
+                NumberOfTStatesLeft -= (tmphaltsToInterrupt * 4);
+                Refresh(tmphaltsToInterrupt - 1);
                 break;
             case 0xDB:     //IN A,(n)
 
-                int port = (A << 8) | GetNextPCByte();
-                A = In(port);
-                Debug.WriteLine(PC + "\tIN A,(n) Port=" + port);
+                tmpport = (A << 8) | GetNextPCByte();
+                A = In(tmpport);
                 NumberOfTStatesLeft -= 11;
                 break;
             case 0x34:  //INC (HL)

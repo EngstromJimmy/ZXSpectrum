@@ -66,8 +66,8 @@ public class Beeper<T> : Interfaces.IOutput where T : IComparable, IComparable<T
         {
 
         }
-        int counter = 0;
-        for (int c = 0; c < bufferCount; c++)
+        counter = 0;
+        for (c = 0; c < bufferCount; c++)
         {
             for (int channel = 0; channel < channels; channel++)
             {
@@ -81,6 +81,8 @@ public class Beeper<T> : Interfaces.IOutput where T : IComparable, IComparable<T
     }
 
     int lastbufferPosition = 0;
+    int c = 0;
+    int counter = 0;
     #region IOutput Members
     //The output is is not dependent on the way the sound will be outputted but rather all the values the buzzer would have at any given tstate
     public void Output(int Port, int ByteValue, int tState)

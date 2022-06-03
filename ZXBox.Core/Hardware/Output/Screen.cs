@@ -62,8 +62,8 @@ public class Screen : IOutput
             ScreenAttributes[pos].Ink = ink;
             ScreenAttributes[pos].Paper = paper;
 
-            int y = (pos / 32) * 8;
-            int x = (pos * 8) - (y * 32);
+            y = (pos / 32) * 8;
+            x = (pos * 8) - (y * 32);
 
             for (int yi = y; yi < y + 8; yi++)
             {
