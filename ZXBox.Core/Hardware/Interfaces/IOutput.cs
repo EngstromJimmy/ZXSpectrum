@@ -1,9 +1,6 @@
-using System;
+namespace ZXBox.Hardware.Interfaces;
 
-namespace ZXBox.Hardware.Interfaces
+public interface IOutput
 {
-    public interface IOutput
-    {
-        void Output(int Port, int ByteValue, int tState);
-    }
+    void Output(int Port, int ByteValue, int tState);
 }

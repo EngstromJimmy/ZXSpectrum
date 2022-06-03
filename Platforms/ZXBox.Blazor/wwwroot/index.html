@@ -16,28 +16,39 @@
         var audiobuffer = [];
         var nextStartTime = 0;
         var lastcall = performance.now()
+        var audiocontext = new (window.AudioContext || window.webkitAudioContext)();
+        var gainNode = audiocontext.createGain();
+        gainNode.gain.value = 0.01;
 
-        
-        function addAudioBuffer(dataPtr) {
-            
+        function addAudioBuffer
+            (dataPtr) {
             var buffersize = 960;
             var myArrayBuffer = audiocontext.createBuffer(1, buffersize, audiocontext.sampleRate);
             var nowBuffering = myArrayBuffer.getChannelData(0);
-           
+
             for (var d = 0; d < buffersize; d++) {
-                nowBuffering[d] =  Module.HEAPU8[dataPtr + d] == 128 ? -1 : 1;
+                nowBuffering[d] = Module.HEAPU8[dataPtr + d];
+                //console.log(nowBuffering[d]);
             }
             let source = audiocontext.createBufferSource();
             source.buffer = myArrayBuffer;
-            source.connect(audiocontext.destination);
-            if (nextStartTime == 0) nextStartTime = audiocontext.currentTime + (myArrayBuffer.length / myArrayBuffer.sampleRate) ;
+
+            //source.connect(gainNode);
+
+
+            gainNode.connect(audiocontext.destination);
+            source.connect(gainNode);
+            if (nextStartTime == 0) nextStartTime = audiocontext.currentTime + (myArrayBuffer.length / myArrayBuffer.sampleRate);
+
             source.start(nextStartTime);
             nextStartTime += myArrayBuffer.length / myArrayBuffer.sampleRate;
+            gainNode.gain.value = 0.0005;
+
+            //console.log(dataPtr);
         }
 
 
-        var audiocontext = new (window.AudioContext || window.webkitAudioContext)();
-        
+
         //function play() {
         //    console.log("Playing sound");
         //    soundon = true;
@@ -54,7 +65,7 @@
         //    source.connect(audiocontext.destination);
 
         //    //add this function as a callback to play next buffer
-        //    //when current buffer has reached its end 
+        //    //when current buffer has reached its end
         //    source.onended = play;
         //    source.start();
         //}
@@ -62,21 +73,68 @@
 
 
         var pressedKeys = [];
+
+        function GetKey(keyCode) {
+            var key = String.fromCharCode(keyCode);
+            //console.log(keyCode);
+            switch (keyCode) {
+                case 32:
+                    key = "space";
+                    break;
+                case 8:
+                    key = "backspace";
+                    break;
+                case 16:
+                    key = "shift";
+                    break;
+                case 17:
+                    key = "control";
+                    break;
+                case 9:
+                    key = "tab";
+                    break;
+                case 18:
+                    key = "alt";
+                    break;
+                case 38:
+                    key = "arrowup";
+                    break;
+                case 40:
+                    key = "arrowdown";
+                    break;
+                case 37:
+                    key = "arrowleft";
+                    break;
+                case 39:
+                    key = "arrowright";
+                    break;
+                case 13:
+                    key = "enter";
+                    break;
+
+            }
+            return key;
+        }
+
         window.onkeyup = function (e) {
-            const index = pressedKeys.indexOf(e.key);
+            var key = GetKey(e.keyCode);
+            const index = pressedKeys.indexOf(key);
             if (index > -1) {
                 pressedKeys.splice(index, 1);
             }
             event.preventDefault();
-            console.log(pressedKeys);
+            //console.log(pressedKeys);
         }
         window.onkeydown = function (e) {
-            const index = pressedKeys.indexOf(e.key);
+
+
+            var key = GetKey(e.keyCode);
+            const index = pressedKeys.indexOf(key);
             if (index == -1) {
-                pressedKeys.push(e.key);
+                pressedKeys.push(key);
             }
             event.preventDefault();
-            console.log(pressedKeys);
+            //console.log(pressedKeys);
         }
 
         window.getKeyStatus = function () {
@@ -99,26 +157,24 @@
         }
 
         window.PaintCanvas = function PaintCanvas(dataPtr) {
-
-            
             imageData.data.set(Uint8ClampedArray.from(Module.HEAPU8.subarray(dataPtr, dataPtr + imageData.data.length)));
             context.putImageData(imageData, 0, 0);
-            context.drawImage(canvas, 0, 0,  canvas.width,  canvas.height);
-            console.log((performance.now() - lastcall).toFixed(2));      
+            context.drawImage(canvas, 0, 0, canvas.width, canvas.height);
+            //console.log((performance.now() - lastcall).toFixed(2));
             lastcall = performance.now();
             return true;
         }
     </script>
-    <app>
+    <div id="app">
         <div style="height:100vh;text-align:center;padding-top:200px;">Loading...</div>
-    </app>
+    </div>
 
     <div id="blazor-error-ui">
         An unhandled error has occurred.
         <a href="" class="reload">Reload</a>
         <a class="dismiss">🗙</a>
     </div>
-    <script src="/JavaScript.js"></script>
+    <script src="JavaScript.js"></script>
     <script src="_framework/blazor.webassembly.js"></script>
 
 </body>

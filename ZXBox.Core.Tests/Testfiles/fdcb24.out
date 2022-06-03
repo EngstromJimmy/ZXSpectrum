@@ -1,0 +1,18 @@
+    0 MC 0000
+    4 MR 0000 fd
+    4 MC 0001
+    8 MR 0001 cb
+    8 MC 0002
+   11 MR 0002 b4
+   11 MC 0003
+   14 MR 0003 24
+   14 MC 0003
+   15 MC 0003
+   16 MC afb2
+   19 MR afb2 7e
+   19 MC afb2
+   20 MC afb2
+   23 MW afb2 fc
+1cac da3e cc7c fc19 0000 0000 0000 0000 572c affe 0000 0004
+00 02 0 0 0 0 23
+afb2 fc -1
