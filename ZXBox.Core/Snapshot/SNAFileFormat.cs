@@ -1,5 +1,3 @@
-using System.Diagnostics;
-
 namespace ZXBox.Snapshot
 {
     public class SNAFileFormat : ISnapshot
@@ -50,7 +48,7 @@ namespace ZXBox.Snapshot
             MemoryHandler.LoadBytesintoMemory(snapshotbytes, 27, 0x4000, cpu);
 
             int pc = cpu.ReadWordFromMemory(cpu.SP);
-            Debug.WriteLine("Load PC:" + pc);
+            //Debug.WriteLine("Load PC:" + pc);
             //cpu.SP++;
             //cpu.SP++;
             cpu.PC = pc;
@@ -113,7 +111,7 @@ namespace ZXBox.Snapshot
             //}
 
             int pc = cpu.ReadWordFromMemory(cpu.SP);
-            Debug.WriteLine("save PC:" + pc);
+            //Debug.WriteLine("save PC:" + pc);
 
             return snapshotData;
 

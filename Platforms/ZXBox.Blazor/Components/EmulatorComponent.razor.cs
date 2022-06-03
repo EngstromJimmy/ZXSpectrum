@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.JSInterop;
 using Microsoft.JSInterop.WebAssembly;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
@@ -89,20 +88,21 @@ namespace ZXBox.Blazor.Pages
         private async void GameLoop_Elapsed(object sender, ElapsedEventArgs e)
         {
             Stopwatch sw = new Stopwatch();
-            sw.Start();
+
             //Get gamepads
             kempston.Gamepads = await GamePadList.GetGamepadsAsync();
 
             //Run JavaScriptInterop to find the currently pressed buttons
             Keyboard.KeyBuffer = await JSRuntime.InvokeAsync<List<string>>("getKeyStatus");
-
+            sw.Start();
             speccy.DoIntructions(69888);
+            sw.Stop();
 
             beeper.GenerateSound();
             await BufferSound();
 
             Paint();
-            sw.Stop();
+
             if (sw.ElapsedMilliseconds > 20)
             {
                 Console.WriteLine(sw.ElapsedMilliseconds + "ms");
