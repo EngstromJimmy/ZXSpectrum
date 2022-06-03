@@ -9,6 +9,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Platforms", "Platforms", "{
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ZXBox.Blazor", "Platforms\ZXBox.Blazor\ZXBox.Blazor.csproj", "{50F28AF7-10CD-46F9-9B8A-55009B96C5F9}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ZXBox.Core.Tests", "ZXBox.Core.Tests\ZXBox.Core.Tests.csproj", "{A1CEA0B2-9204-4BAF-9BBC-F6B22FE11A85}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZXBox.Meadow", "ZXBox.Meadow\ZXBox.Meadow.csproj", "{7D87F833-543E-4F45-9467-E4766A998495}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -23,12 +27,23 @@ Global
 		{50F28AF7-10CD-46F9-9B8A-55009B96C5F9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{50F28AF7-10CD-46F9-9B8A-55009B96C5F9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{50F28AF7-10CD-46F9-9B8A-55009B96C5F9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A1CEA0B2-9204-4BAF-9BBC-F6B22FE11A85}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A1CEA0B2-9204-4BAF-9BBC-F6B22FE11A85}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A1CEA0B2-9204-4BAF-9BBC-F6B22FE11A85}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A1CEA0B2-9204-4BAF-9BBC-F6B22FE11A85}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7D87F833-543E-4F45-9467-E4766A998495}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7D87F833-543E-4F45-9467-E4766A998495}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7D87F833-543E-4F45-9467-E4766A998495}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{7D87F833-543E-4F45-9467-E4766A998495}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7D87F833-543E-4F45-9467-E4766A998495}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7D87F833-543E-4F45-9467-E4766A998495}.Release|Any CPU.Deploy.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{50F28AF7-10CD-46F9-9B8A-55009B96C5F9} = {00F4C7F3-4C41-48AC-91D7-BC7339DC12E6}
+		{7D87F833-543E-4F45-9467-E4766A998495} = {00F4C7F3-4C41-48AC-91D7-BC7339DC12E6}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {D52DCA43-01EB-4AE5-B69B-E064911874F7}

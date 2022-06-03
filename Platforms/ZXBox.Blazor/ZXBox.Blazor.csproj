@@ -1,17 +1,21 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.1</TargetFramework>
-    <RazorLangVersion>3.0</RazorLangVersion>
+    <TargetFramework>net7.0</TargetFramework>
+	   <RunAOTCompilation>true</RunAOTCompilation>
+	  
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="BlazorInputFile" Version="0.2.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="3.2.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Build" Version="3.2.0" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="3.2.0" PrivateAssets="all" />
-    <PackageReference Include="System.Net.Http.Json" Version="3.2.1" />
-    <PackageReference Include="Toolbelt.Blazor.Gamepad" Version="7.0.0.3" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="7.0.0-preview.4.22251.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="7.0.0-preview.4.22251.1" PrivateAssets="all" />
+    
+    <PackageReference Include="System.Net.Http.Json" Version="7.0.0-preview.4.22229.4" />
+    <PackageReference Include="Toolbelt.Blazor.Gamepad" Version="8.0.0.1" />
   </ItemGroup>
 
   <ItemGroup>
@@ -19,6 +23,27 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Update="wwwroot\css\zx.ttf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\images\48.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\images\ZXSpectrum+2.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\images\ZXSpectrum+3.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\images\ZXSpectrum128k.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\images\ZXSpectrum48k.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\images\zxwallpaper.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Update="wwwroot\Roms\ManicMiner.z80.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

@@ -1,0 +1,18 @@
+    0 MC 0000
+    4 MR 0000 dd
+    4 MC 0001
+    8 MR 0001 cb
+    8 MC 0002
+   11 MR 0002 f7
+   11 MC 0003
+   14 MR 0003 c1
+   14 MC 0003
+   15 MC 0003
+   16 MC dcc3
+   19 MR dcc3 1c
+   19 MC dcc3
+   20 MC dcc3
+   23 MW dcc3 1d
+313f 821d 5fcc 42c8 0000 0000 0000 0000 dccc d87b 0000 0004
+00 02 0 0 0 0 23
+dcc3 1d -1
