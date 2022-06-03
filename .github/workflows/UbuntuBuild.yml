@@ -6,6 +6,7 @@ env:
   PROJECT: Platforms/ZXBox.Blazor/ZXBox.Blazor.csproj
   SUBFOLDER: ZXSpectrum
 
+
 # Controls when the workflow will run
 on:
   # Triggers the workflow on push or pull request events but only for the master branch
@@ -42,6 +43,7 @@ jobs:
         
       - name: Change base-tag in index.html from / to BlazorGitHubPagesDemo
         run: sed -i 's/<base href="\/" \/>/<base href="\/${{ env.SUBFOLDER }}\/" \/>/g' ${{ env.PUBLISH_DIR }}/index.html
+
  
         # add .nojekyll file to tell GitHub pages to not treat this as a Jekyll project. 
         # Allow files and folders starting with an underscore.
