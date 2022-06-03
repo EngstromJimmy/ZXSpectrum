@@ -67,17 +67,25 @@ public class Beeper<T> : Interfaces.IOutput where T : IComparable, IComparable<T
 
         }
         counter = 0;
-        for (c = 0; c < bufferCount; c++)
+        if (channels > 1)
         {
-            for (int channel = 0; channel < channels; channel++)
+            for (c = 0; c < bufferCount; c++)
             {
-                returnbuffer[counter++] = buffer[c];
+                for (int channel = 0; channel < channels; channel++)
+                {
+                    returnbuffer[counter++] = buffer[c];
+                }
             }
+            BufferQueue.Enqueue(returnbuffer);
+        }
+        else
+        {
+            BufferQueue.Enqueue(buffer);
         }
 
-        BufferQueue.Enqueue(returnbuffer);
         lastTstate = 0;
         buffer = new T[samplesPerFrame];
+        bufferPosition = 0;
     }
 
     int lastbufferPosition = 0;

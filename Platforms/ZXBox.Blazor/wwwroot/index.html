@@ -16,9 +16,11 @@
         var audiobuffer = [];
         var nextStartTime = 0;
         var lastcall = performance.now()
-        var audiocontext = new (window.AudioContext || window.webkitAudioContext)();
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        this.audioContext = new AudioContext({ latencyHint: 'interactive' });
         var gainNode = audiocontext.createGain();
-        gainNode.gain.value = 0.01;
+        gainNode.gain.value = 0.01;        
+
 
         function addAudioBuffer
         (dataPtr) {
@@ -28,7 +30,7 @@
 
             for (var d = 0; d < buffersize; d++) {
                 nowBuffering[d] = Module.HEAPU8[dataPtr + d] ;
-                //console.log(nowBuffering[d]);
+                console.log(nowBuffering[d]);
             }
             let source = audiocontext.createBufferSource();
             source.buffer = myArrayBuffer;
@@ -49,26 +51,7 @@
 
         
 
-        //function play() {
-        //    console.log("Playing sound");
-        //    soundon = true;
-        //    //end of stream has been reached
-        //    if (audiobuffer.length === 0)
-        //    {
-        //        console.log("To slow");
-        //        soundon = false;
-        //        return;
-        //    }
-        //    let source = audiocontext.createBufferSource();
-        //    //get the latest buffer that should play next
-        //    source.buffer = audiobuffer.shift();
-        //    source.connect(audiocontext.destination);
 
-        //    //add this function as a callback to play next buffer
-        //    //when current buffer has reached its end
-        //    source.onended = play;
-        //    source.start();
-        //}
 
 
 

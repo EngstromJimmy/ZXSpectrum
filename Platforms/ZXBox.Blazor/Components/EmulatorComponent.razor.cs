@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
@@ -117,7 +116,6 @@ namespace ZXBox.Blazor.Pages
         protected async Task BufferSound()
         {
             soundbytes = beeper.GetSoundBuffer();
-            Console.Write(string.Join(',', soundbytes.Select(s => s.ToString())));
             gchsound = GCHandle.Alloc(soundbytes, GCHandleType.Pinned);
             pinnedsound = gchsound.AddrOfPinnedObject();
             mono.InvokeUnmarshalled<IntPtr, string>("addAudioBuffer", pinnedsound);
