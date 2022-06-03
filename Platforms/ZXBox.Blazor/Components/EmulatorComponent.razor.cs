@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
@@ -97,13 +98,12 @@ namespace ZXBox.Blazor.Pages
             Keyboard.KeyBuffer = await JSRuntime.InvokeAsync<List<string>>("getKeyStatus");
             sw.Start();
             speccy.DoIntructions(69888);
-            sw.Stop();
 
             beeper.GenerateSound();
             await BufferSound();
 
             Paint();
-
+            sw.Stop();
             if (sw.ElapsedMilliseconds > 20)
             {
                 Console.WriteLine(sw.ElapsedMilliseconds + "ms");
@@ -117,7 +117,7 @@ namespace ZXBox.Blazor.Pages
         protected async Task BufferSound()
         {
             soundbytes = beeper.GetSoundBuffer();
-
+            Console.Write(string.Join(',', soundbytes.Select(s => s.ToString())));
             gchsound = GCHandle.Alloc(soundbytes, GCHandleType.Pinned);
             pinnedsound = gchsound.AddrOfPinnedObject();
             mono.InvokeUnmarshalled<IntPtr, string>("addAudioBuffer", pinnedsound);
