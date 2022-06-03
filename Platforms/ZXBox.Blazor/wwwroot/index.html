@@ -76,7 +76,7 @@
 
         function GetKey(keyCode) {
             var key = String.fromCharCode(keyCode);
-            console.log(keyCode);
+            //console.log(keyCode);
             switch (keyCode) {
                 case 32:
                     key = "space";
@@ -134,7 +134,7 @@
                 pressedKeys.push(key);
             }
             event.preventDefault();
-            console.log(pressedKeys);
+            //console.log(pressedKeys);
         }
 
         window.getKeyStatus = function () {
