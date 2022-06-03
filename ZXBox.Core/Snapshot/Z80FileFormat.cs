@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 
 namespace ZXBox.Snapshot;
 
@@ -127,12 +126,12 @@ public class Z80FileFormat : ISnapshot
             MemoryBlocks.Add(mb);
         }
 
-        Debug.WriteLineIf(MemoryBlocks.Count <= 3, "48K Z80");
-        Debug.WriteLineIf(MemoryBlocks.Count > 3, "128K Z80");
-        Debug.WriteLineIf((snapshotbytes[29] >> 0x06) == 0, "Cursor");
-        Debug.WriteLineIf((snapshotbytes[29] >> 0x06) == 1, "Kempston");
-        Debug.WriteLineIf((snapshotbytes[29] >> 0x06) == 2, "Sinclair 2 Left joystick");
-        Debug.WriteLineIf((snapshotbytes[29] >> 0x06) == 3, "Sinclair 2 Right joystick");
+        //Debug.WriteLineIf(MemoryBlocks.Count <= 3, "48K Z80");
+        //Debug.WriteLineIf(MemoryBlocks.Count > 3, "128K Z80");
+        //Debug.WriteLineIf((snapshotbytes[29] >> 0x06) == 0, "Cursor");
+        //Debug.WriteLineIf((snapshotbytes[29] >> 0x06) == 1, "Kempston");
+        //Debug.WriteLineIf((snapshotbytes[29] >> 0x06) == 2, "Sinclair 2 Left joystick");
+        //Debug.WriteLineIf((snapshotbytes[29] >> 0x06) == 3, "Sinclair 2 Right joystick");
 
         //Load Memoryblocks into memory
         foreach (MemoryBlock mb in MemoryBlocks)
