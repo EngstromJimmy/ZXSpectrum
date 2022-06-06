@@ -52,17 +52,19 @@ namespace ZXBox.Hardware.Input.Joystick
                 }
                 //GamePadState currentState = GamePad.GetState(playerIndex);
                 //000FUDLR
-
-                if (Gamepad.Buttons[0].Pressed )
+                if (Gamepad.Buttons.Count() > 0)
+                    {
+                    if (Gamepad.Buttons[0].Pressed)
                         returnvalue |= 16;
-                if ((Gamepad.Buttons.Count>=12 && Gamepad.Buttons[12].Pressed) || (Gamepad.Axes.Count>1 && Gamepad.Axes[1] > 0.5))//up
+                    if ((Gamepad.Buttons.Count >= 12 && Gamepad.Buttons[12].Pressed) || (Gamepad.Axes.Count > 1 && Gamepad.Axes[1] > 0.5))//up
                         returnvalue |= 8;
-                if ((Gamepad.Buttons.Count >= 13 && Gamepad.Buttons[13].Pressed) || (Gamepad.Axes.Count > 1 && Gamepad.Axes[1] < -0.5))//down
+                    if ((Gamepad.Buttons.Count >= 13 && Gamepad.Buttons[13].Pressed) || (Gamepad.Axes.Count > 1 && Gamepad.Axes[1] < -0.5))//down
                         returnvalue |= 4;
-                if ((Gamepad.Buttons.Count >= 14 && Gamepad.Buttons[14].Pressed) || (Gamepad.Axes.Count > 0 && Gamepad.Axes[0] < -0.5))//left
+                    if ((Gamepad.Buttons.Count >= 14 && Gamepad.Buttons[14].Pressed) || (Gamepad.Axes.Count > 0 && Gamepad.Axes[0] < -0.5))//left
                         returnvalue |= 2;
-                if ((Gamepad.Buttons.Count >= 15 && Gamepad.Buttons[15].Pressed) || (Gamepad.Axes.Count > 0 && Gamepad.Axes[0] > 0.5))//right
+                    if ((Gamepad.Buttons.Count >= 15 && Gamepad.Buttons[15].Pressed) || (Gamepad.Axes.Count > 0 && Gamepad.Axes[0] > 0.5))//right
                         returnvalue |= 1;
+                }
             }
             return returnvalue;
         }

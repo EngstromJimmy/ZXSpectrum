@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
@@ -92,7 +93,6 @@ namespace ZXBox.Blazor.Pages
 
             //Get gamepads
             kempston.Gamepads = await GamePadList.GetGamepadsAsync();
-
             //Run JavaScriptInterop to find the currently pressed buttons
             Keyboard.KeyBuffer = await JSRuntime.InvokeAsync<List<string>>("getKeyStatus");
             sw.Start();
@@ -105,7 +105,7 @@ namespace ZXBox.Blazor.Pages
             sw.Stop();
             if (sw.ElapsedMilliseconds > 20)
             {
-                Console.WriteLine(sw.ElapsedMilliseconds + "ms");
+                //Console.WriteLine(sw.ElapsedMilliseconds + "ms");
             }
         }
 
