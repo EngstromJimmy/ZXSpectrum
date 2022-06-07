@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
@@ -18,7 +17,7 @@ using ZXBox.Snapshot;
 
 namespace ZXBox.Blazor.Pages
 {
-    public partial class EmulatorComponentModel : ComponentBase
+    public partial class EmulatorComponentModel : ComponentBase, IAsyncDisposable
     {
         private ZXSpectrum speccy;
         public System.Timers.Timer gameLoop;
@@ -153,6 +152,13 @@ namespace ZXBox.Blazor.Pages
             pinnedscreen = gchscreen.AddrOfPinnedObject();
             mono.InvokeUnmarshalled<IntPtr, string>("PaintCanvas", pinnedscreen);
             gchscreen.Free();
+        }
+
+        public ValueTask DisposeAsync()
+        {
+            gameLoop.Stop();
+            gameLoop.Dispose();
+            return ValueTask.CompletedTask;
         }
     }
 }
