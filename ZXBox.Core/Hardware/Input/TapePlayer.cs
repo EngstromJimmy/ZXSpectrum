@@ -23,45 +23,52 @@ namespace ZXBox.Core.Hardware.Input
             long tstate = 0;
             foreach (var block in tf.Blocks)
             {
+                EarValues.Add(new EarValue() { Ear = ear, TState = 0, Pulse = PulseTypeEnum.Pilot });
                 for (int pilotcount = 0; pilotcount < (block.Data[0] < 128 ? 8063 : 3223); pilotcount++)
                 {
                     ear = !ear;
-                    EarValues.Add(new EarValue() { Ear = ear, TState = tstate, Pulse = PulseTypeEnum.Pilot });
                     tstate += 2168;
+                    EarValues.Add(new EarValue() { Ear = ear, TState = tstate, Pulse = PulseTypeEnum.Pilot });
+
                 }
 
                 //Add sync1
                 ear = !ear;
-                EarValues.Add(new EarValue() { Ear = ear, TState = tstate, Pulse = PulseTypeEnum.Sync1 });
                 tstate += 667;
+                EarValues.Add(new EarValue() { Ear = ear, TState = tstate, Pulse = PulseTypeEnum.Sync1 });
+
                 //Add sync2
                 ear = !ear;
-                EarValues.Add(new EarValue() { Ear = ear, TState = tstate, Pulse = PulseTypeEnum.Sync2 });
                 tstate += 735;
+                EarValues.Add(new EarValue() { Ear = ear, TState = tstate, Pulse = PulseTypeEnum.Sync2 });
 
                 BitArray bits = new BitArray(block.Data);
                 for (int i = 0; i < bits.Length; i++)
                 {
                     //Add two pulses
                     ear = !ear;
-                    EarValues.Add(new() { Ear = ear, TState = tstate, Pulse = PulseTypeEnum.Data });
                     tstate += bits[i] ? 1710 : 855;
+                    EarValues.Add(new() { Ear = ear, TState = tstate, Pulse = PulseTypeEnum.Data });
+
                     ear = !ear;
-                    EarValues.Add(new() { Ear = ear, TState = tstate, Pulse = PulseTypeEnum.Data });
                     tstate += bits[i] ? 1710 : 855;
+                    EarValues.Add(new() { Ear = ear, TState = tstate, Pulse = PulseTypeEnum.Data });
                 }
-                ear = !ear;
+                //ear = !ear;
                 //Pause
-                EarValues.Add(new() { Ear = ear, TState = tstate, Pulse = PulseTypeEnum.Pause });
                 tstate += 3500 * 1000; //1second;
+                EarValues.Add(new() { Ear = ear, TState = tstate, Pulse = PulseTypeEnum.Pause });
+
             }
 
             //Add Termination 
             ear = !ear;
-            EarValues.Add(new() { Ear = ear, TState = tstate, Pulse = PulseTypeEnum.Termination });
-            ear = !ear;
-            EarValues.Add(new() { Ear = ear, TState = tstate + 947, Pulse = PulseTypeEnum.Stop });
-
+            tstate += 947;
+            EarValues.Add(new() { Ear = ear, TState = tstate, Pulse = PulseTypeEnum.Stop });
+            //foreach (var e in EarValues)
+            //{
+            //    Console.WriteLine($"{e.TState} \t {e.Ear} \t {e.Pulse}");
+            //}
         }
 
         public void AddTStates(int tstates)
@@ -85,6 +92,7 @@ namespace ZXBox.Core.Hardware.Input
         private long diff = 0;
         int returnvalue = 0xff;
         EarValue ear;
+        bool firstread = true;
         public int Input(int Port, int tact)
         {
             if (IsPlaying)
@@ -102,6 +110,11 @@ namespace ZXBox.Core.Hardware.Input
                 returnvalue = 0xff;
                 if ((Port & 0xff) == 0xfe)
                 {
+                    if (firstread)
+                    {
+                        currentTstate = 0;
+                        firstread = false;
+                    }
                     ear = EarValues.TakeWhile(e => e.TState <= currentTstate).LastOrDefault();
                     if (ear != null)
                     {
