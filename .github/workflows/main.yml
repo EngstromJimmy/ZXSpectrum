@@ -8,9 +8,9 @@ env:
 on:
   # Triggers the workflow on push or pull request events but only for the master branch
   push:
-    branches: [ development ]
+    branches: [ mail ]
   pull_request:
-    branches: [ development ]
+    branches: [ main ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
