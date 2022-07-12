@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using ZXBox.Core.Tape;
@@ -22,8 +21,6 @@ namespace ZXBox.Core.Hardware.Input
             tf.ReadFile(data);
             bool ear = false;
             long tstate = 0;
-            //Add pilot pulse
-
             foreach (var block in tf.Blocks)
             {
                 for (int pilotcount = 0; pilotcount < (block.Data[0] < 128 ? 8063 : 3223); pilotcount++)
@@ -67,6 +64,14 @@ namespace ZXBox.Core.Hardware.Input
 
         }
 
+        public void AddTStates(int tstates)
+        {
+            if (IsPlaying)
+            {
+                currentTstate += tstates;
+            }
+        }
+
         public List<EarValue> EarValues = new();
         public void Play()
         {
@@ -75,6 +80,7 @@ namespace ZXBox.Core.Hardware.Input
         bool IsPlaying = false;
 
         private long currentTstate = 0;
+
         private long lastTstate = 0;
         private long diff = 0;
         int returnvalue = 0xff;
@@ -83,16 +89,16 @@ namespace ZXBox.Core.Hardware.Input
         {
             if (IsPlaying)
             {
-                if (tact < lastTstate)
-                {
-                    diff = Math.Abs((69888 - lastTstate) - tact);
-                }
-                else
-                {
-                    diff = Math.Abs(lastTstate - tact);
-                }
-                lastTstate = tact;
-                currentTstate += diff;
+                //if (tact < lastTstate)
+                //{
+                //    diff = Math.Abs((69888 - lastTstate) - tact);
+                //}
+                //else
+                //{
+                //    diff = Math.Abs(lastTstate - tact);
+                //}
+                //lastTstate = tact;
+                //currentTstate += diff;
                 returnvalue = 0xff;
                 if ((Port & 0xff) == 0xfe)
                 {

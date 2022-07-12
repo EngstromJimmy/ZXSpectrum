@@ -73,9 +73,16 @@ public class ZXSpectrum : Zilog.Z80
         retvalue = 0xFF;
         for (i = 0; i < InputHardware.Count; i++)
         {
-            retvalue &= InputHardware[i].Input(port, NumberOfTstates - Math.Abs(NumberOfTStatesLeft));
+            retvalue &= InputHardware[i].Input(port, NumberOfTstates - Math.Abs(_numberOfTStatesLeft));
         }
         return retvalue;
+    }
+    public override void TstateChange(int diff)
+    {
+        for (i = 0; i < InputHardware.Count; i++)
+        {
+            InputHardware[i].AddTStates(diff);
+        }
     }
     int activescreen = 0;
     bool disablepaging = false;

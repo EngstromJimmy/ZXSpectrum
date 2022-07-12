@@ -24,13 +24,13 @@ namespace ZXBox.Core.Cpus.Sharp
         public override void DoIntructions(int numberOfTStates, Func<Z80, int> gameSpecificFunc)
         {
             NumberOfTstates = numberOfTStates;
-            NumberOfTStatesLeft += numberOfTStates;
+            _numberOfTStatesLeft += numberOfTStates;
             _EndTstates2 = numberOfTStates;
             while (true)
             {
-                if (interruptTriggered(NumberOfTStatesLeft))
+                if (interruptTriggered(_numberOfTStatesLeft))
                 {
-                    NumberOfTStatesLeft -= interrupt();
+                    SubtractNumberOfTStatesLeft(interrupt());
                     break;
                 }
 
@@ -39,7 +39,7 @@ namespace ZXBox.Core.Cpus.Sharp
                 NextOpcode();
                 if (gameSpecificFunc != null)
                 {
-                    NumberOfTStatesLeft -= gameSpecificFunc(this);
+                    SubtractNumberOfTStatesLeft(gameSpecificFunc(this));
                 }
 
                 switch (opcode)
@@ -64,7 +64,8 @@ namespace ZXBox.Core.Cpus.Sharp
                         switch (opcode)
                         {
                             case 0x08:
-                                WriteByteToMemory(GetNextPCWord(), SP); NumberOfTStatesLeft -= 13;
+                                WriteByteToMemory(GetNextPCWord(), SP);
+                                SubtractNumberOfTStatesLeft(13);
                                 break;
                             case 0x10://STOP
                                 Halt();
@@ -106,7 +107,8 @@ namespace ZXBox.Core.Cpus.Sharp
 
                                 break;
                             case 0xEA://LD(nn),A
-                                WriteByteToMemory(GetNextPCWord(), A); NumberOfTStatesLeft -= 13;
+                                WriteByteToMemory(GetNextPCWord(), A);
+                                SubtractNumberOfTStatesLeft(13);
                                 break;
                             case 0xEB://-
                                 break;
@@ -116,11 +118,11 @@ namespace ZXBox.Core.Cpus.Sharp
                                 break;
                             case 0xF0://LD A,(FF00 + n)
                                 A = ReadByteFromMemory(0xFF00 + GetNextPCByte());
-                                NumberOfTStatesLeft -= 7;
+                                SubtractNumberOfTStatesLeft(7);
                                 break;
                             case 0xF2://LD   A,(FF00 + C)
                                 A = ReadByteFromMemory(0xFF00 + C);
-                                NumberOfTStatesLeft -= 7;
+                                SubtractNumberOfTStatesLeft(7);
                                 break;
                             case 0xF4://-
                                 break;
@@ -128,7 +130,7 @@ namespace ZXBox.Core.Cpus.Sharp
                                 break;
                             case 0xFA: //LD   A,(nn)
                                 A = ReadByteFromMemory(GetNextPCWord());
-                                NumberOfTStatesLeft -= 7;
+                                SubtractNumberOfTStatesLeft(7);
                                 break;
                             case 0xFC:// -
                                 break;

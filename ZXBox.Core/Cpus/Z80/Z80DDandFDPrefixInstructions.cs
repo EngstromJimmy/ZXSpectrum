@@ -62,19 +62,19 @@ public partial class Z80
                 break;
             case 0x2A:	//LD IX,(nn)
                 IndexRegistry[index] = ReadWordFromMemory(GetNextPCWord());
-                NumberOfTStatesLeft -= 20;
+                SubtractNumberOfTStatesLeft(20);
                 break;
             case 0x22:      //LD (nn),IX
                 WriteWordToMemory(GetNextPCWord(), IndexRegistry[index]);
-                NumberOfTStatesLeft -= 14;
+                SubtractNumberOfTStatesLeft(14);
                 break;
             case 0x21:     //LD IX,nn
                 IndexRegistry[index] = GetNextPCWord();
-                NumberOfTStatesLeft -= 14;
+                SubtractNumberOfTStatesLeft(14);
                 break;
             case 0x36: //LD (IX+d),n
                 WriteByteToMemory(IndexRegistry[index] + d, GetNextPCByte());
-                NumberOfTStatesLeft -= 19;
+                SubtractNumberOfTStatesLeft(19);
                 break;
             case 0x8E:  //ADC A,(IX+d) With PrefixDD
                 A = ADDADC8(A, ReadByteFromMemory(IndexRegistry[index] + d), true, 19);
@@ -138,12 +138,12 @@ public partial class Z80
                 tmp = ReadWordFromMemory(SP);
                 WriteWordToMemory(SP, IndexRegistry[index]);
                 IndexRegistry[index] = tmp;
-                NumberOfTStatesLeft -= 23;
+                SubtractNumberOfTStatesLeft(23);
                 break;
             case 0x34://INC (IX+d)
                 dvalue = d;
                 WriteByteToMemory(IndexRegistry[index] + dvalue, INC8(ReadByteFromMemory(IndexRegistry[index] + dvalue), 0));
-                NumberOfTStatesLeft -= 23;
+                SubtractNumberOfTStatesLeft(23);
                 break;
             case 0x24:		    //INC IXH*
                 if (IRindex == IndexRegistryEnum.IX)
@@ -171,218 +171,218 @@ public partial class Z80
             case 0x74:		//LD (IYX + d),H
             case 0x75:		//LD (IYX + d),L
                 WriteByteToMemory(IndexRegistry[index] + d, RegisterValueFromOP(0));
-                NumberOfTStatesLeft -= 19;
+                SubtractNumberOfTStatesLeft(19);
                 break;
             case 0x7E://LD A,(IX+d)
                 A = ReadByteFromMemory(IndexRegistry[index] + d);
-                NumberOfTStatesLeft -= 19;
+                SubtractNumberOfTStatesLeft(19);
                 break;
             case 0x7C:		//LD A,IXH*
                 if (IRindex == IndexRegistryEnum.IX)
                     A = IXH;
                 else
                     A = IYH;
-                NumberOfTStatesLeft -= 4;
+                SubtractNumberOfTStatesLeft(4);
                 break;
             case 0x7D://LD A,IXL*
                 if (IRindex == IndexRegistryEnum.IX)
                     A = IXL;
                 else
                     A = IYL;
-                NumberOfTStatesLeft -= 4;
+                SubtractNumberOfTStatesLeft(4);
                 break;
             case 0x46:		//LD B,(IX+d)
                 B = ReadByteFromMemory(IndexRegistry[index] + d);
-                NumberOfTStatesLeft -= 19;
+                SubtractNumberOfTStatesLeft(19);
                 break;
             case 0x44:		 //LD B,IXH*
                 if (IRindex == IndexRegistryEnum.IX)
                     B = IXH;
                 else
                     B = IYH;
-                NumberOfTStatesLeft -= 4;
+                SubtractNumberOfTStatesLeft(4);
                 break;
             case 0x45://LD B,IXL*
                 if (IRindex == IndexRegistryEnum.IX)
                     B = IXL;
                 else
                     B = IYL;
-                NumberOfTStatesLeft -= 4;
+                SubtractNumberOfTStatesLeft(4);
                 break;
             //C register
             case 0x4E:		//LD C,(IX+d)
                 C = ReadByteFromMemory(IndexRegistry[index] + d);
-                NumberOfTStatesLeft -= 19;
+                SubtractNumberOfTStatesLeft(19);
                 break;
             case 0x4C:		 //LD C,IXH*
                 if (IRindex == IndexRegistryEnum.IX)
                     C = IXH;
                 else
                     C = IYH;
-                NumberOfTStatesLeft -= 4;
+                SubtractNumberOfTStatesLeft(4);
                 break;
             case 0x4D://LD B,IXL*
                 if (IRindex == IndexRegistryEnum.IX)
                     C = IXL;
                 else
                     C = IYL;
-                NumberOfTStatesLeft -= 4;
+                SubtractNumberOfTStatesLeft(4);
                 break;
             //D Register
             case 0x56:		//LD D,(IX+d)
                 D = ReadByteFromMemory(IndexRegistry[index] + d);
-                NumberOfTStatesLeft -= 19;
+                SubtractNumberOfTStatesLeft(19);
                 break;
             case 0x54:		//LD D,IXH*
                 if (IRindex == IndexRegistryEnum.IX)
                     D = IXH;
                 else
                     D = IYH;
-                NumberOfTStatesLeft -= 4;
+                SubtractNumberOfTStatesLeft(4);
                 break;
             case 0x55://LD D,IXL*
                 if (IRindex == IndexRegistryEnum.IX)
                     D = IXL;
                 else
                     D = IYL;
-                NumberOfTStatesLeft -= 4;
+                SubtractNumberOfTStatesLeft(4);
                 break;
             //E Register
             case 0x5E:		//LD E,(IX+d)
                 E = ReadByteFromMemory(IndexRegistry[index] + d);
-                NumberOfTStatesLeft -= 19;
+                SubtractNumberOfTStatesLeft(19);
                 break;
             case 0x5C:		 //LD D,IXH*
                 if (IRindex == IndexRegistryEnum.IX)
                     E = IXH;
                 else
                     E = IYH;
-                NumberOfTStatesLeft -= 4;
+                SubtractNumberOfTStatesLeft(4);
                 break;
             case 0x5D://LD E,IXL*
                 if (IRindex == IndexRegistryEnum.IX)
                     E = IXL;
                 else
                     E = IYL;
-                NumberOfTStatesLeft -= 4;
+                SubtractNumberOfTStatesLeft(4);
                 break;
             //H Register
             case 0x66:		//LD H,(IX+d)
                 H = ReadByteFromMemory(IndexRegistry[index] + d);
-                NumberOfTStatesLeft -= 19;
+                SubtractNumberOfTStatesLeft(19);
                 break;
             case 0x67://LD IXH,A*   
                 if (IRindex == IndexRegistryEnum.IX)
                     IXH = A;
                 else
                     IYH = A;
-                NumberOfTStatesLeft -= 4;
+                SubtractNumberOfTStatesLeft(4);
                 break;
             case 0x60:		//LD IXH,B*
                 if (IRindex == IndexRegistryEnum.IX)
                     IXH = B;
                 else
                     IYH = B;
-                NumberOfTStatesLeft -= 4;
+                SubtractNumberOfTStatesLeft(4);
                 break;
             case 0x61:		//LD IXH,C*
                 if (IRindex == IndexRegistryEnum.IX)
                     IXH = C;
                 else
                     IYH = C;
-                NumberOfTStatesLeft -= 4;
+                SubtractNumberOfTStatesLeft(4);
                 break;
             case 0x62:		//LD IXH,D*
                 if (IRindex == IndexRegistryEnum.IX)
                     IXH = D;
                 else
                     IYH = D;
-                NumberOfTStatesLeft -= 4;
+                SubtractNumberOfTStatesLeft(4);
                 break;
             case 0x63:		//LD IXH,E*
                 if (IRindex == IndexRegistryEnum.IX)
                     IXH = E;
                 else
                     IYH = E;
-                NumberOfTStatesLeft -= 4;
+                SubtractNumberOfTStatesLeft(4);
                 break;
             case 0x64:		//LD IXYH,IYXH*
-                NumberOfTStatesLeft -= 4;
+                SubtractNumberOfTStatesLeft(4);
                 break;
             case 0x65://LD IXH,IXL*
                 if (IRindex == IndexRegistryEnum.IX)
                     IXH = IXL;
                 else
                     IYH = IYL;
-                NumberOfTStatesLeft -= 4;
+                SubtractNumberOfTStatesLeft(4);
                 break;
             case 0x26://LD IXH,n*
                 if (IRindex == IndexRegistryEnum.IX)
                     IXH = GetNextPCByte();
                 else
                     IYH = GetNextPCByte();
-                NumberOfTStatesLeft -= 4;
+                SubtractNumberOfTStatesLeft(4);
                 break;
             //L Register
             case 0x6E:		//LD L,(IX+d)
                 L = ReadByteFromMemory(IndexRegistry[index] + d);
-                NumberOfTStatesLeft -= 19;
+                SubtractNumberOfTStatesLeft(19);
                 break;
             case 0x6F://LD IXL,A*
                 if (IRindex == IndexRegistryEnum.IX)
                     IXL = A;
                 else
                     IYL = A;
-                NumberOfTStatesLeft -= 4;
+                SubtractNumberOfTStatesLeft(4);
                 break;
             case 0x68:		//LD IXL,B*
                 if (IRindex == IndexRegistryEnum.IX)
                     IXL = B;
                 else
                     IYL = B;
-                NumberOfTStatesLeft -= 4;
+                SubtractNumberOfTStatesLeft(4);
                 break;
             case 0x69:		//LD IXL,C*
                 if (IRindex == IndexRegistryEnum.IX)
                     IXL = C;
                 else
                     IYL = C;
-                NumberOfTStatesLeft -= 4;
+                SubtractNumberOfTStatesLeft(4);
                 break;
             case 0x6A:		//LD IXL,D*
                 if (IRindex == IndexRegistryEnum.IX)
                     IXL = D;
                 else
                     IYL = D;
-                NumberOfTStatesLeft -= 4;
+                SubtractNumberOfTStatesLeft(4);
                 break;
             case 0x6B:		//LD IXL,E*
                 if (IRindex == IndexRegistryEnum.IX)
                     IXL = E;
                 else
                     IYL = E;
-                NumberOfTStatesLeft -= 4;
+                SubtractNumberOfTStatesLeft(4);
                 break;
             case 0x6C:		//LD IXL,IXH*
                 if (IRindex == IndexRegistryEnum.IX)
                     IXL = IXH;
                 else
                     IYL = IYH;
-                NumberOfTStatesLeft -= 4;
+                SubtractNumberOfTStatesLeft(4);
                 break;
             case 0x6D://LD IXL,IXL*                    
-                NumberOfTStatesLeft -= 4;
+                SubtractNumberOfTStatesLeft(4);
                 break;
             case 0x2E://LD IXL,n*
                 if (IRindex == IndexRegistryEnum.IX)
                     IXL = GetNextPCByte();
                 else
                     IYL = GetNextPCByte();
-                NumberOfTStatesLeft -= 4;
+                SubtractNumberOfTStatesLeft(4);
                 break;
             case 0xF9://LD SP,IX
                 SP = IndexRegistry[index];
-                NumberOfTStatesLeft -= 10;
+                SubtractNumberOfTStatesLeft(10);
                 break;
             case 0xB6://OR (IX+d)
                 OR(ReadByteFromMemory(IndexRegistry[index] + d), 7);
@@ -991,11 +991,11 @@ public partial class Z80
                 break;
             case 0xE1:		//POP IX
                 IndexRegistry[index] = POP();
-                NumberOfTStatesLeft -= 14;
+                SubtractNumberOfTStatesLeft(14);
                 break;
             case 0xE5:		//PUSH IX
                 PUSH(IndexRegistry[index]);
-                NumberOfTStatesLeft -= 15;
+                SubtractNumberOfTStatesLeft(15);
                 break;
             case 0x9E:     //SBC A,(IX+d)
                 A = SBC8(ReadByteFromMemory(IndexRegistry[index] + d), 19);
