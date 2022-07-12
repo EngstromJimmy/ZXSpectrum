@@ -28,6 +28,10 @@ public abstract partial class Z80
         }
     }
 
+    public virtual void TstateChange(int diff)
+    {
+    }
+
     #region Ports
     //Override these
     public virtual int In(int port)
@@ -427,7 +431,13 @@ public abstract partial class Z80
     //Stack Pointer
     public int SP = 0x10000;
     protected int opcode = 0;
-    public int NumberOfTStatesLeft = 0;
+    protected int _numberOfTStatesLeft;
+    int diff = 0;
+    public void SubtractNumberOfTStatesLeft(int tstates = 0)
+    {
+        _numberOfTStatesLeft -= tstates;
+        TstateChange(tstates);
+    }
     public bool[] Parity = new bool[256];
 
     protected int _EndTstates2 = 0;
@@ -435,7 +445,7 @@ public abstract partial class Z80
     {
         get
         {
-            return _EndTstates2 + (NumberOfTStatesLeft * -1);
+            return _EndTstates2 + (_numberOfTStatesLeft * -1);
         }
     }
     //Interupts and memory
@@ -465,7 +475,7 @@ public abstract partial class Z80
     {
         //            _R += t;
         _R = (byte)(((_R + 1) & 0x7F) | (_R & 0x80));
-        //NumberOfTStatesLeft -= 1;
+        //SubtractNumberOfTStatesLeft( 1;
     }
 
     public void Reset()
@@ -497,7 +507,7 @@ public abstract partial class Z80
         IFF = false;
         IFF2 = false;
         IM = 0;
-        NumberOfTStatesLeft = 0;
+        _numberOfTStatesLeft = 0;
         this.Out(254, 5, 0); //Border Color
 
         //Clear Memory
@@ -555,15 +565,15 @@ public abstract partial class Z80
     public virtual void DoIntructions(int numberOfTStates, Func<Z80, int> gameSpecificFunc)
     {
         NumberOfTstates = numberOfTStates;
-        NumberOfTStatesLeft += numberOfTStates;
+        _numberOfTStatesLeft += numberOfTStates;
         _EndTstates2 = numberOfTStates;
         while (true)
         {
 
-            if (interruptTriggered(NumberOfTStatesLeft))
+            if (interruptTriggered(_numberOfTStatesLeft))
             {
                 //NumberOfTStatesLeft += (NumberOfTStates - interrupt());
-                NumberOfTStatesLeft -= interrupt();
+                SubtractNumberOfTStatesLeft(interrupt());
                 break;
             }
 
@@ -572,7 +582,7 @@ public abstract partial class Z80
             NextOpcode();
             if (gameSpecificFunc != null)
             {
-                NumberOfTStatesLeft -= gameSpecificFunc(this);
+                SubtractNumberOfTStatesLeft(gameSpecificFunc(this));
             }
 
             switch (opcode)

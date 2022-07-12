@@ -30,33 +30,33 @@ public partial class Z80
             case 0x46:      //IM0
             case 0x66:      //IM0
                 IM = 0;
-                NumberOfTStatesLeft -= 8;
+                SubtractNumberOfTStatesLeft(8);
                 break;
             case 0x56:     //IM 1
             case 0x76:     //IM 1*
                 IM = 1;
-                NumberOfTStatesLeft -= 8;
+                SubtractNumberOfTStatesLeft(8);
                 break;
             case 0x5E:  //IM 2
             case 0x7E: //IM 2*
                 IM = 2;
-                NumberOfTStatesLeft -= 8;
+                SubtractNumberOfTStatesLeft(8);
                 break;
             case 0x63:  //LD (nn),HL
                 WriteWordToMemory(GetNextPCWord(), HL);
-                NumberOfTStatesLeft -= 16;
+                SubtractNumberOfTStatesLeft(16);
                 break;
             case 0x6B:  //LD HL,(nn)
                 HL = ReadWordFromMemory(GetNextPCWord());
-                NumberOfTStatesLeft -= 20;
+                SubtractNumberOfTStatesLeft(20);
                 break;
             case 0x73:  //LD (nn),SP
                 WriteWordToMemory(GetNextPCWord(), SP);
-                NumberOfTStatesLeft -= 16;
+                SubtractNumberOfTStatesLeft(16);
                 break;
             case 0x7B:  //LD SP,(nn)
                 SP = ReadWordFromMemory(GetNextPCWord());
-                NumberOfTStatesLeft -= 20;
+                SubtractNumberOfTStatesLeft(20);
                 break;
             case 0xA2:     //INI
                 INI(16); break;
@@ -85,9 +85,9 @@ public partial class Z80
             case 0x5F:      //LD A,R
                 LDAR(); break;
             case 0x47:     //LD I,A
-                I = A; NumberOfTStatesLeft -= 9; break;
+                I = A; SubtractNumberOfTStatesLeft(9); break;
             case 0x4F:     //LD R,A
-                R = A; NumberOfTStatesLeft -= 9; break;
+                R = A; SubtractNumberOfTStatesLeft(9); break;
             case 0xA8:    //LDD
                 LDD(); break;
             case 0xB8:  //LDDR
@@ -110,9 +110,9 @@ public partial class Z80
             case 0xB3:
                 OTIR(); break;
             case 0x71:      //OUT (C),0*
-                NumberOfTStatesLeft -= 8;
-                Out(BC, 0, NumberOfTstates - Math.Abs(NumberOfTStatesLeft));
-                NumberOfTStatesLeft -= 4;
+                SubtractNumberOfTStatesLeft(8);
+                Out(BC, 0, NumberOfTstates - Math.Abs(_numberOfTStatesLeft));
+                SubtractNumberOfTStatesLeft(4);
                 break;
             case 0x79:      //OUT (C),A
             case 0x41:      //OUT (C),B
@@ -121,9 +121,9 @@ public partial class Z80
             case 0x59:      //OUT (C),E
             case 0x61:      //OUT (C),H
             case 0x69:      //OUT (C),L
-                NumberOfTStatesLeft -= 8;
-                Out(BC, RegisterValueFromOP(3), NumberOfTstates - Math.Abs(NumberOfTStatesLeft));
-                NumberOfTStatesLeft -= 4; //12
+                SubtractNumberOfTStatesLeft(8);
+                Out(BC, RegisterValueFromOP(3), NumberOfTstates - Math.Abs(_numberOfTStatesLeft));
+                SubtractNumberOfTStatesLeft(4); //12
                 break;
             case 0xAB:  //OUTD
                 OUTD(); break;
@@ -163,19 +163,19 @@ public partial class Z80
                 break;
             case 0x53:          //LD (nn),DE
                 WriteWordToMemory(GetNextPCWord(), DE);
-                NumberOfTStatesLeft -= 20;
+                SubtractNumberOfTStatesLeft(20);
                 break;
             case 0x43:   //LD (nn),BC
                 WriteWordToMemory(GetNextPCWord(), BC);
-                NumberOfTStatesLeft -= 20;
+                SubtractNumberOfTStatesLeft(20);
                 break;
             case 0x4B:     //LD BC,(nn)
                 BC = ReadWordFromMemory(GetNextPCWord());
-                NumberOfTStatesLeft -= 10;
+                SubtractNumberOfTStatesLeft(10);
                 break;
             case 0x5B:  //LD DE,(nn)
                 DE = ReadWordFromMemory(GetNextPCWord());
-                NumberOfTStatesLeft -= 10;
+                SubtractNumberOfTStatesLeft(10);
                 break;
             case 0xB2: //INIR
                 INIR();

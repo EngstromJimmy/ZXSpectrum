@@ -33,7 +33,7 @@ public partial class Z80
 
     private int RES(int bit, int value, int tstates)
     {
-        NumberOfTStatesLeft -= tstates;
+        SubtractNumberOfTStatesLeft(tstates);
         return value & ~bitArray[bit];
     }
 
@@ -61,7 +61,7 @@ public partial class Z80
         fN = false;
         fC = rlc;
 
-        NumberOfTStatesLeft -= tstates;
+        SubtractNumberOfTStatesLeft(tstates);
         return (value);
     }
 
@@ -86,7 +86,7 @@ public partial class Z80
         fN = false;
         fH = false;
         fC = c;
-        NumberOfTStatesLeft -= 4;
+        SubtractNumberOfTStatesLeft(4);
         A = rlcavalue;
     }
 
@@ -110,7 +110,7 @@ public partial class Z80
         fH = ((((sbc8a & 0x0f) - (b & 0x0f) - sbc8c) & F_H) != 0);
         fN = true;
 
-        NumberOfTStatesLeft -= tstates;
+        SubtractNumberOfTStatesLeft(tstates);
 
         return sbc8truncated;
     }
@@ -133,7 +133,7 @@ public partial class Z80
         fH = ((((a & 0x0fff) - (b & 0x0fff) - sbc16c) & 0x1000) != 0);
         fN = true;
 
-        NumberOfTStatesLeft -= tstates;
+        SubtractNumberOfTStatesLeft(tstates);
         return sbc16truncated;
     }
 
@@ -161,7 +161,7 @@ public partial class Z80
         fN = false;
         fC = rlcc;
 
-        NumberOfTStatesLeft -= tstates;
+        SubtractNumberOfTStatesLeft(tstates);
         return value;
     }
 
@@ -187,7 +187,7 @@ public partial class Z80
         fN = false;
         fH = false;
         fC = rlac;
-        NumberOfTStatesLeft -= 4;
+        SubtractNumberOfTStatesLeft(4);
         A = rlavalue;
     }
 
@@ -214,14 +214,14 @@ public partial class Z80
         fN = false;
         fC = rrc;
 
-        NumberOfTStatesLeft -= tstates;
+        SubtractNumberOfTStatesLeft(tstates);
         return value;
     }
 
     public void Halt()
     {
-        tmphaltsToInterrupt = (((NumberOfTStatesLeft - 1) / 4) + 1);
-        NumberOfTStatesLeft -= (tmphaltsToInterrupt * 4);
+        tmphaltsToInterrupt = (((_numberOfTStatesLeft - 1) / 4) + 1);
+        SubtractNumberOfTStatesLeft((tmphaltsToInterrupt * 4));
         Refresh(tmphaltsToInterrupt - 1);
     }
 
@@ -229,7 +229,7 @@ public partial class Z80
     {
         PUSH(PC);
         PC = position;
-        NumberOfTStatesLeft -= 11;
+        SubtractNumberOfTStatesLeft(11);
     }
 
     int rrdvalue; int rrdm; int rrdq;
@@ -250,7 +250,7 @@ public partial class Z80
         fPV = Parity[rrdvalue];
         fH = false;
         fN = false;
-        NumberOfTStatesLeft -= 18;
+        SubtractNumberOfTStatesLeft(18);
         A = rrdvalue;
     }
     int rrcavalue; bool rrcac;
@@ -274,7 +274,7 @@ public partial class Z80
         fH = false;
         fC = rrcac;
 
-        NumberOfTStatesLeft -= 4;
+        SubtractNumberOfTStatesLeft(4);
         A = rrcavalue;
     }
 
@@ -301,7 +301,7 @@ public partial class Z80
         fN = false;
         fC = rrcc;
 
-        NumberOfTStatesLeft -= tstates;
+        SubtractNumberOfTStatesLeft(tstates);
         return value;
     }
 
@@ -326,7 +326,7 @@ public partial class Z80
         fH = (false);
         fC = (rrac);
 
-        NumberOfTStatesLeft -= 4;
+        SubtractNumberOfTStatesLeft(4);
         A = rravalue;
     }
     int rldm; int rldq; int rldvalue;
@@ -348,7 +348,7 @@ public partial class Z80
         fH = false;
         fN = false;
 
-        NumberOfTStatesLeft -= 18;
+        SubtractNumberOfTStatesLeft(18);
         A = rldvalue;
     }
 
@@ -367,7 +367,7 @@ public partial class Z80
         fN = false;
         fC = srac;
 
-        NumberOfTStatesLeft -= tstates;
+        SubtractNumberOfTStatesLeft(tstates);
         return value;
     }
 
@@ -386,7 +386,7 @@ public partial class Z80
     //    fH=((((a & 0x0f) - (value & 0x0f)) & F_H) != 0);
     //    fN=true;
 
-    //    NumberOfTStatesLeft -= tstates;
+    //    SubtractNumberOfTStatesLeft( tstates;
 
     //    A=truncated;
     //}
@@ -405,7 +405,7 @@ public partial class Z80
         fN = false;
         fC = false;
 
-        NumberOfTStatesLeft -= tstates;
+        SubtractNumberOfTStatesLeft(tstates);
 
         A = xornewvalue;
     }
@@ -424,7 +424,7 @@ public partial class Z80
         fH = false;
         fN = false;
         fC = srlc;
-        NumberOfTStatesLeft -= tstates;
+        SubtractNumberOfTStatesLeft(tstates);
 
         return (value);
     }
@@ -443,14 +443,14 @@ public partial class Z80
         fH = false;
         fN = false;
         fC = slac;
-        NumberOfTStatesLeft -= tstates;
+        SubtractNumberOfTStatesLeft(tstates);
 
         return value;
     }
 
     private int SET(int bit, int value, int tstates)
     {
-        NumberOfTStatesLeft -= tstates;
+        SubtractNumberOfTStatesLeft(tstates);
         return value | bitArray[bit];
     }
 
@@ -459,11 +459,11 @@ public partial class Z80
         if (condition)
         {
             PC = POP();
-            NumberOfTStatesLeft -= tstates;
+            SubtractNumberOfTStatesLeft(tstates);
         }
         else
         {
-            NumberOfTStatesLeft -= notmettstates;
+            SubtractNumberOfTStatesLeft(notmettstates);
         }
     }
 
@@ -486,8 +486,8 @@ public partial class Z80
     {
         B = DEC8(B, 0);
 
-        NumberOfTStatesLeft -= 9;
-        Out(BC, ReadByteFromMemory(HL), NumberOfTstates - Math.Abs(NumberOfTStatesLeft));
+        SubtractNumberOfTStatesLeft(9);
+        Out(BC, ReadByteFromMemory(HL), NumberOfTstates - Math.Abs(_numberOfTStatesLeft));
         HL = INC16(HL, 0);
 
         fZ = (B == 0);
@@ -504,7 +504,7 @@ public partial class Z80
         }
         fPV = Parity[(((ReadByteFromMemory(HL) + L) & 7) ^ B)];
 
-        NumberOfTStatesLeft -= 7;
+        SubtractNumberOfTStatesLeft(7);
     }
 
     int outdvalue;
@@ -513,8 +513,8 @@ public partial class Z80
         B = DEC8(B, 0);
 
         outdvalue = ReadByteFromMemory(HL);
-        NumberOfTStatesLeft -= 9;
-        Out(BC, outdvalue, NumberOfTstates - Math.Abs(NumberOfTStatesLeft));
+        SubtractNumberOfTStatesLeft(9);
+        Out(BC, outdvalue, NumberOfTstates - Math.Abs(_numberOfTStatesLeft));
         HL = DEC16(HL, 0);
 
         fZ = (B == 0);
@@ -530,16 +530,16 @@ public partial class Z80
             fC = false;
         }
         fPV = Parity[(((outdvalue + L) & 7) ^ B)];
-        NumberOfTStatesLeft -= 7;
+        SubtractNumberOfTStatesLeft(7);
     }
 
     int otirvalue;
     public void OTIR()
     {
         otirvalue = ReadByteFromMemory(HL);
-        NumberOfTStatesLeft -= 9;
+        SubtractNumberOfTStatesLeft(9);
         B = DEC8(B, 0);
-        Out(BC, otirvalue, NumberOfTstates - Math.Abs(NumberOfTStatesLeft));
+        Out(BC, otirvalue, NumberOfTstates - Math.Abs(_numberOfTStatesLeft));
         HL = INC16(HL, 0);
 
         fN = ((otirvalue >> 7) & 0x01) == 1;
@@ -558,11 +558,11 @@ public partial class Z80
         if (B != 0)
         {
             PC = (PC - 2) & 0xffff;
-            NumberOfTStatesLeft -= 12;
+            SubtractNumberOfTStatesLeft(12);
         }
         else
         {
-            NumberOfTStatesLeft -= 7;
+            SubtractNumberOfTStatesLeft(7);
         }
 
     }
@@ -570,8 +570,8 @@ public partial class Z80
     public void OTDR()
     {
         B = DEC8(B, 0);
-        NumberOfTStatesLeft -= 9;
-        Out(BC, ReadByteFromMemory(HL), NumberOfTstates - Math.Abs(NumberOfTStatesLeft));
+        SubtractNumberOfTStatesLeft(9);
+        Out(BC, ReadByteFromMemory(HL), NumberOfTstates - Math.Abs(_numberOfTStatesLeft));
         HL = DEC16(HL, 0);
 
         fZ = true;
@@ -579,11 +579,11 @@ public partial class Z80
         if (B != 0)
         {
             PC = (PC - 2) & 0xffff;
-            NumberOfTStatesLeft -= 12;
+            SubtractNumberOfTStatesLeft(12);
         }
         else
         {
-            NumberOfTStatesLeft -= 7;
+            SubtractNumberOfTStatesLeft(7);
         }
     }
 
@@ -600,13 +600,13 @@ public partial class Z80
         fZ = orvalue == 0;
         fN = false;
         fC = false;
-        NumberOfTStatesLeft -= tstates;
+        SubtractNumberOfTStatesLeft(tstates);
         A = orvalue;
     }
 
     public void NOP()
     {
-        NumberOfTStatesLeft -= 4;
+        SubtractNumberOfTStatesLeft(4);
     }
 
     int negtmp;
@@ -616,7 +616,7 @@ public partial class Z80
 
         A = 0;
         SUB(negtmp, 0);
-        NumberOfTStatesLeft -= 8;
+        SubtractNumberOfTStatesLeft(8);
     }
 
     int lddmemval; int lddn;
@@ -637,7 +637,7 @@ public partial class Z80
         f5 = ((lddn & 0x01) == 1);
         f3 = ((lddn >> 3 & 0x01) == 1);
 
-        NumberOfTStatesLeft -= 16;
+        SubtractNumberOfTStatesLeft(16);
     }
 
     int lddr_local_tstates; int lddrcount, lddrdest, lddrfrom;
@@ -682,7 +682,7 @@ public partial class Z80
         DE = lddrdest;
         HL = lddrfrom;
         BC = lddrcount;
-        NumberOfTStatesLeft -= lddr_local_tstates;
+        SubtractNumberOfTStatesLeft(lddr_local_tstates);
         //int tstates = (5 + 16 * (BC)); 
         //int tmp1 = DE; 
         //int tmp2 = HL;	// LDDR - ok
@@ -699,7 +699,7 @@ public partial class Z80
         //H = tmp2 >> 8; 
         //F &= 0xe9;
 
-        //NumberOfTStatesLeft -= tstates;
+        //SubtractNumberOfTStatesLeft( tstates;
     }
 
     int ldimemval = 0;
@@ -719,7 +719,7 @@ public partial class Z80
         f5 = ((n & 0x01) == 1);
         f3 = ((n >> 3 & 0x01) == 1);
 
-        NumberOfTStatesLeft -= 16;
+        SubtractNumberOfTStatesLeft(16);
     }
 
     int ldir_local_tstates, ldircount, ldirdest, ldirfrom;
@@ -763,7 +763,7 @@ public partial class Z80
 
             ldir_local_tstates += (21);
             Refresh(2);
-            if (interruptTriggered(NumberOfTStatesLeft - ldir_local_tstates))
+            if (interruptTriggered(_numberOfTStatesLeft - ldir_local_tstates))
             {
                 break;
             }
@@ -829,7 +829,7 @@ public partial class Z80
         L = tmp2 & 0xff;
         H = tmp2 >> 8;*/
 
-        NumberOfTStatesLeft -= ldir_local_tstates;
+        SubtractNumberOfTStatesLeft(ldir_local_tstates);
     }
 
     int ldarvalue;
@@ -845,7 +845,7 @@ public partial class Z80
         fH = false;
         fN = false;
 
-        NumberOfTStatesLeft -= 9;
+        SubtractNumberOfTStatesLeft(9);
         A = ldarvalue;
     }
     int ldaivalue;
@@ -861,7 +861,7 @@ public partial class Z80
         fH = false;
         fN = false;
 
-        NumberOfTStatesLeft -= 9;
+        SubtractNumberOfTStatesLeft(9);
 
         A = ldaivalue;
     }
@@ -869,7 +869,7 @@ public partial class Z80
     {
         if (argument)
             PC = position;
-        NumberOfTStatesLeft -= tstates;
+        SubtractNumberOfTStatesLeft(tstates);
     }
 
     private int Sign(int nn)
@@ -883,7 +883,7 @@ public partial class Z80
         {
             PC = (PC + Sign(position)) & 0xFFFF;
         }
-        NumberOfTStatesLeft -= tstates;
+        SubtractNumberOfTStatesLeft(tstates);
     }
 
     int inbcvalue;
@@ -891,7 +891,7 @@ public partial class Z80
     {
         inbcvalue = In(BC);
 
-        NumberOfTStatesLeft -= tstates;
+        SubtractNumberOfTStatesLeft(tstates);
 
         fZ = (inbcvalue == 0);
         fS = ((inbcvalue & F_S) != 0);
@@ -911,10 +911,10 @@ public partial class Z80
         if (B != 0)  //If B is not zero Do instruction again
         {
             PC = PC - 2;
-            NumberOfTStatesLeft -= 21;
+            SubtractNumberOfTStatesLeft(21);
         }
         else
-            NumberOfTStatesLeft -= 16;
+            SubtractNumberOfTStatesLeft(16);
     }
 
     int indb;
@@ -938,7 +938,7 @@ public partial class Z80
             fH = false;
         }
         fPV = Parity[(((ReadByteFromMemory(HL) + ((C - 1) & 255)) & 7) ^ B)];
-        NumberOfTStatesLeft -= tstates;
+        SubtractNumberOfTStatesLeft(tstates);
     }
 
     int inib, inival;
@@ -963,7 +963,7 @@ public partial class Z80
             fH = false;
         }
         fPV = Parity[(((inival + ((C + 1) & 255)) & 7) ^ B)];
-        NumberOfTStatesLeft -= tstates;
+        SubtractNumberOfTStatesLeft(tstates);
     }
 
     public void INIR()
@@ -971,12 +971,12 @@ public partial class Z80
         INI(0);
         if (B != 0)
         {
-            NumberOfTStatesLeft -= 21;
+            SubtractNumberOfTStatesLeft(21);
             PC = PC - 2;
         }
         else
         {
-            NumberOfTStatesLeft -= 16;
+            SubtractNumberOfTStatesLeft(16);
         }
 
     }
@@ -1001,7 +1001,7 @@ public partial class Z80
         fH = ((((a & 0x0f) + (b & 0x0f) + addadc8c) & F_H) != 0);
         fN = false;
 
-        NumberOfTStatesLeft -= tStates;
+        SubtractNumberOfTStatesLeft(tStates);
 
         return addadc8truncated;
     }
@@ -1024,7 +1024,7 @@ public partial class Z80
             fPV = ((a ^ ~b) & (a ^ addadc16truncated) & 0x8000) != 0;
             fZ = (addadc16truncated) == 0;
         }
-        NumberOfTStatesLeft -= tStates;
+        SubtractNumberOfTStatesLeft(tStates);
         return (addadc16truncated);
     }
 
@@ -1042,7 +1042,7 @@ public partial class Z80
         fN = false;
         fC = false;
 
-        NumberOfTStatesLeft -= tStates;
+        SubtractNumberOfTStatesLeft(tStates);
         return and8newvalue;
     }
 
@@ -1061,7 +1061,7 @@ public partial class Z80
         //fZ = !bitIsSet;
         //fPV = !bitIsSet;        
 
-        NumberOfTStatesLeft -= tStates;
+        SubtractNumberOfTStatesLeft(tStates);
         //fN=false;
         //fH=true;
         //f3=((regvalue & F_3) != 0);
@@ -1088,7 +1088,7 @@ public partial class Z80
         fS = ((bit == 7) ? bitixydbitIsSet : false);
         fZ = !bitixydbitIsSet;
         fPV = !bitixydbitIsSet;
-        NumberOfTStatesLeft -= tStates;
+        SubtractNumberOfTStatesLeft(tStates);
     }
 
     int callnnw;
@@ -1097,7 +1097,7 @@ public partial class Z80
         callnnw = GetNextPCWord();
         PCToStack();
         PC = callnnw;
-        NumberOfTStatesLeft -= 17;
+        SubtractNumberOfTStatesLeft(17);
     }
 
     int sllc;
@@ -1114,7 +1114,7 @@ public partial class Z80
         fH = false;
         fN = false;
         fC = (sllc == 1);
-        NumberOfTStatesLeft -= tstates;
+        SubtractNumberOfTStatesLeft(tstates);
         return value;
     }
 
@@ -1139,13 +1139,13 @@ public partial class Z80
         fH = ((((cpa & 0x0f) - (value & 0x0f)) & F_H) != 0);
         fPV = (((cpa ^ value) & (cpa ^ cpnewvalue) & 0x80) != 0);
 
-        NumberOfTStatesLeft -= tstates;
+        SubtractNumberOfTStatesLeft(tstates);
     }
 
     int cp2sub, cp2truncated;
     public void CP2(int s, int tStates)
     {
-        NumberOfTStatesLeft -= tStates;
+        SubtractNumberOfTStatesLeft(tStates);
         cp2sub = A - s;
         cp2truncated = cp2sub & 0xff;
 
@@ -1167,12 +1167,12 @@ public partial class Z80
             callw = GetNextPCWord();
             PCToStack();
             PC = callw;
-            NumberOfTStatesLeft -= 17;
+            SubtractNumberOfTStatesLeft(17);
         }
         else
         {
             PC = ((PC + 2) & 0xffff);
-            NumberOfTStatesLeft -= 10;
+            SubtractNumberOfTStatesLeft(10);
         }
     }
 
@@ -1185,7 +1185,7 @@ public partial class Z80
         f5 = ((A & F_5) != 0);
         fN = false;
         fC = !fC;
-        NumberOfTStatesLeft -= 4;
+        SubtractNumberOfTStatesLeft(4);
     }
 
     bool cpdc, cpdpv;
@@ -1210,7 +1210,7 @@ public partial class Z80
         f3 = ((cpdn >> 3 & 0x01) == 1);
         //-----------------------
 
-        NumberOfTStatesLeft -= 16;
+        SubtractNumberOfTStatesLeft(16);
     }
     bool cpic; int cpimemvalue; int cpin;
     public void CPI()
@@ -1225,7 +1225,7 @@ public partial class Z80
         f3 = ((cpin >> 3 & 0x01) == 1);
         fPV = (BC != 0);
         fC = cpic;
-        NumberOfTStatesLeft -= 16;
+        SubtractNumberOfTStatesLeft(16);
     }
 
     bool cpirc; int cpirvalue; int cpirn; bool cpirpv;
@@ -1250,17 +1250,17 @@ public partial class Z80
         if (BC != 0 && A != cpirvalue)
         {   //Repeat until BC ==0
             PC = ((PC - 2) & 0xffff);
-            NumberOfTStatesLeft -= 21;
+            SubtractNumberOfTStatesLeft(21);
         }
         else
         {
-            NumberOfTStatesLeft -= 16;
+            SubtractNumberOfTStatesLeft(16);
         }
     }
 
     private int INC16(int value, int tStates)
     {
-        NumberOfTStatesLeft -= tStates;
+        SubtractNumberOfTStatesLeft(tStates);
         return (value + 1) & 0xffff;
     }
 
@@ -1279,7 +1279,7 @@ public partial class Z80
         fH = inc8h;
         fN = false;
 
-        NumberOfTStatesLeft -= tStates;
+        SubtractNumberOfTStatesLeft(tStates);
         return value;
     }
 
@@ -1291,7 +1291,7 @@ public partial class Z80
     /// <returns>Decremented value</returns>
     private int DEC16(int value, int tStates)
     {
-        NumberOfTStatesLeft -= tStates;
+        SubtractNumberOfTStatesLeft(tStates);
         return (value - 1) & 0xffff;
     }
 
@@ -1304,7 +1304,7 @@ public partial class Z80
     /// <returns>Decremented value</returns>
     private int DEC8(int value, int tStates)
     {
-        NumberOfTStatesLeft -= tStates;
+        SubtractNumberOfTStatesLeft(tStates);
         dec8pv = (value == 0x80);
         dev8h = (((value & 0x0f) - 1) & F_H) != 0;
         value = (value - 1) & 0xff;
@@ -1355,11 +1355,11 @@ public partial class Z80
         {
             //Repeat until BC==0
             PC = ((PC - 2) & 0xffff);
-            NumberOfTStatesLeft -= 21;
+            SubtractNumberOfTStatesLeft(21);
         }
         else
         {
-            NumberOfTStatesLeft -= 16;
+            SubtractNumberOfTStatesLeft(16);
         }
     }
 
@@ -1368,7 +1368,7 @@ public partial class Z80
     /// </summary>
     public void CPL()
     {
-        NumberOfTStatesLeft -= 4;
+        SubtractNumberOfTStatesLeft(4);
         int comp = A ^ 0xff;
 
         f3 = (comp & F_3) != 0;
@@ -1413,7 +1413,7 @@ public partial class Z80
 
         fC = daac;
         fPV = Parity[A];
-        NumberOfTStatesLeft -= 4;
+        SubtractNumberOfTStatesLeft(4);
     }
 
     int suba, subsubtracted, subtruncated;
@@ -1433,7 +1433,7 @@ public partial class Z80
         fN = true;
 
         A = subtruncated;
-        NumberOfTStatesLeft -= tStates;
+        SubtractNumberOfTStatesLeft(tStates);
     }
 
     public void DNJZ()
@@ -1446,25 +1446,25 @@ public partial class Z80
         //{
         //    int d = GetNextPCByte();
         //    PC = (PC + d) & 0xffff;
-        //    NumberOfTStatesLeft -= 13;
+        //    SubtractNumberOfTStatesLeft( 13;
         //}
         //else
         //{
         //    PC = INC16(PC, 0);
-        //    NumberOfTStatesLeft -= 8;
+        //    SubtractNumberOfTStatesLeft( 8;
         //}
         //F = f;
 
         B = (B - 1) & 0xff;
         if (B != 0)
         {
-            NumberOfTStatesLeft -= 13;
+            SubtractNumberOfTStatesLeft(13);
             PC += Sign(GetNextPCByte());
             PC++;
         }
         else
         {
-            NumberOfTStatesLeft -= 8;
+            SubtractNumberOfTStatesLeft(8);
             PC++;
         }
     }
@@ -1484,7 +1484,7 @@ public partial class Z80
         HL = HLPrim;
         HLPrim = exxtmp;
 
-        NumberOfTStatesLeft -= 4;
+        SubtractNumberOfTStatesLeft(4);
     }
     #endregion
 
