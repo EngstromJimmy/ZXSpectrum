@@ -73,7 +73,7 @@ public class ZXSpectrum : Zilog.Z80
         retvalue = 0xFF;
         for (i = 0; i < InputHardware.Count; i++)
         {
-            retvalue &= InputHardware[i].Input(port, NumberOfTstates);
+            retvalue &= InputHardware[i].Input(port, NumberOfTstates - Math.Abs(NumberOfTStatesLeft));
         }
         return retvalue;
     }

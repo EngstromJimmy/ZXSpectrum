@@ -10,6 +10,7 @@ using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Timers;
+using ZXBox.Core.Hardware.Input;
 using ZXBox.Hardware.Input;
 using ZXBox.Hardware.Input.Joystick;
 using ZXBox.Hardware.Output;
@@ -23,9 +24,10 @@ namespace ZXBox.Blazor.Pages
         public System.Timers.Timer gameLoop;
         int flashcounter = 16;
         bool flash = false;
-        JavaScriptKeyboard Keyboard = new JavaScriptKeyboard();
+        JavaScriptKeyboard Keyboard = new();
         Kempston kempston;
         Beeper<byte> beeper;
+        public TapePlayer taperPlayer = new();
 
         [Inject]
         Toolbelt.Blazor.Gamepad.GamepadList GamePadList { get; set; }
@@ -49,10 +51,10 @@ namespace ZXBox.Blazor.Pages
         {
             speccy = GetZXSpectrum(rom);
             speccy.InputHardware.Add(Keyboard);
-
+            speccy.InputHardware.Add(taperPlayer);
             kempston = new Kempston();
             speccy.InputHardware.Add(kempston);
-            //48000 samples per second, 50 frames per second (20ms per frame)
+            //48000 samples per second, 50 frames per second (20ms per frame) Mono
             beeper = new Beeper<byte>(0, 127, 48000 / 50, 1);
             speccy.OutputHardware.Add(beeper);
             mono = JSRuntime as WebAssemblyJSRuntime;
@@ -62,15 +64,25 @@ namespace ZXBox.Blazor.Pages
 
         public async Task HandleFileSelected(InputFileChangeEventArgs args)
         {
-            var file = args.File;
+            if (args.File.Name.ToLower().EndsWith(".tap"))
+            {
+                //Load the tape
+                var file = args.File;
+                var ms = new MemoryStream();
+                await file.OpenReadStream().CopyToAsync(ms);
+                taperPlayer.LoadTape(ms.ToArray());
+            }
+            else
+            {
+                var file = args.File;
+                var ms = new MemoryStream();
 
-            var ms = new MemoryStream();
+                await file.OpenReadStream().CopyToAsync(ms);
 
-            await file.OpenReadStream().CopyToAsync(ms);
-
-            var handler = FileFormatFactory.GetSnapShotHandler(file.Name);
-            var bytes = ms.ToArray();
-            handler.LoadSnapshot(bytes, speccy);
+                var handler = FileFormatFactory.GetSnapShotHandler(file.Name);
+                var bytes = ms.ToArray();
+                handler.LoadSnapshot(bytes, speccy);
+            }
         }
         [Inject]
         HttpClient httpClient { get; set; }
