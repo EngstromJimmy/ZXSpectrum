@@ -16,8 +16,8 @@
   <ItemGroup>
     <Compile Remove="Hardware\Input\Joystick\Kempston.cs" />
     <Compile Remove="Hardware\Input\Keyboard.cs" />
-    <Compile Remove="Z80\Z80DDPrefixInstructions.cs" />
-    <Compile Remove="Z80\Z80FDPrefixInstructions.cs" />
+    <Compile Remove="Cpus\Z80\Z80DDPrefixInstructions.cs" />
+    <Compile Remove="Cpus\Z80\Z80FDPrefixInstructions.cs" />
   </ItemGroup>
 
   <ItemGroup>

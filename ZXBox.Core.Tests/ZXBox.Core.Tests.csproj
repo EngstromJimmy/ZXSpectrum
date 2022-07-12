@@ -17,6 +17,12 @@
     <ProjectReference Include="..\ZXBox.Core\ZXBox.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="Binaries\FROGGERS.TAP">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
   
 
 
