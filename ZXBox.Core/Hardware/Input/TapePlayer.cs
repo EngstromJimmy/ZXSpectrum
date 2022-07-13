@@ -24,7 +24,6 @@ namespace ZXBox.Core.Hardware.Input
             bool signal;
             foreach (var block in tf.Blocks)
             {
-                EarValues.Add(new EarValue() { Ear = ear, TState = 0, Pulse = PulseTypeEnum.Pilot });
                 for (int pilotcount = 0; pilotcount < (block.Data[0] < 128 ? 8063 : 3223); pilotcount++)
                 {
                     ear = !ear;
@@ -60,7 +59,10 @@ namespace ZXBox.Core.Hardware.Input
                     }
                 }
                 ear = !ear;
+                tstate += 3500;
+                EarValues.Add(new() { Ear = ear, TState = tstate, Pulse = PulseTypeEnum.Pause });
                 //Pause
+                ear = false;
                 tstate += 3500 * 1000; //1second;
                 EarValues.Add(new() { Ear = ear, TState = tstate, Pulse = PulseTypeEnum.Pause });
 
