@@ -59,7 +59,7 @@ namespace ZXBox.Core.Hardware.Input
                         EarValues.Add(new() { Ear = ear, TState = tstate, Pulse = PulseTypeEnum.Data });
                     }
                 }
-                //ear = !ear;
+                ear = !ear;
                 //Pause
                 tstate += 3500 * 1000; //1second;
                 EarValues.Add(new() { Ear = ear, TState = tstate, Pulse = PulseTypeEnum.Pause });
