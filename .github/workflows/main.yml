@@ -1,6 +1,6 @@
 # This is a basic workflow to help you get started with Actions
 
-name: Deploy sample project
+name: AOT Compile ZXSpectrum
 env:
   PUBLISH_DIR: Platforms/ZXBox.Blazor/bin/Release/net7.0/publish/wwwroot
 
@@ -8,7 +8,7 @@ env:
 on:
   # Triggers the workflow on push or pull request events but only for the master branch
   push:
-    branches: [ mail ]
+    branches: [ main ]
   pull_request:
     branches: [ main ]
 
