@@ -41,7 +41,7 @@ namespace ZXBox.Core.Hardware.Input
                 ear = !ear;
                 tstate += 735;
                 EarValues.Add(new EarValue() { Ear = ear, TState = tstate, Pulse = PulseTypeEnum.Sync2 });
-
+                b = 0;
                 for (; b < block.Data.Length; b++)
                 {
                     for (bitmask = 0x80; bitmask > 0; bitmask = bitmask >> 1)
