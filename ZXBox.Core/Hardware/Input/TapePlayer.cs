@@ -43,16 +43,22 @@ namespace ZXBox.Core.Hardware.Input
                 EarValues.Add(new EarValue() { Ear = ear, TState = tstate, Pulse = PulseTypeEnum.Sync2 });
 
                 BitArray bits = new BitArray(block.Data);
-                for (int i = 0; i < bits.Length; i++)
+                foreach (var b in block.Data)
                 {
-                    //Add two pulses
-                    ear = !ear;
-                    tstate += bits[i] ? 1710 : 855;
-                    EarValues.Add(new() { Ear = ear, TState = tstate, Pulse = PulseTypeEnum.Data });
 
-                    ear = !ear;
-                    tstate += bits[i] ? 1710 : 855;
-                    EarValues.Add(new() { Ear = ear, TState = tstate, Pulse = PulseTypeEnum.Data });
+                    for (int bitmask = 0x80; bitmask > 0; bitmask = bitmask >> 1)
+                    {
+                        var signal = (b & bitmask) == bitmask;
+
+                        //Add two pulses
+                        ear = !ear;
+                        tstate += signal ? 1710 : 855;
+                        EarValues.Add(new() { Ear = ear, TState = tstate, Pulse = PulseTypeEnum.Data });
+
+                        ear = !ear;
+                        tstate += signal ? 1710 : 855;
+                        EarValues.Add(new() { Ear = ear, TState = tstate, Pulse = PulseTypeEnum.Data });
+                    }
                 }
                 //ear = !ear;
                 //Pause
