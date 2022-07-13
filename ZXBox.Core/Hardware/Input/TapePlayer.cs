@@ -114,7 +114,7 @@ namespace ZXBox.Core.Hardware.Input
                         firstread = false;
                     }
 
-                    for (; tapeposition < EarValues.Count;)
+                    for (; tapeposition < EarValues.Count - 1;)
                     {
                         if (EarValues[tapeposition + 1].TState < currentTstate)
                         {
