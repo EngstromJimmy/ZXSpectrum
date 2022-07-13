@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections.Generic;
 using ZXBox.Core.Tape;
 using ZXBox.Hardware.Interfaces;
 
@@ -21,6 +19,9 @@ namespace ZXBox.Core.Hardware.Input
             tf.ReadFile(data);
             bool ear = false;
             long tstate = 0;
+            long b = 0;
+            int bitmask;
+            bool signal;
             foreach (var block in tf.Blocks)
             {
                 EarValues.Add(new EarValue() { Ear = ear, TState = 0, Pulse = PulseTypeEnum.Pilot });
@@ -42,13 +43,11 @@ namespace ZXBox.Core.Hardware.Input
                 tstate += 735;
                 EarValues.Add(new EarValue() { Ear = ear, TState = tstate, Pulse = PulseTypeEnum.Sync2 });
 
-                BitArray bits = new BitArray(block.Data);
-                foreach (var b in block.Data)
+                for (; b < block.Data.Length; b++)
                 {
-
-                    for (int bitmask = 0x80; bitmask > 0; bitmask = bitmask >> 1)
+                    for (bitmask = 0x80; bitmask > 0; bitmask = bitmask >> 1)
                     {
-                        var signal = (b & bitmask) == bitmask;
+                        signal = (block.Data[b] & bitmask) == bitmask;
 
                         //Add two pulses
                         ear = !ear;
@@ -99,20 +98,11 @@ namespace ZXBox.Core.Hardware.Input
         int returnvalue = 0xff;
         EarValue ear;
         bool firstread = true;
+        int tapeposition = 0;
         public int Input(int Port, int tact)
         {
             if (IsPlaying)
             {
-                //if (tact < lastTstate)
-                //{
-                //    diff = Math.Abs((69888 - lastTstate) - tact);
-                //}
-                //else
-                //{
-                //    diff = Math.Abs(lastTstate - tact);
-                //}
-                //lastTstate = tact;
-                //currentTstate += diff;
                 returnvalue = 0xff;
                 if ((Port & 0xff) == 0xfe)
                 {
@@ -121,7 +111,20 @@ namespace ZXBox.Core.Hardware.Input
                         currentTstate = 0;
                         firstread = false;
                     }
-                    ear = EarValues.TakeWhile(e => e.TState <= currentTstate).LastOrDefault();
+
+                    for (; tapeposition < EarValues.Count;)
+                    {
+                        if (EarValues[tapeposition + 1].TState < currentTstate)
+                        {
+                            tapeposition++;
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+
+                    ear = EarValues[tapeposition];
                     if (ear != null)
                     {
                         if (ear.Pulse == PulseTypeEnum.Stop)
