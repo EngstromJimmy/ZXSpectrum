@@ -203,6 +203,7 @@ public class Screen : IOutput
     int p = 0;
     public uint[] drawScreen(bool flash)
     {
+        tstatesperpixel = (Height * Width) / 69888d;
         if (RenderBorder)
         {
             //Update border top
@@ -212,7 +213,7 @@ public class Screen : IOutput
                 screenflash[p] = GetBorderColor(p * tstatesperpixel);
             }
 
-            for (int py = bordertop; py < Height; py++)
+            for (int py = bordertop; py < Height - borderbottom; py++)
             {
                 for (int px = 0; px < bordersides; px++)
                 {
@@ -221,10 +222,6 @@ public class Screen : IOutput
                     screenflash[pixel] = GetBorderColor(pixel * tstatesperpixel);
                 }
 
-            }
-
-            for (int py = bordertop; py < Height; py++)
-            {
                 for (int px = Width - bordersides; px < Width; px++)
                 {
                     var pixel = ((py * Width) + px);
@@ -233,6 +230,17 @@ public class Screen : IOutput
                 }
 
             }
+
+            //for (int py = bordertop; py < Height; py++)
+            //{
+            //    for (int px = Width - bordersides; px < Width; px++)
+            //    {
+            //        var pixel = ((py * Width) + px);
+            //        screen[pixel] = GetBorderColor(pixel * tstatesperpixel);
+            //        screenflash[pixel] = GetBorderColor(pixel * tstatesperpixel);
+            //    }
+
+            //}
 
             for (p = (Width * (Height - borderbottom)); p < (Height * Width); p++)
             {
