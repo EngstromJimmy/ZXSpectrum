@@ -10,12 +10,12 @@
 @if (gameLoop.Enabled)
 {
     <div style="text-align:center; color:white">
-        Load a game (supported formats: Z80 and SNA)<br />
+        Load a game (supported formats: TAP, Z80, and SNA)<br />
         <InputFile OnChange="HandleFileSelected" /><br />
         Use a gamepad for Kempston joystick<br />
         @((MarkupString)Instructions)<br />
         <button @onclick="@(()=>LoadGame("ManicMiner.z80","left - q<br/>right - w<br/>jump - space"))">Load Manic Miner (1983)(Bug-Byte Software)</button>
-        <button @onclick="taperPlayer.Play">Start tape (Under development)</button>
+        <button @onclick="taperPlayer.Play">Start tape</button>
     </div>
 }
 else
