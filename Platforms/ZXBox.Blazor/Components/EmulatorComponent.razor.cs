@@ -27,7 +27,7 @@ namespace ZXBox.Blazor.Pages
         JavaScriptKeyboard Keyboard = new();
         Kempston kempston;
         Beeper<byte> beeper;
-        public TapePlayer taperPlayer = new();
+        public TapePlayer taperPlayer;
 
         [Inject]
         Toolbelt.Blazor.Gamepad.GamepadList GamePadList { get; set; }
@@ -51,12 +51,14 @@ namespace ZXBox.Blazor.Pages
         {
             speccy = GetZXSpectrum(rom);
             speccy.InputHardware.Add(Keyboard);
-            speccy.InputHardware.Add(taperPlayer);
+
             kempston = new Kempston();
             speccy.InputHardware.Add(kempston);
             //48000 samples per second, 50 frames per second (20ms per frame) Mono
             beeper = new Beeper<byte>(0, 127, 48000 / 50, 1);
             speccy.OutputHardware.Add(beeper);
+            taperPlayer = new(beeper);
+            speccy.InputHardware.Add(taperPlayer);
             mono = JSRuntime as WebAssemblyJSRuntime;
             speccy.Reset();
             gameLoop.Start();
