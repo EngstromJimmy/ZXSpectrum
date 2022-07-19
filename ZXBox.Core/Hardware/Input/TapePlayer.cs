@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using ZXBox.Core.Tape;
 using ZXBox.Hardware.Interfaces;
+using ZXBox.Hardware.Output;
 
 namespace ZXBox.Core.Hardware.Input
 {
@@ -12,6 +13,11 @@ namespace ZXBox.Core.Hardware.Input
     /// </summary>
     public class TapePlayer : IInput
     {
+        private Beeper<byte> _beeper;
+        public TapePlayer(Beeper<byte> beeper)
+        {
+            _beeper = beeper;
+        }
         public TapFormat tf = new TapFormat();
 
         public void LoadTape(byte[] data)
@@ -127,6 +133,7 @@ namespace ZXBox.Core.Hardware.Input
                     }
 
                     ear = EarValues[tapeposition];
+                    _beeper.Output(0xfe, (ear.Ear ? 1 : 0) << 4, tact);
                     if (ear != null)
                     {
                         if (ear.Pulse == PulseTypeEnum.Stop)
