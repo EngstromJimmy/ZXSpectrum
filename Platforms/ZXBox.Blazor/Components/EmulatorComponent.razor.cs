@@ -64,6 +64,7 @@ namespace ZXBox.Blazor.Pages
             gameLoop.Start();
         }
 
+        public string TapeName { get; set; }
         public async Task HandleFileSelected(InputFileChangeEventArgs args)
         {
             if (args.File.Name.ToLower().EndsWith(".tap"))
@@ -73,6 +74,7 @@ namespace ZXBox.Blazor.Pages
                 var ms = new MemoryStream();
                 await file.OpenReadStream().CopyToAsync(ms);
                 tapePlayer.LoadTape(ms.ToArray());
+                TapeName = Path.GetFileNameWithoutExtension(args.File.Name);
             }
             else
             {
@@ -118,10 +120,8 @@ namespace ZXBox.Blazor.Pages
             sw.Stop();
             if (tapePlayer != null && tapePlayer.IsPlaying)
             {
-                PercentLoaded = ((Convert.ToDecimal(tapePlayer.CurrentTstate) / Convert.ToDecimal(tapePlayer.TotalTstates)) * 100);
+                PercentLoaded = ((Convert.ToDouble(tapePlayer.CurrentTstate) / Convert.ToDouble(tapePlayer.TotalTstates)) * 100);
                 await InvokeAsync(() => StateHasChanged());
-                //await mono.InvokeVoidAsync("document.getElementById('tape-s-circle7').style.transform = 'translate(500px,340px)'; document.getElementById('tape-u-tapeleft_to').style.transform = 'translate(255px,340px)';");
-                //await mono.InvokeVoidAsync("document.getElementById('tape-s-circle7').style.transform = 'translate(590px,340px)';document.getElementById('tape-u-tapeleft_to').style.transform = 'translate(340px,340px)';");
             }
         }
 
@@ -138,7 +138,7 @@ namespace ZXBox.Blazor.Pages
             gchsound.Free();
         }
 
-        public decimal PercentLoaded = 0;
+        public double PercentLoaded = 0;
         protected async override void OnAfterRender(bool firstRender)
         {
             if (firstRender)

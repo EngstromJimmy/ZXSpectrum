@@ -78,11 +78,8 @@ namespace ZXBox.Core.Hardware.Input
             //Add Termination 
             ear = !ear;
             tstate += 947;
-            EarValues.Add(new() { Ear = ear, TState = tstate, Pulse = PulseTypeEnum.Stop });
-            //foreach (var e in EarValues)
-            //{
-            //    Console.WriteLine($"{e.TState} \t {e.Ear} \t {e.Pulse}");
-            //}
+            EarValues.Add(new() { Ear = ear, TState = tstate, Pulse = PulseTypeEnum.Termination });
+            EarValues.Add(new() { Ear = false, TState = tstate, Pulse = PulseTypeEnum.Stop });
         }
 
         public void AddTStates(int tstates)
