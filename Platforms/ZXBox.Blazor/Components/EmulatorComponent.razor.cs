@@ -120,11 +120,17 @@ namespace ZXBox.Blazor.Pages
             sw.Stop();
             if (tapePlayer != null && tapePlayer.IsPlaying)
             {
+                TapeStopped = false;
                 PercentLoaded = ((Convert.ToDouble(tapePlayer.CurrentTstate) / Convert.ToDouble(tapePlayer.TotalTstates)) * 100);
                 await InvokeAsync(() => StateHasChanged());
             }
+            if (!TapeStopped && !tapePlayer.IsPlaying)
+            {
+                TapeStopped = true;
+                await InvokeAsync(() => StateHasChanged());
+            }
         }
-
+        bool TapeStopped = false;
         GCHandle gchsound;
         IntPtr pinnedsound;
         WebAssemblyJSRuntime mono;
