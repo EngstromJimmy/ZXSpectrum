@@ -1,63 +1,74 @@
 ﻿
-#tape-s-circle7 {
-    transition: transform 20ms linear;
+@font-face {
+    font-family: 'Easy Speech';
+    src: url('/css/Easy Speech_free.ttf');
+}
+.cls-1 {
+    fill: none;
+    stroke: #fff;
+    stroke-dasharray: 0 0 19.37 19.37;
+    stroke-width: 11px;
 }
 
-
-#tape-u-tapeleft_to {
-    transition: transform 20ms linear;
+.cls-1, .cls-2, .cls-3, .cls-4, .cls-5 {
+    stroke-miterlimit: 10;
 }
 
-@keyframes lefttape {
+.cls-2, .cls-3, .cls-4, .cls-5 {
+    stroke: #000;
+}
+
+.cls-2, .cls-3, .cls-5 {
+    stroke-width: 6px;
+}
+
+.cls-2, .cls-4 {
+    fill: #5e5858;
+}
+
+.cls-6, .cls-3 {
+    fill: #fff;
+}
+
+.cls-7 {
+    fill: #3a1f0d;
+}
+
+.cls-4 {
+    stroke-width: 3px;
+}
+
+.cls-8 {
+    font-family: MyriadPro-Regular, 'Myriad Pro';
+}
+
+.cls-8, .cls-9 {
+    font-size: 75px;
+}
+
+.cls-9 {
+    fill: #173577;
+    font-family: EasySpeech, 'Easy Speech';
+    text-align:center;
+}
+
+.cls-5 {
+    fill: #898989;
+}
+
+#Spool_Left,#Spool_Right {
+    animation: SpoolRotation 3000ms linear reverse infinite;
+    transform-box: fill-box;
+    transform-origin: center;
+}
+
+@keyframes SpoolRotation {
     0% {
-        transform: translate(253.5px,339.5px)
+        transform: rotate(0deg);
     }
 
     100% {
-        transform: translate(337.878699px,342.33px)
-    }
-}
-
-/*#tape-u-tape_right_to {
-    animation: righttape 10000ms linear 1 reverse forwards
-}*/
-
-@keyframes righttape {
-    0% {
-        transform: translate(742.588758px,339.5px)
-    }
-
-    100% {
-        transform: translate(816px,339.5px)
-    }
-}
-
-#tape-s-path17_tr {
-    animation: lefttapereel 3000ms linear reverse infinite
-}
-
-@keyframes lefttapereel {
-    0% {
-        transform: translate(309.903137px,342px) rotate(0deg)
-    }
-
-    100% {
-        transform: translate(309.903137px,342px) rotate(360deg)
-    }
-}
-
-/*Right wheel*/
-#tape-s-path19_tr {
-    animation: righttapereel 3000ms linear reverse infinite
-}
-
-@keyframes righttapereel {
-    0% {
-        transform: translate(664.233154px,342.329987px) rotate(0deg)
-    }
-
-    100% {
-        transform: translate(664.233154px,342.329987px) rotate(360deg)
+        transform: rotate(360deg);
     }
 }
 
