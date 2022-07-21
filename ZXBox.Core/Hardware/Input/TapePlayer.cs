@@ -96,7 +96,7 @@ namespace ZXBox.Core.Hardware.Input
             TotalTstates = EarValues.Last().TState;
             IsPlaying = true;
         }
-        public bool IsPlaying = false;
+        public bool IsPlaying { get; set; } = false;
 
         public long CurrentTstate = 0;
         public long TotalTstates = 0;
@@ -145,6 +145,10 @@ namespace ZXBox.Core.Hardware.Input
                         else
                             return returnvalue &= ~(1 << 6);
                     }
+                }
+                if (CurrentTstate > TotalTstates)
+                {
+                    IsPlaying = false;
                 }
             }
 
