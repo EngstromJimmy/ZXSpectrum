@@ -1,0 +1,63 @@
+﻿
+#tape-s-circle7 {
+    transition: transform 20ms linear;
+}
+
+
+#tape-u-tapeleft_to {
+    transition: transform 20ms linear;
+}
+
+@keyframes lefttape {
+    0% {
+        transform: translate(253.5px,339.5px)
+    }
+
+    100% {
+        transform: translate(337.878699px,342.33px)
+    }
+}
+
+/*#tape-u-tape_right_to {
+    animation: righttape 10000ms linear 1 reverse forwards
+}*/
+
+@keyframes righttape {
+    0% {
+        transform: translate(742.588758px,339.5px)
+    }
+
+    100% {
+        transform: translate(816px,339.5px)
+    }
+}
+
+#tape-s-path17_tr {
+    animation: lefttapereel 3000ms linear reverse infinite
+}
+
+@keyframes lefttapereel {
+    0% {
+        transform: translate(309.903137px,342px) rotate(0deg)
+    }
+
+    100% {
+        transform: translate(309.903137px,342px) rotate(360deg)
+    }
+}
+
+/*Right wheel*/
+#tape-s-path19_tr {
+    animation: righttapereel 3000ms linear reverse infinite
+}
+
+@keyframes righttapereel {
+    0% {
+        transform: translate(664.233154px,342.329987px) rotate(0deg)
+    }
+
+    100% {
+        transform: translate(664.233154px,342.329987px) rotate(360deg)
+    }
+}
+

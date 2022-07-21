@@ -15,7 +15,16 @@
         Use a gamepad for Kempston joystick<br />
         @((MarkupString)Instructions)<br />
         <button @onclick="@(()=>LoadGame("ManicMiner.z80","left - q<br/>right - w<br/>jump - space"))">Load Manic Miner (1983)(Bug-Byte Software)</button>
-        <button @onclick="taperPlayer.Play">Start tape</button>
+        @if(!tapePlayer.IsPlaying)
+        {
+            <button @onclick="tapePlayer.Play">Start tape @PercentLoaded</button>
+        }
+        else
+        {
+            <div style="height:300px;">
+                <TapePlayerComponent Percent="@PercentLoaded"></TapePlayerComponent>
+            </div>
+        }
     </div>
 }
 else

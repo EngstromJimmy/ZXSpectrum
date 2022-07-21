@@ -27,7 +27,7 @@ namespace ZXBox.Blazor.Pages
         JavaScriptKeyboard Keyboard = new();
         Kempston kempston;
         Beeper<byte> beeper;
-        public TapePlayer taperPlayer;
+        public TapePlayer tapePlayer;
 
         [Inject]
         Toolbelt.Blazor.Gamepad.GamepadList GamePadList { get; set; }
@@ -57,8 +57,8 @@ namespace ZXBox.Blazor.Pages
             //48000 samples per second, 50 frames per second (20ms per frame) Mono
             beeper = new Beeper<byte>(0, 127, 48000 / 50, 1);
             speccy.OutputHardware.Add(beeper);
-            taperPlayer = new(beeper);
-            speccy.InputHardware.Add(taperPlayer);
+            tapePlayer = new(beeper);
+            speccy.InputHardware.Add(tapePlayer);
             mono = JSRuntime as WebAssemblyJSRuntime;
             speccy.Reset();
             gameLoop.Start();
@@ -72,7 +72,7 @@ namespace ZXBox.Blazor.Pages
                 var file = args.File;
                 var ms = new MemoryStream();
                 await file.OpenReadStream().CopyToAsync(ms);
-                taperPlayer.LoadTape(ms.ToArray());
+                tapePlayer.LoadTape(ms.ToArray());
             }
             else
             {
@@ -116,9 +116,12 @@ namespace ZXBox.Blazor.Pages
 
             Paint();
             sw.Stop();
-            if (sw.ElapsedMilliseconds > 20)
+            if (tapePlayer != null && tapePlayer.IsPlaying)
             {
-                //Console.WriteLine(sw.ElapsedMilliseconds + "ms");
+                PercentLoaded = ((Convert.ToDecimal(tapePlayer.CurrentTstate) / Convert.ToDecimal(tapePlayer.TotalTstates)) * 100);
+                await InvokeAsync(() => StateHasChanged());
+                //await mono.InvokeVoidAsync("document.getElementById('tape-s-circle7').style.transform = 'translate(500px,340px)'; document.getElementById('tape-u-tapeleft_to').style.transform = 'translate(255px,340px)';");
+                //await mono.InvokeVoidAsync("document.getElementById('tape-s-circle7').style.transform = 'translate(590px,340px)';document.getElementById('tape-u-tapeleft_to').style.transform = 'translate(340px,340px)';");
             }
         }
 
@@ -135,6 +138,7 @@ namespace ZXBox.Blazor.Pages
             gchsound.Free();
         }
 
+        public decimal PercentLoaded = 0;
         protected async override void OnAfterRender(bool firstRender)
         {
             if (firstRender)
