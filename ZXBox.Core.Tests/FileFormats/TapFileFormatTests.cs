@@ -1,6 +1,5 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.IO;
-using ZXBox.Core.Hardware.Input;
 using ZXBox.Core.Tape;
 
 namespace ZXBox.Core.Tests.FileFormats;
@@ -23,7 +22,7 @@ public class TapFileFormatTests
     public void DecodeTapFileTest()
     {
 
-        var tp = new TapePlayer();
+        //var tp = new TapePlayer();
 
     }
 }

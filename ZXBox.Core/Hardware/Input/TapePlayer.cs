@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using ZXBox.Core.Tape;
 using ZXBox.Hardware.Interfaces;
 using ZXBox.Hardware.Output;
@@ -88,18 +89,20 @@ namespace ZXBox.Core.Hardware.Input
         {
             if (IsPlaying)
             {
-                currentTstate += tstates;
+                CurrentTstate += tstates;
             }
         }
 
         public List<EarValue> EarValues = new();
         public void Play()
         {
+            TotalTstates = EarValues.Last().TState;
             IsPlaying = true;
         }
-        bool IsPlaying = false;
+        public bool IsPlaying = false;
 
-        private long currentTstate = 0;
+        public long CurrentTstate = 0;
+        public long TotalTstates = 0;
 
         private long lastTstate = 0;
         private long diff = 0;
@@ -116,13 +119,13 @@ namespace ZXBox.Core.Hardware.Input
                 {
                     if (firstread)
                     {
-                        currentTstate = 0;
+                        CurrentTstate = 0;
                         firstread = false;
                     }
 
                     for (; tapeposition < EarValues.Count - 1;)
                     {
-                        if (EarValues[tapeposition + 1].TState < currentTstate)
+                        if (EarValues[tapeposition + 1].TState < CurrentTstate)
                         {
                             tapeposition++;
                         }
