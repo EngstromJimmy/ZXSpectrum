@@ -34,7 +34,7 @@ The naming of the project might seem strange, I originally developed the emulato
 I have chosen to keep the name think of is as a ZX(Spectrum) in an other box =).
 
 I did a talk about Blazor at Microsoft Ignite 2019 where I demoed my ZX Spectrum emulator running on Blazor WebAssembly. After doing a talk on Blazor and Blutooth at Live Coders Conf, I got a lot of comments on my ZX Spectrum so I decided to publish it =)  
-You can find the Blazor implementation here https://zxbox.com .  
+You can find the Blazor implementation here http://zxbox.com .  
 I got a lot of amazing feedback and many wanted to see the code so I decided to share that as well.
 
 There are still things left to do for example implementing sound (for Blazor) and support for more file formats.
