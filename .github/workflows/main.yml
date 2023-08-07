@@ -2,7 +2,7 @@
 
 name: AOT Compile ZXSpectrum
 env:
-  PUBLISH_DIR: Platforms/ZXBox.Blazor/bin/Release/net7.0/publish/wwwroot
+  PUBLISH_DIR: Platforms/ZXBox.Blazor/bin/Release/net8.0/publish/wwwroot
 
 # Controls when the workflow will run
 on:
