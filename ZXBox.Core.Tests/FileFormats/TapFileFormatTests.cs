@@ -17,7 +17,16 @@ public class TapFileFormatTests
 
         Assert.AreEqual(tf.Blocks.Count, 2);
     }
+    [TestMethod]
+    public void LoadSentinelTapFileTest()
+    {
+        var filename = @"C:\Users\Jimmy\Downloads\SentinelThe.tap\SENTINEL.TAP";
+        var tf = new TapFormat();
+        var bytes = File.ReadAllBytes(filename);
+        tf.ReadFile(bytes);
 
+        Assert.AreEqual(tf.Blocks.Count, 2);
+    }
     [TestMethod]
     public void DecodeTapFileTest()
     {

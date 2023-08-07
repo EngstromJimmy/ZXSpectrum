@@ -110,7 +110,7 @@ namespace ZXBox.Hardware.Input
                         if (GetKeyStatus("t"))
                             returnvalue &= ~16;
                         break;
-                    case 0x07: //1, 2, 3, 4, 5n
+                    case 0x07: //1, 2, 3, 4, 5
                         //if (ks.IsKeyDown(Keys.D1) || IsNextKey(Keys.D1) || (JoystickType == JoystickTypeEnum.Sinclair1 && (State.DPad.Left == ButtonState.Pressed || ks.IsKeyDown(Keys.Left))))
                         if (GetKeyStatus("1"))
                             returnvalue &= ~1;

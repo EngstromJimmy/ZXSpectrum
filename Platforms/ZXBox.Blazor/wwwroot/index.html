@@ -34,9 +34,6 @@
             let source = audiocontext.createBufferSource();
             source.buffer = myArrayBuffer;
 
-            //source.connect(gainNode);
-
-
             gainNode.connect(audiocontext.destination);
             source.connect(gainNode);
             if (nextStartTime == 0) nextStartTime = audiocontext.currentTime + (myArrayBuffer.length / myArrayBuffer.sampleRate);
@@ -127,15 +124,12 @@
             //console.log(pressedKeys);
         }
         window.onkeydown = function (e) {
-
-
             var key = GetKey(e.keyCode);
             const index = pressedKeys.indexOf(key);
             if (index == -1) {
                 pressedKeys.push(key);
             }
             event.preventDefault();
-            //console.log(pressedKeys);
         }
 
         window.getKeyStatus = function () {
@@ -161,8 +155,6 @@
             imageData.data.set(Uint8ClampedArray.from(Module.HEAPU8.subarray(dataPtr, dataPtr + imageData.data.length)));
             context.putImageData(imageData, 0, 0);
             context.drawImage(canvas, 0, 0, canvas.width, canvas.height);
-            //console.log((performance.now() - lastcall).toFixed(2));
-            lastcall = performance.now();
             return true;
         }
     </script>
