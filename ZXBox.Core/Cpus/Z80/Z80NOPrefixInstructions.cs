@@ -302,20 +302,30 @@ public partial class Z80
                 A = ReadByteFromMemory(GetNextPCWord());
                 SubtractNumberOfTStatesLeft(13);
                 break;
-            case 0x7F:		//LD A,A
-            case 0x78:		//LD A,B
-            case 0x79:		//LD A,C
-            case 0x7A:		//LD A,D
-            case 0x7B:		//LD A,E
-                A = RegisterValueFromOP(0);
-                SubtractNumberOfTStatesLeft(4);
-                break;
-            case 0x7C:  //LD A,H
-                A = H;
-                SubtractNumberOfTStatesLeft(4);
-                break;
-            case 0x7D: //LD A,L
-                A = L;
+            //case 0x7F:		//LD A,A
+            //case 0x78:		//LD A,B
+            //case 0x79:		//LD A,C
+            //case 0x7A:		//LD A,D
+            //case 0x7B:		//LD A,E
+            //    A = RegisterValueFromOP(0);
+            //    SubtractNumberOfTStatesLeft(4);
+            //    break;
+            //case 0x7C:  //LD A,H
+            //    A = H;
+            //    SubtractNumberOfTStatesLeft(4);
+            //    break;
+            //case 0x7D: //LD A,L
+            //    A = L;
+            //    SubtractNumberOfTStatesLeft(4);
+            //    break;
+            case >= 0x78 and <= 0x7D or 0x7F: //LD A,r
+            case >= 0x40 and <= 0x43 or 0x47: //LD B,r
+            case >= 0x48 and <= 0x4D or 0x4F: //LD C,r
+            case >= 0x50 and <= 0x55 or 0x57: //LD D,r
+            case >= 0x58 and <= 0x5D or 0x5F: //LD E,r
+            case >= 0x60 and <= 0x65 or 0x67: //LD H,r
+            case >= 0x68 and <= 0x6D or 0x6F: //LD L,r
+                Registers[BitValueFromOP] = RegisterValueFromOP(0);
                 SubtractNumberOfTStatesLeft(4);
                 break;
             case 0x3E:      //LD A,n
@@ -326,14 +336,14 @@ public partial class Z80
                 B = ReadByteFromMemory(HL);
                 SubtractNumberOfTStatesLeft(7);
                 break;
-            case 0x47:		//LD B,A
-            case 0x40:		//LD B,B
-            case 0x41:		//LD B,C
-            case 0x42:		//LD B,D
-            case 0x43:		//LD B,E
-                B = RegisterValueFromOP(0);
-                SubtractNumberOfTStatesLeft(4);
-                break;
+            //case 0x47:		//LD B,A
+            //case 0x40:		//LD B,B
+            //case 0x41:		//LD B,C
+            //case 0x42:		//LD B,D
+            //case 0x43:		//LD B,E
+            //    B = RegisterValueFromOP(0);
+            //    SubtractNumberOfTStatesLeft(4);
+            //    break;
             case 0x44:      //LD B,H
                 B = H;
                 SubtractNumberOfTStatesLeft(4);
@@ -354,22 +364,22 @@ public partial class Z80
                 C = ReadByteFromMemory(HL);
                 SubtractNumberOfTStatesLeft(7);
                 break;
-            case 0x4F:		//LD C,A
-            case 0x48:		//LD C,B
-            case 0x49:		//LD C,C
-            case 0x4A:		//LD C,D
-            case 0x4B:		//LD C,E
-                C = RegisterValueFromOP(0);
-                SubtractNumberOfTStatesLeft(4);
-                break;
-            case 0x4C:      //LD C,H
-                C = H;
-                SubtractNumberOfTStatesLeft(4);
-                break;
-            case 0x4D://LD C,L
-                C = L;
-                SubtractNumberOfTStatesLeft(4);
-                break;
+            //case 0x4F:		//LD C,A
+            //case 0x48:		//LD C,B
+            //case 0x49:		//LD C,C
+            //case 0x4A:		//LD C,D
+            //case 0x4B:		//LD C,E
+            //    C = RegisterValueFromOP(0);
+            //    SubtractNumberOfTStatesLeft(4);
+            //    break;
+            //case 0x4C:      //LD C,H
+            //    C = H;
+            //    SubtractNumberOfTStatesLeft(4);
+            //    break;
+            //case 0x4D://LD C,L
+            //    C = L;
+            //    SubtractNumberOfTStatesLeft(4);
+            //    break;
             case 0x0E:             //LD C,n
                 C = GetNextPCByte();
                 SubtractNumberOfTStatesLeft(7);
@@ -378,22 +388,22 @@ public partial class Z80
                 D = ReadByteFromMemory(HL);
                 SubtractNumberOfTStatesLeft(7);
                 break;
-            case 0x57:		//LD D,A
-            case 0x50:		//LD D,B
-            case 0x51:		//LD D,C
-            case 0x52:		//LD D,D
-            case 0x53:		//LD D,E
-                D = RegisterValueFromOP(0);
-                SubtractNumberOfTStatesLeft(4);
-                break;
-            case 0x54:      //LD D,H
-                D = H;
-                SubtractNumberOfTStatesLeft(4);
-                break;
-            case 0x55: //LD D,L
-                D = L;
-                SubtractNumberOfTStatesLeft(4);
-                break;
+            //case 0x57:		//LD D,A
+            //case 0x50:		//LD D,B
+            //case 0x51:		//LD D,C
+            //case 0x52:		//LD D,D
+            //case 0x53:		//LD D,E
+            //    D = RegisterValueFromOP(0);
+            //    SubtractNumberOfTStatesLeft(4);
+            //    break;
+            //case 0x54:      //LD D,H
+            //    D = H;
+            //    SubtractNumberOfTStatesLeft(4);
+            //    break;
+            //case 0x55: //LD D,L
+            //    D = L;
+            //    SubtractNumberOfTStatesLeft(4);
+            //    break;
             case 0x16:             //LD D,n
                 D = GetNextPCByte();
                 SubtractNumberOfTStatesLeft(7);
@@ -406,22 +416,22 @@ public partial class Z80
                 E = ReadByteFromMemory(HL);
                 SubtractNumberOfTStatesLeft(7);
                 break;
-            case 0x5F:		//LD E,A
-            case 0x58:		//LD E,B
-            case 0x59:		//LD E,C
-            case 0x5A:		//LD E,D
-            case 0x5B:		//LD E,E
-                E = RegisterValueFromOP(0);
-                SubtractNumberOfTStatesLeft(4);
-                break;
-            case 0x5C:      //LD E,H
-                E = H;
-                SubtractNumberOfTStatesLeft(4);
-                break;
-            case 0x5D://LD E,L
-                E = L;
-                SubtractNumberOfTStatesLeft(4);
-                break;
+            //case 0x5F:		//LD E,A
+            //case 0x58:		//LD E,B
+            //case 0x59:		//LD E,C
+            //case 0x5A:		//LD E,D
+            //case 0x5B:		//LD E,E
+            //    E = RegisterValueFromOP(0);
+            //    SubtractNumberOfTStatesLeft(4);
+            //    break;
+            //case 0x5C:      //LD E,H
+            //    E = H;
+            //    SubtractNumberOfTStatesLeft(4);
+            //    break;
+            //case 0x5D://LD E,L
+            //    E = L;
+            //    SubtractNumberOfTStatesLeft(4);
+            //    break;
             case 0x1E:             //LD E,n
                 E = GetNextPCByte();
                 SubtractNumberOfTStatesLeft(7);
@@ -430,34 +440,34 @@ public partial class Z80
                 H = ReadByteFromMemory(HL);
                 SubtractNumberOfTStatesLeft(7);
                 break;
-            case 0x67: //LD H,A
-                H = A;
-                SubtractNumberOfTStatesLeft(4);
-                break;
-            case 0x60:      //LD H,B
-                H = B;
-                SubtractNumberOfTStatesLeft(4);
-                break;
-            case 0x61:      //LD H,C
-                H = C;
-                SubtractNumberOfTStatesLeft(4);
-                break;
-            case 0x62:      //LD H,D
-                H = D;
-                SubtractNumberOfTStatesLeft(4);
-                break;
-            case 0x63:      //LD H,E
-                H = E;
-                SubtractNumberOfTStatesLeft(4);
-                break;
-            case 0x64:  //LD H,H
-                H = H;
-                SubtractNumberOfTStatesLeft(4);
-                break;
-            case 0x65://LD H,L
-                H = L;
-                SubtractNumberOfTStatesLeft(4);
-                break;
+            //case 0x67: //LD H,A
+            //    H = A;
+            //    SubtractNumberOfTStatesLeft(4);
+            //    break;
+            //case 0x60:      //LD H,B
+            //    H = B;
+            //    SubtractNumberOfTStatesLeft(4);
+            //    break;
+            //case 0x61:      //LD H,C
+            //    H = C;
+            //    SubtractNumberOfTStatesLeft(4);
+            //    break;
+            //case 0x62:      //LD H,D
+            //    H = D;
+            //    SubtractNumberOfTStatesLeft(4);
+            //    break;
+            //case 0x63:      //LD H,E
+            //    H = E;
+            //    SubtractNumberOfTStatesLeft(4);
+            //    break;
+            //case 0x64:  //LD H,H
+            //    H = H;
+            //    SubtractNumberOfTStatesLeft(4);
+            //    break;
+            //case 0x65://LD H,L
+            //    H = L;
+            //    SubtractNumberOfTStatesLeft(4);
+            //    break;
             case 0x26: //LD H,n
                 H = GetNextPCByte();
                 SubtractNumberOfTStatesLeft(7);
@@ -466,34 +476,34 @@ public partial class Z80
                 L = ReadByteFromMemory(HL);
                 SubtractNumberOfTStatesLeft(7);
                 break;
-            case 0x6F://LD L,A
-                L = A;
-                SubtractNumberOfTStatesLeft(4);
-                break;
-            case 0x68:         //LD L,B
-                L = B;
-                SubtractNumberOfTStatesLeft(4);
-                break;
-            case 0x69:         //LD L,C
-                L = C;
-                SubtractNumberOfTStatesLeft(4);
-                break;
-            case 0x6A:      //LD L,D
-                L = D;
-                SubtractNumberOfTStatesLeft(4);
-                break;
-            case 0x6B:      //LD L,E
-                L = E;
-                SubtractNumberOfTStatesLeft(4);
-                break;
-            case 0x6C:      //LD L,H
-                L = H;
-                SubtractNumberOfTStatesLeft(4);
-                break;
-            case 0x6D://LD L,L
-                L = L;
-                SubtractNumberOfTStatesLeft(4);
-                break;
+            //case 0x6F://LD L,A
+            //    L = A;
+            //    SubtractNumberOfTStatesLeft(4);
+            //    break;
+            //case 0x68:         //LD L,B
+            //    L = B;
+            //    SubtractNumberOfTStatesLeft(4);
+            //    break;
+            //case 0x69:         //LD L,C
+            //    L = C;
+            //    SubtractNumberOfTStatesLeft(4);
+            //    break;
+            //case 0x6A:      //LD L,D
+            //    L = D;
+            //    SubtractNumberOfTStatesLeft(4);
+            //    break;
+            //case 0x6B:      //LD L,E
+            //    L = E;
+            //    SubtractNumberOfTStatesLeft(4);
+            //    break;
+            //case 0x6C:      //LD L,H
+            //    L = H;
+            //    SubtractNumberOfTStatesLeft(4);
+            //    break;
+            //case 0x6D://LD L,L
+            //    L = L;
+            //    SubtractNumberOfTStatesLeft(4);
+            //    break;
             case 0x2E: //LD L ,n
                 L = GetNextPCByte();
                 SubtractNumberOfTStatesLeft(7);

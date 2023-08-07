@@ -7,7 +7,7 @@ using ZXBox.Hardware.Output;
 namespace ZXBox.Core.Hardware.Input
 {
     /// <summary>
-    ///A leader consisting of 8063 (for header blocks) or 3223 (data blocks) pulses, each of which has a duration of 2168 tstates.
+    ///A Pilot consisting of 8063 (for header blocks) or 3223 (data blocks) pulses, each of which has a duration of 2168 tstates.
     ///A first sync pulse of 667 tstates.
     ///A second sync pulse of 735 tstates.
     ///The block data: a reset bit is encoded as two pulses of 855 tstates each, a set bit as two pulses of 1710 tstates each.The lowest byte in memory is first on tape, with the most significant bit first within each byte.
@@ -66,7 +66,7 @@ namespace ZXBox.Core.Hardware.Input
                     }
                 }
                 ear = !ear;
-                tstate += 3500;
+                tstate += 3500 * 5; //5ms
                 EarValues.Add(new() { Ear = ear, TState = tstate, Pulse = PulseTypeEnum.Pause });
                 //Pause
                 ear = false;
