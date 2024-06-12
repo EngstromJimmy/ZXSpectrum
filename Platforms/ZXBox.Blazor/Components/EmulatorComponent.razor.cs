@@ -138,10 +138,7 @@ namespace ZXBox.Blazor.Pages
         protected async Task BufferSound()
         {
             soundbytes = beeper.GetSoundBuffer();
-            gchsound = GCHandle.Alloc(soundbytes, GCHandleType.Pinned);
-            pinnedsound = gchsound.AddrOfPinnedObject();
-            mono.InvokeUnmarshalled<IntPtr, string>("addAudioBuffer", pinnedsound);
-            gchsound.Free();
+            mono.InvokeVoid("addAudioBuffer", soundbytes);
         }
 
         public double PercentLoaded = 0;
