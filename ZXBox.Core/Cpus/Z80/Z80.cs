@@ -6,7 +6,7 @@ namespace Zilog;
 public abstract partial class Z80
 {
 
-    public void WriteByteToMemoryOverridden(int address, int b)
+    public void WriteByteToMemoryOverridden(ushort address, byte b)
     {
         this.WriteByteToMemory(address, b);
     }
@@ -34,12 +34,12 @@ public abstract partial class Z80
 
     #region Ports
     //Override these
-    public virtual int In(int port)
+    public virtual byte In(ushort port)
     {
         return 0xff;
     }
 
-    public virtual void Out(int Port, int ByteValue, int tStates)
+    public virtual void Out(ushort Port, byte ByteValue, int tStates)
     {
     }
 
@@ -104,249 +104,243 @@ public abstract partial class Z80
     private static int R_H = 0x04;
     private static int R_L = 0x05;
     //Index Registers
-    public int[] IndexRegistry = new int[2];
-    public int IX
+    public ushort[] IndexRegistry = new ushort[2];
+    public ushort IX
     {
-        get { return IndexRegistry[(int)IndexRegistryEnum.IX]; }
-        set { IndexRegistry[(int)IndexRegistryEnum.IX] = value; }
+        get => IndexRegistry[(int)IndexRegistryEnum.IX];
+        set => IndexRegistry[(int)IndexRegistryEnum.IX] = value;
     }
-    public int IY
+    public ushort IY
     {
-        get { return IndexRegistry[(int)IndexRegistryEnum.IY]; }
-        set { IndexRegistry[(int)IndexRegistryEnum.IY] = value; }
+        get => IndexRegistry[(int)IndexRegistryEnum.IY];
+        set => IndexRegistry[(int)IndexRegistryEnum.IY] = value;
     }
 
     //Interrupt Register
-    public int I = 0;
-    public int[] Registers = new int[10];
+    public byte I = 0;
+    public byte[] Registers = new byte[10];
 
     //Registers Prim
-    public int[] RegitersPrim = new int[10];
-    public int Fprim = 0;
+    public byte[] RegitersPrim = new byte[10];
+    public byte Fprim = 0;
     //8bit
-    public int A
+    public byte A
     {
-        get { return Registers[R_A]; }
-        set { Registers[R_A] = value; }
+        get => Registers[R_A];
+        set => Registers[R_A] = value;
     }
 
-    public int B
+    public byte B
     {
-        get { return Registers[R_B]; }
-        set { Registers[R_B] = value; }
+        get => Registers[R_B];
+        set => Registers[R_B] = value;
     }
 
-    public int C
+    public byte C
     {
-        get { return Registers[R_C]; }
-        set { Registers[R_C] = value; }
+        get => Registers[R_C];
+        set => Registers[R_C] = value;
     }
 
-    public int D
+    public byte D
     {
-        get { return Registers[R_D]; }
-        set { Registers[R_D] = value; }
+        get => Registers[R_D];
+        set => Registers[R_D] = value;
     }
 
-    public int E
+    public byte E
     {
-        get { return Registers[R_E]; }
-        set { Registers[R_E] = value; }
+        get => Registers[R_E];
+        set => Registers[R_E] = value;
     }
 
-    public int H
+    public byte H
     {
-        get { return Registers[R_H]; }
-        set { Registers[R_H] = value; }
+        get => Registers[R_H];
+        set => Registers[R_H] = value;
     }
 
-    public int L
+    public byte L
     {
-        get { return Registers[R_L]; }
-        set { Registers[R_L] = value; }
+        get => Registers[R_L];
+        set => Registers[R_L] = value;
     }
 
-    public int APrim
+    public byte APrim
     {
-        get { return RegitersPrim[R_A]; }
-        set { RegitersPrim[R_A] = value; }
+        get => RegitersPrim[R_A];
+        set => RegitersPrim[R_A] = value;
     }
 
-    public int BPrim
+    public byte BPrim
     {
-        get { return RegitersPrim[R_B]; }
-        set { RegitersPrim[R_B] = value; }
+        get => RegitersPrim[R_B];
+        set => RegitersPrim[R_B] = value;
     }
 
-    public int CPrim
+    public byte CPrim
     {
-        get { return RegitersPrim[R_C]; }
-        set { RegitersPrim[R_C] = value; }
+        get => RegitersPrim[R_C];
+        set => RegitersPrim[R_C] = value;
     }
 
-    public int DPrim
+    public byte DPrim
     {
-        get { return RegitersPrim[R_D]; }
-        set { RegitersPrim[R_D] = value; }
+        get => RegitersPrim[R_D];
+        set => RegitersPrim[R_D] = value;
     }
 
-    public int EPrim
+    public byte EPrim
     {
-        get { return RegitersPrim[R_E]; }
-        set { RegitersPrim[R_E] = value; }
+        get => RegitersPrim[R_E];
+        set => RegitersPrim[R_E] = value;
     }
 
-    public int HPrim
+    public byte HPrim
     {
-        get { return RegitersPrim[R_H]; }
-        set { RegitersPrim[R_H] = value; }
+        get => RegitersPrim[R_H];
+        set => RegitersPrim[R_H] = value;
     }
 
-    public int LPrim
+    public byte LPrim
     {
-        get { return RegitersPrim[R_L]; }
-        set { RegitersPrim[R_L] = value; }
+        get => RegitersPrim[R_L];
+        set => RegitersPrim[R_L] = value;
     }
 
-    public int FPrim
+    public byte FPrim
     {
-        get { return Fprim; }
-        set { Fprim = value; }
+        get => Fprim;
+        set => Fprim = value;
     }
 
     //16 bit
-    public int HL
+    public ushort HL
     {
         get
         {
-            return Registers[R_H] << 8 | Registers[R_L];
+            return (ushort)(Registers[R_H] << 8 | Registers[R_L]);
         }
         set
         {
-            Registers[R_H] = value >> 8;
-            Registers[R_L] = value & 0xff;
-            //if (value == 23672)
-            //{
-            //    Console.WriteLine("SET hl:" + HL.ToString());
-            //    Console.WriteLine("PC: " + PC.ToString());
-            //    Console.WriteLine("OP: 0x" + opcode.ToString("x"));
-            //}
+            Registers[R_H] = (byte)(value >> 8);
+            Registers[R_L] = (byte)(value & 0xff);
         }
     }
 
-    public int HLPrim
+    public ushort HLPrim
     {
         get
         {
-            return RegitersPrim[R_H] << 8 | RegitersPrim[R_L];
+            return (ushort)(RegitersPrim[R_H] << 8 | RegitersPrim[R_L]);
         }
         set
         {
-            RegitersPrim[R_H] = value >> 8;
-            RegitersPrim[R_L] = value & 0xff;
+            RegitersPrim[R_H] = (byte)(value >> 8);
+            RegitersPrim[R_L] = (byte)(value & 0xff);
         }
     }
 
-    public int DE
+    public ushort DE
     {
         get
         {
-            return Registers[R_D] << 8 | Registers[R_E];
+            return (ushort)(Registers[R_D] << 8 | Registers[R_E]);
         }
         set
         {
-            Registers[R_D] = value >> 8;
-            Registers[R_E] = value & 0xff;
+            Registers[R_D] = (byte)(value >> 8);
+            Registers[R_E] = (byte)(value & 0xff);
         }
     }
 
-    public int DEPrim
+    public ushort DEPrim
     {
         get
         {
-            return RegitersPrim[R_D] << 8 | RegitersPrim[R_E];
+            return (ushort)(RegitersPrim[R_D] << 8 | RegitersPrim[R_E]);
         }
         set
         {
-            RegitersPrim[R_D] = value >> 8;
-            RegitersPrim[R_E] = value & 0xff;
+            RegitersPrim[R_D] = (byte)(value >> 8);
+            RegitersPrim[R_E] = (byte)(value & 0xff);
         }
     }
 
-    public int BC
+    public ushort BC
     {
         get
         {
-            return Registers[R_B] << 8 | Registers[R_C];
+            return (ushort)(Registers[R_B] << 8 | Registers[R_C]);
         }
         set
         {
-            Registers[R_B] = value >> 8;
-            Registers[R_C] = value & 0xff;
+            Registers[R_B] = (byte)(value >> 8);
+            Registers[R_C] = (byte)(value & 0xff);
         }
     }
 
-    public int BCPrim
+    public ushort BCPrim
     {
         get
         {
-            return RegitersPrim[R_B] << 8 | RegitersPrim[R_C];
+            return (ushort)(RegitersPrim[R_B] << 8 | RegitersPrim[R_C]);
         }
         set
         {
-            RegitersPrim[R_B] = value >> 8;
-            RegitersPrim[R_C] = value & 0xff;
+            RegitersPrim[R_B] = (byte)(value >> 8);
+            RegitersPrim[R_C] = (byte)(value & 0xff);
         }
     }
 
-    public int AF
+    public ushort AF
     {
         get
         {
-            return Registers[R_A] << 8 | F;
+            return (ushort)(Registers[R_A] << 8 | F);
         }
         set
         {
-            Registers[R_A] = value >> 8;
+            Registers[R_A] = (byte)(value >> 8);
             F = value & 0xff;
         }
     }
 
-    public int AFPrim
+    public ushort AFPrim
     {
         get
         {
-            return RegitersPrim[R_A] << 8 | FPrim;
+            return (ushort)(RegitersPrim[R_A] << 8 | FPrim);
         }
         set
         {
-            RegitersPrim[R_A] = value >> 8;
-            Fprim = value & 0xff;
+            RegitersPrim[R_A] = (byte)(value >> 8);
+            Fprim = (byte)(value & 0xff);
         }
     }
 
-    public int IXL
+    public byte IXL
     {
-        get { return IX & 0xff; }
-        set { IX = (IX & 0xff00) | (value); }
+        get => (byte)(IX & 0xff);
+        set => IX = (ushort)((IX & 0xff00) | (value));
     }
 
-    public int IXH
+    public byte IXH
     {
-        get { return (IX >> 8) & 0xff; }
-        set { IX = (IX & 0xff) | (value << 8); }
+        get => (byte)((IX >> 8) & 0xff);
+        set => IX = (ushort)((IX & 0xff) | (value << 8));
     }
 
-    public int IYL
+    public byte IYL
     {
-        get { return IY & 0xff; }
-        set { IY = (IY & 0xff00) | (value); }
+        get => (byte)(IY & 0xff);
+        set => IY = (ushort)((IY & 0xff00) | (value));
     }
 
-    public int IYH
+    public byte IYH
     {
-        get { return (IY >> 8) & 0xff; }
-        set { IY = (IY & 0xff) | (value << 8); }
+        get => (byte)((IY >> 8) & 0xff);
+        set => IY = (ushort)((IY & 0xff) | (value << 8));
     }
 
     /// <summary>
@@ -354,20 +348,11 @@ public abstract partial class Z80
     /// </summary>
     /// <param name="rpos"></param>
     /// <returns></returns>
-    public int RegisterValueFromOP(int rpos)
-    {
-        return Registers[(opcode >> rpos) & 7];
-    }
+    public byte RegisterValueFromOP(int rpos) => Registers[(opcode >> rpos) & 7];
 
-    public int BitValueFromOP
-    {
-        get { return ((opcode >> 3) & 7); }
-    }
+    public int BitValueFromOP => (opcode >> 3) & 7;
 
-    private int d
-    {
-        get { return Sign(ReadByteFromMemory(PC++)); }
-    }
+    private sbyte d => Sign(ReadByteFromMemory(PC++));
 
     #endregion
 
@@ -382,57 +367,57 @@ public abstract partial class Z80
         PC = StackpopWord();
     }
 
-    protected int GetNextPCByte()
+    protected byte GetNextPCByte()
     {
-        int b = ReadByteFromMemory(PC);
-        PC = PC + 1 & 0xffff;
+        byte b = ReadByteFromMemory(PC);
+        PC = (ushort)(PC + 1 & 0xffff);
         return b;
     }
-    protected int GetNextPCWord()
+    protected ushort GetNextPCWord()
     {
-        int w = ReadByteFromMemory(PC++);
-        w |= (ReadByteFromMemory(PC++ & 0xffff) << 8);
+        ushort w = ReadByteFromMemory(PC++);
+        w |= (ushort)(ReadByteFromMemory((ushort)(PC++ & 0xffff)) << 8);
         return w;
     }
     #endregion
 
     #region Stack
-    public void StackpushWord(int word)
+    public void StackpushWord(ushort word)
     {
-        int sp = ((SP - 2) & 0xffff);
+        ushort sp = (ushort)((SP - 2) & 0xffff);
         SP = sp;
         WriteWordToMemory(sp, word);
     }
-    public int StackpopWord()
+    public ushort StackpopWord()
     {
-        int w = ReadByteFromMemory(SP);
+        ushort w = ReadByteFromMemory(SP);
         SP++;
-        w |= (ReadByteFromMemory(SP & 0xffff) << 8);
-        SP = (SP + 1 & 0xffff);
+        w |= (ushort)(ReadByteFromMemory((ushort)(SP & 0xffff)) << 8);
+        SP = (ushort)(SP + 1 & 0xffff);
         return w;
     }
     #endregion
 
     #region Memory
-    public abstract void WriteWordToMemory(int address, int word);
+    public abstract void WriteWordToMemory(ushort address, ushort word);
 
-    public abstract void WriteByteToMemory(int address, int bytetowrite);
+    public abstract void WriteByteToMemory(ushort address, byte bytetowrite);
 
-    public abstract int ReadByteFromMemory(int address);
+    public abstract byte ReadByteFromMemory(ushort address);
 
-    public int ReadWordFromMemory(int address)
+    public ushort ReadWordFromMemory(ushort address)
     {
-        return (ReadByteFromMemory(address + 1 & 0xffff) << 8 | ReadByteFromMemory(address & 0xffff)) & 0xffff;
+        return (ushort)((ReadByteFromMemory((ushort)(address + 1 & 0xffff)) << 8 | ReadByteFromMemory((ushort)(address & 0xffff))) & 0xffff);
     }
     #endregion
 
     //Program Counter
-    public int PC;
+    public ushort PC;
     //Stack Pointer
-    public int SP = 0x10000;
-    protected int opcode = 0;
+    public ushort SP = 0xffff;
+    protected ushort opcode = 0;
     protected int _numberOfTStatesLeft;
-    int diff = 0;
+    // int diff = 0;
     public void SubtractNumberOfTStatesLeft(int tstates = 0)
     {
         _numberOfTStatesLeft -= tstates;
@@ -441,13 +426,7 @@ public abstract partial class Z80
     public bool[] Parity = new bool[256];
 
     protected int _EndTstates2 = 0;
-    public int EndTstates2
-    {
-        get
-        {
-            return _EndTstates2 + (_numberOfTStatesLeft * -1);
-        }
-    }
+    public int EndTstates2 => _EndTstates2 + (_numberOfTStatesLeft * -1);
     //Interupts and memory
     public bool BlockINT = true;
     public bool IFF = false;
@@ -457,13 +436,13 @@ public abstract partial class Z80
     public int _R = 0;
     public int R7
     {
-        get { return _R7; }
-        set { _R7 = value; }
+        get => _R7;
+        set => _R7 = value;
     }
 
-    public int R
+    public byte R
     {
-        get { return (_R & 0x7f) | _R7; }
+        get { return (byte)((_R & 0x7f) | _R7); }
         set
         {
             _R = value;
@@ -473,9 +452,7 @@ public abstract partial class Z80
 
     public void Refresh(int t)
     {
-        //            _R += t;
         _R = (byte)(((_R + 1) & 0x7F) | (_R & 0x80));
-        //SubtractNumberOfTStatesLeft( 1;
     }
 
     public void Reset()
@@ -513,15 +490,15 @@ public abstract partial class Z80
         //Clear Memory
         for (int a = 16384; a < 3 * 16384; a++)
         {
-            WriteByteToMemory(a, 0);
+            WriteByteToMemory((ushort)a, 0);
         }
     }
 
     //System.Text.StringBuilder sb = new StringBuilder();
     public void NextOpcode()
     {
-        opcode = (ReadByteFromMemory(PC) & 0xff);
-        PC = (PC + 1) & 0xffff;
+        opcode = (ushort)(ReadByteFromMemory(PC) & 0xff);
+        PC = (ushort)((PC + 1) & 0xffff);
     }
 
     public int interrupt()
@@ -534,7 +511,6 @@ public abstract partial class Z80
 
         switch (IM)
         {
-            case 0:
             case 1:
                 PCToStack();
                 IFF = false;
@@ -545,9 +521,9 @@ public abstract partial class Z80
                 PCToStack();
                 IFF = false;
                 IFF2 = false;
-                int t = (I << 8) | 0x00ff;
+                var t = (ushort)((I << 8) | 0x00ff);
                 PC = ReadWordFromMemory(t);
-                return 19;
+                return 19;          
         }
 
         return 0;
@@ -556,13 +532,13 @@ public abstract partial class Z80
     public int NumberOfTstates = 0;
 
     public StringBuilder sb = new StringBuilder();
-    private DateTime start;
-    public void DoIntructions(int numberOfTStates = 69888)
+    // private DateTime start;
+    public void DoInstructions(int numberOfTStates = 69888)
     {
-        DoIntructions(numberOfTStates, null);
+        DoInstructions(numberOfTStates, null);
     }
 
-    public virtual void DoIntructions(int numberOfTStates, Func<Z80, int> gameSpecificFunc)
+    public virtual void DoInstructions(int numberOfTStates, Func<Z80, int> gameSpecificFunc)
     {
         NumberOfTstates = numberOfTStates;
         _numberOfTStatesLeft += numberOfTStates;

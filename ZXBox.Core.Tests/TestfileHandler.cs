@@ -19,18 +19,18 @@ namespace ZXBox.Core.Tests
             while (rows[0].IndexOf("  ") > 0)
                 rows[0] = rows[0].Replace("  ", " ");
             string[] rowdata = rows[0].Split(' ');
-            ts.af = Convert.ToInt32(rowdata[0], 16);
-            ts.bc = Convert.ToInt32(rowdata[1], 16);
-            ts.de = Convert.ToInt32(rowdata[2], 16);
-            ts.hl = Convert.ToInt32(rowdata[3], 16);
-            ts.af_ = Convert.ToInt32(rowdata[4], 16);
-            ts.bc_ = Convert.ToInt32(rowdata[5], 16);
-            ts.de_ = Convert.ToInt32(rowdata[6], 16);
-            ts.hl_ = Convert.ToInt32(rowdata[7], 16);
-            ts.ix = Convert.ToInt32(rowdata[8], 16);
-            ts.iy = Convert.ToInt32(rowdata[9], 16);
-            ts.sp = Convert.ToInt32(rowdata[10], 16);
-            ts.pc = Convert.ToInt32(rowdata[11], 16);
+            ts.af = Convert.ToUInt16(rowdata[0], 16);
+            ts.bc = Convert.ToUInt16(rowdata[1], 16);
+            ts.de = Convert.ToUInt16(rowdata[2], 16);
+            ts.hl = Convert.ToUInt16(rowdata[3], 16);
+            ts.af_ = Convert.ToUInt16(rowdata[4], 16);
+            ts.bc_ = Convert.ToUInt16(rowdata[5], 16);
+            ts.de_ = Convert.ToUInt16(rowdata[6], 16);
+            ts.hl_ = Convert.ToUInt16(rowdata[7], 16);
+            ts.ix = Convert.ToUInt16(rowdata[8], 16);
+            ts.iy = Convert.ToUInt16(rowdata[9], 16);
+            ts.sp = Convert.ToUInt16(rowdata[10], 16);
+            ts.pc = Convert.ToUInt16(rowdata[11], 16);
 
             //&i, &r, &iff1, &iff2, &im, &z80.halted, &end_tstates2
             //Since C# lacks the fscanf function we need to do this in a ugly way
@@ -41,8 +41,8 @@ namespace ZXBox.Core.Tests
             while (rows[1].IndexOf("  ") > 0)
                 rows[1]=rows[1].Replace("  ", " ");
             rowdata = rows[1].Split(' ');
-            ts.i = Convert.ToInt32(rowdata[0], 16);
-            ts.r = Convert.ToInt32(rowdata[1], 16);
+            ts.i = Convert.ToByte(rowdata[0], 16);
+            ts.r = Convert.ToByte(rowdata[1], 16);
             ts.iff1 = rowdata[2]=="0"?false:true;
             ts.iff2 = rowdata[3]=="0"?false:true;
             ts.im = Convert.ToInt32(rowdata[4]);
@@ -56,18 +56,18 @@ namespace ZXBox.Core.Tests
                 rowdata = rows[a].Split(' ');
                 if (rowdata[0].Length > 1)
                 {
-                    int mempos = Convert.ToInt32(rowdata[0],16);
+                    int mempos = Convert.ToUInt16(rowdata[0],16);
                     for (int b = 1; b < rowdata.Length; b++)
                     {
                         if (rowdata[b] != "-1")
-                            ts.Memory[mempos++] = Convert.ToInt32(rowdata[b], 16);
+                            ts.Memory[mempos++] = Convert.ToByte(rowdata[b], 16);
                     }
                 }
             }
             return ts;
         }
 
-        public static TestState ReadOUTFile(string Path,int[] MemoryPreset)
+        public static TestState ReadOUTFile(string Path,byte[] MemoryPreset)
         {
             TextReader tr = new StreamReader(Path);
             string file = tr.ReadToEnd();
@@ -81,18 +81,18 @@ namespace ZXBox.Core.Tests
 
             //&af, &bc,&de, &hl, &af_, &bc_, &de_, &hl_, &ix, &iy, &sp, &pc 
             string[] rowdata = rows[LineToStarttRead].Split(' ');
-            ts.af = Convert.ToInt32(rowdata[0], 16);
-            ts.bc = Convert.ToInt32(rowdata[1], 16);
-            ts.de = Convert.ToInt32(rowdata[2], 16);
-            ts.hl = Convert.ToInt32(rowdata[3], 16);
-            ts.af_ = Convert.ToInt32(rowdata[4], 16);
-            ts.bc_ = Convert.ToInt32(rowdata[5], 16);
-            ts.de_ = Convert.ToInt32(rowdata[6], 16);
-            ts.hl_ = Convert.ToInt32(rowdata[7], 16);
-            ts.ix = Convert.ToInt32(rowdata[8], 16);
-            ts.iy = Convert.ToInt32(rowdata[9], 16);
-            ts.sp = Convert.ToInt32(rowdata[10], 16);
-            ts.pc = Convert.ToInt32(rowdata[11], 16);
+            ts.af = Convert.ToUInt16(rowdata[0], 16);
+            ts.bc = Convert.ToUInt16(rowdata[1], 16);
+            ts.de = Convert.ToUInt16(rowdata[2], 16);
+            ts.hl = Convert.ToUInt16(rowdata[3], 16);
+            ts.af_ = Convert.ToUInt16(rowdata[4], 16);
+            ts.bc_ = Convert.ToUInt16(rowdata[5], 16);
+            ts.de_ = Convert.ToUInt16(rowdata[6], 16);
+            ts.hl_ = Convert.ToUInt16(rowdata[7], 16);
+            ts.ix = Convert.ToUInt16(rowdata[8], 16);
+            ts.iy = Convert.ToUInt16(rowdata[9], 16);
+            ts.sp = Convert.ToUInt16(rowdata[10], 16);
+            ts.pc = Convert.ToUInt16(rowdata[11], 16);
 
             //&i, &r, &iff1, &iff2, &im, &z80.halted, &end_tstates2
             //Since C# lacks the fscanf function we need to do this in a ugly way
@@ -103,8 +103,8 @@ namespace ZXBox.Core.Tests
             while (rows[LineToStarttRead + 1].IndexOf("  ") > 0)
                 rows[LineToStarttRead + 1] = rows[LineToStarttRead+1].Replace("  ", " ");
             rowdata = rows[LineToStarttRead+1].Split(' ');
-            ts.i = Convert.ToInt32(rowdata[0], 16);
-            ts.r = Convert.ToInt32(rowdata[1], 16);
+            ts.i = Convert.ToByte(rowdata[0], 16);
+            ts.r = Convert.ToByte(rowdata[1], 16);
             ts.iff1 = rowdata[2] == "0" ? false : true;
             ts.iff2 = rowdata[3] == "0" ? false : true;
             ts.im = Convert.ToInt32(rowdata[4]);
@@ -123,7 +123,7 @@ namespace ZXBox.Core.Tests
                     for (int b = 1; b < rowdata.Length; b++)
                     {
                         if (rowdata[b] != "-1")
-                            ts.Memory[mempos++] = Convert.ToInt32(rowdata[b], 16);
+                            ts.Memory[mempos++] = Convert.ToByte(rowdata[b], 16);
                     }
                 }
             }

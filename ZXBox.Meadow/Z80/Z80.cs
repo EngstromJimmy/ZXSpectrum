@@ -9,7 +9,7 @@ namespace Zilog
     {
 
 
-        public void WriteByteToMemoryOverridden(int address, int b)
+        public void WriteByteToMemoryOverridden(ushort address, byte b)
         {
             this.WriteByteToMemory(address, b);
         }
@@ -117,97 +117,97 @@ namespace Zilog
 
         //Interrupt Register
         public  int I=0;
-        public int[] Registers=new int[10]; 
+        public byte[] Registers=new byte[10]; 
 
         //Registers Prim
-        public int[] RegitersPrim=new int[10];
-        public int Fprim=0;
+        public byte[] RegitersPrim=new byte[10];
+        public byte Fprim=0;
         //8bit
-        public int A
+        public byte A
         {
             get { return Registers[R_A]; }
             set { Registers[R_A] = value; }
         }
 
-        public int B
+        public byte B
         {
             get { return Registers[R_B]; }
             set { Registers[R_B] = value; }
         }
 
-        public int C
+        public byte C
         {
             get { return Registers[R_C]; }
             set { Registers[R_C] = value; }
         }
 
-        public int D
+        public byte D
         {
             get { return Registers[R_D]; }
             set { Registers[R_D] = value; }
         }
 
-        public int E
+        public byte E
         {
             get { return Registers[R_E]; }
             set { Registers[R_E] = value; }
         }
 
-        public int H
+        public byte H
         {
             get { return Registers[R_H]; }
             set { Registers[R_H] = value; }
         }
 
-        public int L
+        public byte L
         {
             get { return Registers[R_L]; }
             set { Registers[R_L] = value; }
         }
 
-        public int APrim
+        public byte APrim
         {
             get { return RegitersPrim[R_A]; }
             set { RegitersPrim[R_A] = value; }
         }
 
-        public int BPrim
+        public byte BPrim
         {
             get { return RegitersPrim[R_B]; }
             set { RegitersPrim[R_B] = value; }
         }
 
-        public int CPrim
+        public byte CPrim
         {
             get { return RegitersPrim[R_C]; }
             set { RegitersPrim[R_C] = value; }
         }
 
-        public int DPrim
+        public byte DPrim
         {
             get { return RegitersPrim[R_D]; }
             set { RegitersPrim[R_D] = value; }
         }
 
-        public int EPrim
+        public byte EPrim
         {
             get { return RegitersPrim[R_E]; }
             set { RegitersPrim[R_E] = value; }
         }
 
-        public int HPrim
+        public byte HPrim
         {
             get { return RegitersPrim[R_H]; }
             set { RegitersPrim[R_H] = value; }
         }
 
-        public int LPrim
+        public byte LPrim
         {
             get { return RegitersPrim[R_L]; }
             set { RegitersPrim[R_L] = value; }
         }
 
-        public int FPrim
+        public byte FPrim
         {
             get { return Fprim; }
             set { Fprim = value; }
@@ -215,7 +215,7 @@ namespace Zilog
 
 
         //16 bit
-        public int HL
+        public ushort HL
         {
             get
             {
@@ -234,7 +234,7 @@ namespace Zilog
             }
         }
 
-        public int HLPrim
+        public ushort HLPrim
         {
             get
             {
@@ -248,7 +248,7 @@ namespace Zilog
         }
 
 
-        public int DE
+        public ushort DE
         {
             get
             {
@@ -261,7 +261,7 @@ namespace Zilog
             }
         }
 
-        public int DEPrim
+        public ushort DEPrim
         {
             get
             {
@@ -275,7 +275,7 @@ namespace Zilog
         } 
 
 
-        public int BC
+        public ushort BC
         {
             get
             {
@@ -288,7 +288,7 @@ namespace Zilog
             }
         }
 
-        public int BCPrim
+        public ushort BCPrim
         {
             get
             {
@@ -301,7 +301,7 @@ namespace Zilog
             }
         }
 
-        public int AF
+        public ushort AF
         {
             get
             {
@@ -314,7 +314,7 @@ namespace Zilog
             }
         }
 
-        public int AFPrim
+        public ushort AFPrim
         {
             get
             {
@@ -327,25 +327,25 @@ namespace Zilog
             }
         }
 
-        public int IXL
+        public byte IXL
         {
             get {return IX & 0xff;}
             set { IX=(IX & 0xff00) | (value); }
         }
 
-        public int IXH
+        public byte IXH
         {
             get { return (IX >> 8) & 0xff; }
             set { IX = (IX & 0xff) | (value << 8); }
         }
 
-        public int IYL
+        public byte IYL
         {
             get { return IY & 0xff; }
             set { IY = (IY & 0xff00) | (value); }
         }
 
-        public int IYH
+        public byte IYH
         {
             get { return (IY >> 8) & 0xff; }
             set { IY = (IY & 0xff) | (value << 8); }
@@ -384,28 +384,28 @@ namespace Zilog
                 PC = StackpopWord();
             }
 
-            private int GetNextPCByte()
+            private byte GetNextPCByte()
             {
-                int b = ReadByteFromMemory(PC);
+                byte b = ReadByteFromMemory(PC);
                 PC = PC+1  & 0xffff;
                 return b;
             }
-            private int GetNextPCWord()
+            private ushort GetNextPCWord()
             {
-                int w = ReadByteFromMemory(PC++);
+                ushort w = ReadByteFromMemory(PC++);
                 w |= (ReadByteFromMemory(PC++  & 0xffff) << 8);
                 return w;
             }
         #endregion
 
         #region Stack
-        public void StackpushWord(int word)
+            public void StackpushWord(ushort word)
             {
                 int sp = ((SP - 2) & 0xffff);
                 SP=sp;
                 WriteWordToMemory(sp, word);
             }
-            public int StackpopWord()
+            public ushort StackpopWord()
             {
                 int w = ReadByteFromMemory(SP);
                 SP++;
@@ -416,16 +416,16 @@ namespace Zilog
         #endregion
 
         #region Memory
-        public abstract void WriteWordToMemory(int address, int word);
+        public abstract void WriteWordToMemory(ushort address, ushort word);
 
 
-        public abstract void WriteByteToMemory(int address, int bytetowrite);
+        public abstract void WriteByteToMemory(ushort address, byte bytetowrite);
             
 
-        public abstract int ReadByteFromMemory(int address);
+        public abstract byte ReadByteFromMemory(ushort address);
             
 
-        public int ReadWordFromMemory(int address)
+        public ushort ReadWordFromMemory(ushort address)
         {
             return (ReadByteFromMemory(address+1 & 0xffff) << 8 | ReadByteFromMemory(address  & 0xffff)) & 0xffff;
         }
@@ -554,12 +554,12 @@ namespace Zilog
         public int NumberOfTstates = 0;
         public StringBuilder sb = new StringBuilder();
         private DateTime start;
-        public void DoIntructions(int numberOfTStates)
+        public void DoInstructions(int numberOfTStates)
         {
-            DoIntructions(numberOfTStates, null);
+            DoInstructions(numberOfTStates, null);
         }
 
-        public void DoIntructions(int numberOfTStates, Func<Z80, int> gameSpecificFunc)
+        public void DoInstructions(int numberOfTStates, Func<Z80, int> gameSpecificFunc)
         {
             //sb = new StringBuilder();
             NumberOfTstates = numberOfTStates;
