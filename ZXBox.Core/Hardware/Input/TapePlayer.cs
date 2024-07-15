@@ -92,12 +92,12 @@ namespace ZXBox.Core.Hardware.Input
         public long CurrentTstate;
         public long TotalTstates;
 
-        private int _returnValue = 0xFF;
+        private byte _returnValue = 0xFF;
         private EarValue _ear;
         private bool _firstRead = true;
         private int _tapePosition;
 
-        public int Input(int Port, int tact)
+        public byte Input(ushort Port, int tact)
         {
             if (IsPlaying)
             {
@@ -123,7 +123,7 @@ namespace ZXBox.Core.Hardware.Input
                     }
 
                     _ear = EarValues[_tapePosition];
-                    _beeper?.Output(0xfe, (_ear.Ear ? 1 : 0) << 4, tact);
+                    _beeper?.Output((ushort)0xfe, (byte)((_ear.Ear ? 1 : 0) << 4), tact);
                     if (_ear != null)
                     {
                         if (_ear.Pulse == PulseTypeEnum.Stop)
@@ -133,10 +133,12 @@ namespace ZXBox.Core.Hardware.Input
 
                         if (_ear.Ear)
                         {
-                            return _returnValue |= 1 << 6;
+                            _returnValue |= 1 << 6;
+                            return _returnValue;
                         }
 
-                        return _returnValue &= ~(1 << 6);
+                        _returnValue &= (byte)~(1 << 6);
+                        return _returnValue;
                     }
                 }
 

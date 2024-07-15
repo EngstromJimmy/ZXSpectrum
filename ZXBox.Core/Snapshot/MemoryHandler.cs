@@ -15,7 +15,7 @@ public class MemoryHandler
     {
         for (int a = ByteArrayStartIndex; a < bytes.Length && MemoryStartIndex < bytes.Length; a++)
         {
-            cpu.WriteByteToMemory(MemoryStartIndex++, bytes[a]);
+            cpu.WriteByteToMemory((ushort)MemoryStartIndex++, bytes[a]);
         }
     }
 
