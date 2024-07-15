@@ -24,6 +24,7 @@ public class ZXEmulator : Game
     Beeper<byte> beeper;
     TapePlayer tapePlayer;
     Hardware.Keyboard keyboard;
+    Hardware.JoystickFake joystickFake;
 
     public ZXEmulator()
     {
@@ -39,15 +40,19 @@ public class ZXEmulator : Game
 
         speccy = new ZXSpectrum(true, true, 20, 20, 20);
 
+        keyboard = new Hardware.Keyboard(this);
+        this.Components.Add(keyboard);
+        speccy.InputHardware.Add(keyboard);
+
+        joystickFake = new Hardware.JoystickFake();
+        speccy.InputHardware.Add(joystickFake);
+
         beeper = new Beeper<byte>(0, 127, 48000 / 50, 1);
         speccy.OutputHardware.Add(beeper);
         
         tapePlayer = new(beeper);
         speccy.InputHardware.Add(tapePlayer);
 
-        keyboard = new Hardware.Keyboard(this);
-        this.Components.Add(keyboard);
-        speccy.InputHardware.Add(keyboard);
         speccy.Reset();
 
         screen = new Hardware.Screen(this, width, height, SCALE);
@@ -66,7 +71,7 @@ public class ZXEmulator : Game
     {
         var ms = new MemoryStream();
         var handler = FileFormatFactory.GetSnapShotHandler(filename);
-        var stream = new FileStream("Roms/" + filename + ".json", FileMode.Open);
+        var stream = new FileStream("Platforms/ZXBox.Monogame/Roms/" + filename + ".json", FileMode.Open);
         await stream.CopyToAsync(ms);
         var bytes = ms.ToArray();
         handler.LoadSnapshot(bytes, speccy);
@@ -77,7 +82,7 @@ public class ZXEmulator : Game
         if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
             Exit();
 
-        speccy.DoInstructions(69888);
+        speccy.DoInstructions();
 
         if (flashcounter == 0)
         {
