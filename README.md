@@ -51,3 +51,17 @@ Rodnay Zaks - For writing the book I used to implement all the Z80 Assembler ins
 
 Projects
 https://github.com/jsakamoto/Toolbelt.Blazor.Gamepad
+
+## Building for different platforms
+
+### Blazor
+
+1. Install .NET 8.0
+2. Run `dotnet workload restore` in the ZXBox.Blazor directory
+3. Run `dotnet run` and browse the page in your browser of preference
+
+### Monogame
+
+1. Install .NET 6.0 or later
+2. Run `dotnet tools restore` in the ZXBox.Monogame directory
+3. Run `dotnet run`
