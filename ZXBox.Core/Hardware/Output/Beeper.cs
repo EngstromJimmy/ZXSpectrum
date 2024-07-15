@@ -93,7 +93,7 @@ public class Beeper<T> : Interfaces.IOutput where T : IComparable, IComparable<T
     int counter = 0;
     #region IOutput Members
     //The output is is not dependent on the way the sound will be outputted but rather all the values the buzzer would have at any given tstate
-    public void Output(int Port, int ByteValue, int tState)
+    public void Output(ushort Port, byte ByteValue, int tState)
     {
         double buffertstate = Convert.ToDouble(samplesPerFrame) / 69888d;
 

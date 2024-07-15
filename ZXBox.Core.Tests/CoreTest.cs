@@ -22,7 +22,7 @@ namespace ZXBox.Core.Tests
 
         public static bool TestInstruction(string file)
         {
-            file = $"{Directory.GetParent(Directory.GetCurrentDirectory()).Parent.Parent.FullName}\\Testfiles\\" + file;
+            file = $"{Directory.GetParent(Directory.GetCurrentDirectory()).Parent.Parent.FullName}/Testfiles/" + file;
             ZXSpectrum z80 = new ZXSpectrum();
             z80.Reset();
 
@@ -45,15 +45,15 @@ namespace ZXBox.Core.Tests
             //z80.Memory = ts.Memory;
             for(int m=0;m< ts.Memory.Length; m++)
             {
-                z80.WriteByteToMemory(m, ts.Memory[m]);
+                z80.WriteByteToMemory((ushort)m, ts.Memory[m]);
             }
             z80.PC = ts.pc;
             z80.R = ts.r;
             z80.SP = ts.sp;
 
-            z80.DoIntructions(ts.end_tstates2);
+            z80.DoInstructions(ts.end_tstates2);
 
-            TestState tsout = TestfileHandler.ReadOUTFile(Path.GetDirectoryName(file) + "\\" + Path.GetFileNameWithoutExtension(file) + ".out", ts.Memory);
+            TestState tsout = TestfileHandler.ReadOUTFile(Path.GetDirectoryName(file) + "/" + Path.GetFileNameWithoutExtension(file) + ".out", ts.Memory);
 
             //Compare
             bool result = CoreTest.CompareFunction(tsout, ExtractState(z80));
@@ -71,7 +71,7 @@ namespace ZXBox.Core.Tests
             //Assert.AreEqual(ts.af,z80.af,"af");
             //Assert.AreEqual(ts.af_, z80.af_,"af_");
 
-            Assert.AreEqual(ts.bc,z80.bc,"bc");
+            Assert.AreEqual (ts.bc,z80.bc,"bc");
             Assert.AreEqual (ts.bc_, z80.bc_,"bc_");
                 
             Assert.AreEqual (ts.de, z80.de,"de");
@@ -83,7 +83,7 @@ namespace ZXBox.Core.Tests
             //Assert.AreEqual (ts.iff2 , z80.iff2, "iff2");
             Assert.AreEqual (ts.im , z80.im, "im");
             Assert.AreEqual (ts.ix , z80.ix, "ix");
-            Assert.AreEqual(ts.iy, z80.iy, "iy");
+            Assert.AreEqual( ts.iy, z80.iy, "iy");
 
             //Not comparing this due to not fully implemented contended memory.
             //Assert.AreEqual(ts.end_tstates2, z80.end_tstates2,"tstates2");
@@ -195,7 +195,7 @@ namespace ZXBox.Core.Tests
             ts.iy = z80.IY;
             for (int m = 0; m < ts.Memory.Length; m++)
             {
-                ts.Memory[m] = z80.ReadByteFromMemory(m);
+                ts.Memory[m] = z80.ReadByteFromMemory((ushort)m);
             }
             ts.pc = z80.PC;
             ts.r = z80.R;

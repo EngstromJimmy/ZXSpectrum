@@ -11,7 +11,7 @@ public class ZXSpectrum : Zilog.Z80
     public List<byte[]> Banks = new List<byte[]> { new byte[0x4000], new byte[0x4000], new byte[0x4000], new byte[0x4000], new byte[0x4000], new byte[0x4000], new byte[0x4000] };
 
     Screen speccyscreen;
-    byte[] romBytes;
+    // byte[] romBytes;
 
     public ZXSpectrum(bool renderBorder = true, bool loadRom = true, int borderTop = 48, int borderBottom = 56, int borderSide = 64, RomEnum rom = RomEnum.ZXSpectrum48k)
     {
@@ -66,11 +66,10 @@ public class ZXSpectrum : Zilog.Z80
     public List<IOutput> OutputHardware = new List<IOutput>();
 
     public int bordercolor = 1;
-    int retvalue = 0xFF;
     int i = 0;
-    public override int In(int port)
+    public override byte In(ushort port)
     {
-        retvalue = 0xFF;
+        byte retvalue = 0xFF;
         for (i = 0; i < InputHardware.Count; i++)
         {
             retvalue &= InputHardware[i].Input(port, NumberOfTstates - Math.Abs(_numberOfTStatesLeft));
@@ -86,7 +85,7 @@ public class ZXSpectrum : Zilog.Z80
     }
     int activescreen = 0;
     bool disablepaging = false;
-    public override void Out(int Port, int ByteValue, int tStates)
+    public override void Out(ushort Port, byte ByteValue, int tStates)
     {
         //128k
         if (Port == 0x7ffd)
@@ -104,9 +103,8 @@ public class ZXSpectrum : Zilog.Z80
     }
     int bank = 0;
     int rom = 0;
-    public override void WriteByteToMemory(int address, int bytetowrite)
+    public override void WriteByteToMemory(ushort address, byte bytetowrite)
     {
-
         if (address < 0x4000) //rom
         {
             Roms[rom][address & 0xffff] = (byte)(bytetowrite & 0xff);
@@ -140,14 +138,14 @@ public class ZXSpectrum : Zilog.Z80
         }
     }
 
-    public override void WriteWordToMemory(int address, int word)
+    public override void WriteWordToMemory(ushort address, ushort word)
     {
-        WriteByteToMemory(address, word & 0xff);
+        WriteByteToMemory(address, (byte)(word & 0xff));
         address++;
-        WriteByteToMemory(address, word >> 8);
+        WriteByteToMemory(address, (byte)(word >> 8));
     }
 
-    public override int ReadByteFromMemory(int address)
+    public override byte ReadByteFromMemory(ushort address)
     {
         if (address < 0x4000) //rom
         {
