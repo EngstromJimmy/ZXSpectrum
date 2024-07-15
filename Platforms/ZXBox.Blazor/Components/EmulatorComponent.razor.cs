@@ -275,7 +275,7 @@ half4 main(float2 fragCoord)
                 Keyboard.KeyBuffer = await JSRuntime.InvokeAsync<List<string>>("getKeyStatus");
                 sw.Start();
                 var frameTStates = speccy.FrameTStates;
-                speccy.DoIntructions(frameTStates);
+                speccy.DoInstructions(frameTStates);
 
                 beeper.GenerateSound(frameTStates);
                 await BufferSound();
