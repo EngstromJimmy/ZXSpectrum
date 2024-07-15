@@ -111,7 +111,7 @@ namespace ZXBox.Blazor.Pages
             //Run JavaScriptInterop to find the currently pressed buttons
             Keyboard.KeyBuffer = await JSRuntime.InvokeAsync<List<string>>("getKeyStatus");
             sw.Start();
-            speccy.DoIntructions(69888);
+            speccy.DoInstructions(69888);
 
             beeper.GenerateSound();
             await BufferSound();

@@ -17,34 +17,29 @@ public partial class Z80
 
     public bool interruptTriggered(int tstates)
     {
-        return (tstates <= 0);
+        return tstates <= 0;
     }
 
-    int pushsp;
-    public void PUSH(int word)
+    public void PUSH(ushort word)
     {
-        //    int sp = ((SP() - 2) & 0xffff);
-        //    SP(sp);
-        //    PokeW(sp, word);
-        pushsp = (SP - 2 & 0xffff);
+        var pushsp = (ushort)(SP - 2 & 0xffff);
         SP = pushsp;
         WriteWordToMemory(pushsp, word);
     }
 
-    private int RES(int bit, int value, int tstates)
+    private byte RES(int bit, byte value, int tstates)
     {
         SubtractNumberOfTStatesLeft(tstates);
-        return value & ~bitArray[bit];
+        return (byte)(value & ~bitArray[bit]);
     }
 
-    bool rlc;
-    public int RL(int value, int tstates)
+    public byte RL(byte value, int tstates)
     {
-        rlc = (value & 0x80) != 0;
+        var rlc = (value & 0x80) != 0;
 
         if (fC)
         {
-            value = (value << 1) | 0x01;
+            value = (byte)((value << 1) | 0x01);
         }
         else
         {
@@ -53,27 +48,26 @@ public partial class Z80
         value &= 0xff;
 
         fS = (value & F_S) != 0;
-        f3 = ((value & F_3) != 0);
-        f5 = ((value & F_5) != 0);
-        fZ = ((value) == 0);
+        f3 = (value & F_3) != 0;
+        f5 = (value & F_5) != 0;
+        fZ = value == 0;
         fPV = Parity[value];
         fH = false;
         fN = false;
         fC = rlc;
 
         SubtractNumberOfTStatesLeft(tstates);
-        return (value);
+        return value;
     }
 
-    int rlcavalue;
     public void RLCA()
     {
-        rlcavalue = A;
+        var rlcavalue = A;
         bool c = (rlcavalue & 0x80) != 0;
 
         if (c)
         {
-            rlcavalue = (rlcavalue << 1) | 0x01;
+            rlcavalue = (byte)((rlcavalue << 1) | 0x01);
         }
         else
         {
@@ -81,8 +75,8 @@ public partial class Z80
         }
         rlcavalue &= 0xff;
 
-        f3 = ((rlcavalue & F_3) != 0);
-        f5 = ((rlcavalue & F_5) != 0);
+        f3 = (rlcavalue & F_3) != 0;
+        f5 = (rlcavalue & F_5) != 0;
         fN = false;
         fH = false;
         fC = c;
@@ -90,24 +84,20 @@ public partial class Z80
         A = rlcavalue;
     }
 
-    int sbc8a;
-    int sbc8c;
-    int value;
-    int sbc8truncated;
-    private int SBC8(int b, int tstates)
+    private byte SBC8(byte b, int tstates)
     {
-        sbc8a = A;
-        sbc8c = fC ? 1 : 0;
-        value = sbc8a - b - sbc8c;
-        sbc8truncated = value & 0xff;
+        var sbc8a = A;
+        var sbc8c = fC ? 1 : 0;
+        var value = sbc8a - b - sbc8c;
+        var sbc8truncated = (byte)(value & 0xff);
 
-        fS = ((sbc8truncated & F_S) != 0);
-        f3 = ((sbc8truncated & F_3) != 0);
-        f5 = ((sbc8truncated & F_5) != 0);
-        fZ = ((sbc8truncated) == 0);
-        fC = ((value & 0x100) != 0);
-        fPV = (((sbc8a ^ b) & (sbc8a ^ sbc8truncated) & 0x80) != 0);
-        fH = ((((sbc8a & 0x0f) - (b & 0x0f) - sbc8c) & F_H) != 0);
+        fS = (sbc8truncated & F_S) != 0;
+        f3 = (sbc8truncated & F_3) != 0;
+        f5 = (sbc8truncated & F_5) != 0;
+        fZ = sbc8truncated == 0;
+        fC = (value & 0x100) != 0;
+        fPV = ((sbc8a ^ b) & (sbc8a ^ sbc8truncated) & 0x80) != 0;
+        fH = (((sbc8a & 0x0f) - (b & 0x0f) - sbc8c) & F_H) != 0;
         fN = true;
 
         SubtractNumberOfTStatesLeft(tstates);
@@ -115,36 +105,32 @@ public partial class Z80
         return sbc8truncated;
     }
 
-    int sbc16c;
-    int sbc16value;
-    int sbc16truncated;
-    private int SBC16(int a, int b, int tstates)
+    private ushort SBC16(ushort a, ushort b, int tstates)
     {
-        sbc16c = fC ? 1 : 0;
-        sbc16value = a - b - sbc16c;
-        sbc16truncated = sbc16value & 0xffff;
+        var sbc16c = fC ? 1 : 0;
+        var sbc16value = (a - b - sbc16c);
+        var sbc16truncated = (ushort)(sbc16value & 0xffff);
 
-        fS = ((sbc16truncated & (F_S << 8)) != 0);
-        f3 = ((sbc16truncated & (F_3 << 8)) != 0);
-        f5 = ((sbc16truncated & (F_5 << 8)) != 0);
-        fZ = ((sbc16truncated) == 0);
-        fC = ((sbc16value & 0x10000) != 0);
-        fPV = (((a ^ b) & (a ^ sbc16truncated) & 0x8000) != 0);
-        fH = ((((a & 0x0fff) - (b & 0x0fff) - sbc16c) & 0x1000) != 0);
+        fS = (sbc16truncated & (F_S << 8)) != 0;
+        f3 = (sbc16truncated & (F_3 << 8)) != 0;
+        f5 = (sbc16truncated & (F_5 << 8)) != 0;
+        fZ = sbc16truncated == 0;
+        fC = (sbc16value & 0x10000) != 0; // TODO: Does this even make sense?
+        fPV = ((a ^ b) & (a ^ sbc16truncated) & 0x8000) != 0;
+        fH = (((a & 0x0fff) - (b & 0x0fff) - sbc16c) & 0x1000) != 0;
         fN = true;
 
         SubtractNumberOfTStatesLeft(tstates);
         return sbc16truncated;
     }
 
-    bool rlcc;
-    public int RLC(int value, int tstates)
+    public byte RLC(byte value, int tstates)
     {
-        rlcc = (value & 0x80) != 0;
+        var rlcc = (value & 0x80) != 0;
 
         if (rlcc)
         {
-            value = (value << 1) | 0x01;
+            value = (byte)((value << 1) | 0x01);
         }
         else
         {
@@ -152,11 +138,11 @@ public partial class Z80
         }
         value &= 0xff;
 
-        fS = ((value & F_S) != 0);
-        f3 = ((value & F_3) != 0);
-        f5 = ((value & F_5) != 0);
-        fZ = ((value) == 0);
-        fPV = (Parity[value]);
+        fS = (value & F_S) != 0;
+        f3 = (value & F_3) != 0;
+        f5 = (value & F_5) != 0;
+        fZ = value == 0;
+        fPV = Parity[value];
         fH = false;
         fN = false;
         fC = rlcc;
@@ -165,15 +151,14 @@ public partial class Z80
         return value;
     }
 
-    int rlavalue; bool rlac;
     public void RLA()
     {
-        rlavalue = A;
-        rlac = (rlavalue & 0x80) != 0;
+        var rlavalue = A;
+        var rlac = (rlavalue & 0x80) != 0;
 
         if (fC)
         {
-            rlavalue = (rlavalue << 1) | 0x01;
+            rlavalue = (byte)((rlavalue << 1) | 0x01);
         }
         else
         {
@@ -182,8 +167,8 @@ public partial class Z80
 
         rlavalue &= 0xff;
 
-        f3 = ((rlavalue & F_3) != 0);
-        f5 = ((rlavalue & F_5) != 0);
+        f3 = (rlavalue & F_3) != 0;
+        f5 = (rlavalue & F_5) != 0;
         fN = false;
         fH = false;
         fC = rlac;
@@ -191,24 +176,23 @@ public partial class Z80
         A = rlavalue;
     }
 
-    bool rrc;
-    public int RR(int value, int tstates)
+    public byte RR(byte value, int tstates)
     {
-        rrc = (value & 0x01) != 0;
+        var rrc = (value & 0x01) != 0;
 
         if (fC)
         {
-            value = (value >> 1) | 0x80;
+            value = (byte)((value >> 1) | 0x80);
         }
         else
         {
             value >>= 1;
         }
 
-        fS = ((value & F_S) != 0);
-        f3 = ((value & F_3) != 0);
-        f5 = ((value & F_5) != 0);
-        fZ = ((value) == 0);
+        fS = (value & F_S) != 0;
+        f3 = (value & F_3) != 0;
+        f5 = (value & F_5) != 0;
+        fZ = value == 0;
         fPV = Parity[value];
         fH = false;
         fN = false;
@@ -220,56 +204,55 @@ public partial class Z80
 
     public void Halt()
     {
-        tmphaltsToInterrupt = (((_numberOfTStatesLeft - 1) / 4) + 1);
-        SubtractNumberOfTStatesLeft((tmphaltsToInterrupt * 4));
+        tmphaltsToInterrupt = ((_numberOfTStatesLeft - 1) / 4) + 1;
+        SubtractNumberOfTStatesLeft(tmphaltsToInterrupt * 4);
         Refresh(tmphaltsToInterrupt - 1);
     }
 
-    public void RST(int position)
+    public void RST(ushort position)
     {
         PUSH(PC);
         PC = position;
         SubtractNumberOfTStatesLeft(11);
     }
 
-    int rrdvalue; int rrdm; int rrdq;
     public void RRD()
     {
-        rrdvalue = A;
-        rrdm = ReadByteFromMemory(HL);
-        rrdq = rrdm;
+        var rrdvalue = A;
+        var rrdm = ReadByteFromMemory(HL);
+        var rrdq = rrdm;
 
-        rrdm = (rrdm >> 4) | (rrdvalue << 4);
-        rrdvalue = (rrdvalue & 0xf0) | (rrdq & 0x0f);
+        rrdm = (byte)((rrdm >> 4) | (rrdvalue << 4));
+        rrdvalue = (byte)((rrdvalue & 0xf0) | (rrdq & 0x0f));
         WriteByteToMemory(HL, rrdm);
 
-        fS = ((rrdvalue & F_S) != 0);
-        f3 = ((rrdvalue & F_3) != 0);
-        f5 = ((rrdvalue & F_5) != 0);
-        fZ = (rrdvalue == 0);
+        fS = (rrdvalue & F_S) != 0;
+        f3 = (rrdvalue & F_3) != 0;
+        f5 = (rrdvalue & F_5) != 0;
+        fZ = rrdvalue == 0;
         fPV = Parity[rrdvalue];
         fH = false;
         fN = false;
         SubtractNumberOfTStatesLeft(18);
         A = rrdvalue;
     }
-    int rrcavalue; bool rrcac;
+
     public void RRCA()
     {
-        rrcavalue = A;
-        rrcac = (rrcavalue & 0x01) != 0;
+        var rrcavalue = A;
+        var rrcac = (rrcavalue & 0x01) != 0;
 
         if (rrcac)
         {
-            rrcavalue = (rrcavalue >> 1) | 0x80;
+            rrcavalue = (byte)((rrcavalue >> 1) | 0x80);
         }
         else
         {
             rrcavalue >>= 1;
         }
 
-        f3 = ((rrcavalue & F_3) != 0);
-        f5 = ((rrcavalue & F_5) != 0);
+        f3 = (rrcavalue & F_3) != 0;
+        f5 = (rrcavalue & F_5) != 0;
         fN = false;
         fH = false;
         fC = rrcac;
@@ -278,180 +261,154 @@ public partial class Z80
         A = rrcavalue;
     }
 
-    bool rrcc;
-    public int RRC(int value, int tstates)
+    public byte RRC(byte value, int tstates)
     {
-        rrcc = (value & 0x01) != 0;
+        var rrcc = (value & 0x01) != 0;
 
         if (rrcc)
         {
-            value = (value >> 1) | 0x80;
+            value = (byte)((value >> 1) | 0x80);
         }
         else
         {
             value >>= 1;
         }
 
-        fS = ((value & F_S) != 0);
-        f3 = ((value & F_3) != 0);
-        f5 = ((value & F_5) != 0);
-        fZ = ((value) == 0);
-        fPV = (Parity[value]);
+        fS = (value & F_S) != 0;
+        f3 = (value & F_3) != 0;
+        f5 = (value & F_5) != 0;
+        fZ = value == 0;
+        fPV = Parity[value];
         fH = false;
         fN = false;
         fC = rrcc;
 
         SubtractNumberOfTStatesLeft(tstates);
-        return value;
+        return (byte)value;
     }
 
-    int rravalue; bool rrac;
     public void RRA()
     {
-        rravalue = A;
-        rrac = (rravalue & 0x01) != 0;
+        var rravalue = A;
+        var rrac = (rravalue & 0x01) != 0;
 
         if (fC)
         {
-            rravalue = (rravalue >> 1) | 0x80;
+            rravalue = (byte)((rravalue >> 1) | 0x80);
         }
         else
         {
             rravalue >>= 1;
         }
 
-        f3 = ((rravalue & F_3) != 0);
-        f5 = ((rravalue & F_5) != 0);
-        fN = (false);
-        fH = (false);
-        fC = (rrac);
+        f3 = (rravalue & F_3) != 0;
+        f5 = (rravalue & F_5) != 0;
+        fN = false;
+        fH = false;
+        fC = rrac;
 
         SubtractNumberOfTStatesLeft(4);
-        A = rravalue;
+        A = (byte)rravalue;
     }
-    int rldm; int rldq; int rldvalue;
+    
     public void RLD()
     {
-        rldvalue = A;
-        rldm = ReadByteFromMemory(HL);
-        rldq = rldm;
+        var rldvalue = A;
+        var rldm = ReadByteFromMemory(HL);
+        var rldq = rldm;
 
-        rldm = (rldm << 4) | (rldvalue & 0x0f);
-        rldvalue = (rldvalue & 0xf0) | (rldq >> 4);
-        WriteByteToMemory(HL, rldm & 0xff);
+        rldm = (byte)((rldm << 4) | (rldvalue & 0x0f));
+        rldvalue = (byte)((rldvalue & 0xf0) | (rldq >> 4));
+        WriteByteToMemory(HL, (byte)(rldm & 0xff));
 
-        fS = ((rldvalue & F_S) != 0);
-        f3 = ((rldvalue & F_3) != 0);
-        f5 = ((rldvalue & F_5) != 0);
-        fZ = (rldvalue == 0);
+        fS = (rldvalue & F_S) != 0;
+        f3 = (rldvalue & F_3) != 0;
+        f5 = (rldvalue & F_5) != 0;
+        fZ = rldvalue == 0;
         fPV = Parity[rldvalue];
         fH = false;
         fN = false;
 
         SubtractNumberOfTStatesLeft(18);
-        A = rldvalue;
+        A = (byte)rldvalue;
     }
 
-    bool srac;
-    public int SRA(int value, int tstates)
+    public byte SRA(int value, int tstates)
     {
-        srac = (value & 0x01) != 0;
+        var srac = (value & 0x01) != 0;
         value = (value >> 1) | (value & 0x80);
 
-        fS = ((value & F_S) != 0);
-        f3 = ((value & F_3) != 0);
-        f5 = ((value & F_5) != 0);
-        fZ = ((value) == 0);
+        fS = (value & F_S) != 0;
+        f3 = (value & F_3) != 0;
+        f5 = (value & F_5) != 0;
+        fZ = value == 0;
         fPV = Parity[value];
         fH = false;
         fN = false;
         fC = srac;
 
         SubtractNumberOfTStatesLeft(tstates);
-        return value;
+        return (byte)value;
     }
 
-    //public void SUB(int value,int tstates)
-    //{
-    //    int a = A;
-    //    int subtracted = a - value;
-    //    int truncated = wans & 0xff;
-
-    //    fS=((truncated & F_S) != 0);
-    //    f3=((truncated & F_3) != 0);
-    //    f5=((truncated & F_5) != 0);
-    //    fZ=((truncated) == 0);
-    //    fC=((wans & 0x100) != 0);
-    //    fPV=(((a ^ value) & (a ^ truncated) & 0x80) != 0);
-    //    fH=((((a & 0x0f) - (value & 0x0f)) & F_H) != 0);
-    //    fN=true;
-
-    //    SubtractNumberOfTStatesLeft( tstates;
-
-    //    A=truncated;
-    //}
-
-    int xornewvalue;
     public void XOR(int value, int tstates)
     {
-        xornewvalue = (A ^ value) & 0xff;
+        var xornewvalue = (A ^ value) & 0xff;
 
-        fS = ((xornewvalue & F_S) != 0);
-        f3 = ((xornewvalue & F_3) != 0);
-        f5 = ((xornewvalue & F_5) != 0);
-        fH = (false);
-        fPV = (Parity[xornewvalue]);
-        fZ = (xornewvalue == 0);
+        fS = (xornewvalue & F_S) != 0;
+        f3 = (xornewvalue & F_3) != 0;
+        f5 = (xornewvalue & F_5) != 0;
+        fH = false;
+        fPV = Parity[xornewvalue];
+        fZ = xornewvalue == 0;
         fN = false;
         fC = false;
 
         SubtractNumberOfTStatesLeft(tstates);
 
-        A = xornewvalue;
+        A = (byte)xornewvalue;
     }
 
-    bool srlc;
-    private int SRL(int value, int tstates)
+    private byte SRL(int value, int tstates)
     {
-        srlc = (value & 0x01) != 0;
+        var srlc = (value & 0x01) != 0;
         value = value >> 1;
 
-        fS = ((value & F_S) != 0);
-        f3 = ((value & F_3) != 0);
-        f5 = ((value & F_5) != 0);
-        fZ = ((value) == 0);
+        fS = (value & F_S) != 0;
+        f3 = (value & F_3) != 0;
+        f5 = (value & F_5) != 0;
+        fZ = value == 0;
         fPV = Parity[value];
         fH = false;
         fN = false;
         fC = srlc;
         SubtractNumberOfTStatesLeft(tstates);
 
-        return (value);
+        return (byte)value;
     }
 
-    bool slac;
-    public int SLA(int value, int tstates)
+    public byte SLA(int value, int tstates)
     {
-        slac = (value & 0x80) != 0;
+        var slac = (value & 0x80) != 0;
         value = (value << 1) & 0xff;
 
-        fS = ((value & F_S) != 0);
-        f3 = ((value & F_3) != 0);
-        f5 = ((value & F_5) != 0);
-        fZ = ((value) == 0);
+        fS = (value & F_S) != 0;
+        f3 = (value & F_3) != 0;
+        f5 = (value & F_5) != 0;
+        fZ = value == 0;
         fPV = Parity[value];
         fH = false;
         fN = false;
         fC = slac;
         SubtractNumberOfTStatesLeft(tstates);
 
-        return value;
+        return (byte)value;
     }
 
-    private int SET(int bit, int value, int tstates)
+    private byte SET(int bit, int value, int tstates)
     {
         SubtractNumberOfTStatesLeft(tstates);
-        return value | bitArray[bit];
+        return (byte)(value | bitArray[bit]);
     }
 
     public void RET(bool condition, int tstates, int notmettstates)
@@ -467,19 +424,14 @@ public partial class Z80
         }
     }
 
-    int popsp; int popt;
-    public int POP()
+    public ushort POP()
     {
-        popsp = SP;
-        popt = ReadByteFromMemory(popsp);
+        var popsp = SP;
+        ushort popt = ReadByteFromMemory(popsp);
         popsp++;
-        popt |= (ReadByteFromMemory(popsp & 0xffff) << 8);
-        SP = (++popsp & 0xffff);
+        popt |= (ushort)(ReadByteFromMemory((ushort)(popsp & 0xffff)) << 8);
+        SP = (ushort)(++popsp & 0xffff);
         return popt;
-
-        //int retval = ReadWordFromMemory(SP);
-        //SP=(SP+2 & 0xffff);
-        //return retval;
     }
 
     public void OUTI()
@@ -490,7 +442,7 @@ public partial class Z80
         Out(BC, ReadByteFromMemory(HL), NumberOfTstates - Math.Abs(_numberOfTStatesLeft));
         HL = INC16(HL, 0);
 
-        fZ = (B == 0);
+        fZ = B == 0;
         fN = true;
         if (ReadByteFromMemory(HL) + L > 255)
         {
@@ -502,22 +454,21 @@ public partial class Z80
             fH = false;
             fC = false;
         }
-        fPV = Parity[(((ReadByteFromMemory(HL) + L) & 7) ^ B)];
+        fPV = Parity[((ReadByteFromMemory(HL) + L) & 7) ^ B];
 
         SubtractNumberOfTStatesLeft(7);
     }
 
-    int outdvalue;
     public void OUTD()
     {
         B = DEC8(B, 0);
 
-        outdvalue = ReadByteFromMemory(HL);
+        var outdvalue = ReadByteFromMemory(HL);
         SubtractNumberOfTStatesLeft(9);
         Out(BC, outdvalue, NumberOfTstates - Math.Abs(_numberOfTStatesLeft));
         HL = DEC16(HL, 0);
 
-        fZ = (B == 0);
+        fZ = B == 0;
         fN = (outdvalue >> 7 & 0x01) != 1;
         if ((outdvalue + L) > 255)
         {
@@ -529,14 +480,13 @@ public partial class Z80
             fH = false;
             fC = false;
         }
-        fPV = Parity[(((outdvalue + L) & 7) ^ B)];
+        fPV = Parity[((outdvalue + L) & 7) ^ B];
         SubtractNumberOfTStatesLeft(7);
     }
 
-    int otirvalue;
     public void OTIR()
     {
-        otirvalue = ReadByteFromMemory(HL);
+        var otirvalue = ReadByteFromMemory(HL);
         SubtractNumberOfTStatesLeft(9);
         B = DEC8(B, 0);
         Out(BC, otirvalue, NumberOfTstates - Math.Abs(_numberOfTStatesLeft));
@@ -553,11 +503,11 @@ public partial class Z80
             fH = true;
             fC = true;
         }
-        fPV = Parity[(((otirvalue + L) & 7) ^ B)];
+        fPV = Parity[((otirvalue + L) & 7) ^ B];
 
         if (B != 0)
         {
-            PC = (PC - 2) & 0xffff;
+            PC = (ushort)((PC - 2) & 0xffff);
             SubtractNumberOfTStatesLeft(12);
         }
         else
@@ -578,7 +528,7 @@ public partial class Z80
         fZ = true;
         if (B != 0)
         {
-            PC = (PC - 2) & 0xffff;
+            PC = (ushort)((PC - 2) & 0xffff);
             SubtractNumberOfTStatesLeft(12);
         }
         else
@@ -587,10 +537,9 @@ public partial class Z80
         }
     }
 
-    int orvalue;
     public void OR(int b, int tstates)
     {
-        orvalue = A | b;
+        var orvalue = A | b;
 
         fS = (orvalue & F_S) != 0;
         f3 = (orvalue & F_3) != 0;
@@ -601,7 +550,7 @@ public partial class Z80
         fN = false;
         fC = false;
         SubtractNumberOfTStatesLeft(tstates);
-        A = orvalue;
+        A = (byte)orvalue;
     }
 
     public void NOP()
@@ -609,21 +558,19 @@ public partial class Z80
         SubtractNumberOfTStatesLeft(4);
     }
 
-    int negtmp;
     public void NEG()
     {
-        negtmp = A;
+        var negtmp = A;
 
         A = 0;
         SUB(negtmp, 0);
         SubtractNumberOfTStatesLeft(8);
     }
 
-    int lddmemval; int lddn;
     public void LDD()
     {
-        lddmemval = ReadByteFromMemory(HL);
-        WriteByteToMemory(DE, lddmemval);
+        var lddmemval = ReadByteFromMemory(HL);
+        WriteByteToMemory(DE, (byte)lddmemval);
         DE = DEC16(DE, 0);
         HL = DEC16(HL, 0);
         BC = DEC16(BC, 0);
@@ -632,22 +579,21 @@ public partial class Z80
         fH = false;
         fN = false;
 
-        lddn = lddmemval + A;
+        var lddn = lddmemval + A;
 
-        f5 = ((lddn & 0x01) == 1);
-        f3 = ((lddn >> 3 & 0x01) == 1);
+        f5 = (lddn & 0x01) == 1;
+        f3 = (lddn >> 3 & 0x01) == 1;
 
         SubtractNumberOfTStatesLeft(16);
     }
 
-    int lddr_local_tstates; int lddrcount, lddrdest, lddrfrom;
     public void LDDR()
     {  //TODO:fix this
-        lddr_local_tstates = 0;
+        var lddr_local_tstates = 0;
 
-        lddrcount = BC;
-        lddrdest = DE;
-        lddrfrom = HL;
+        var lddrcount = BC;
+        var lddrdest = DE;
+        var lddrfrom = HL;
         Refresh(-2);
         do
         {
@@ -656,7 +602,7 @@ public partial class Z80
             lddrdest = DEC16(lddrdest, 0);
             lddrcount = DEC16(lddrcount, 0);
 
-            lddr_local_tstates += (21);
+            lddr_local_tstates += 21;
             Refresh(2);
             if (interruptTriggered(lddr_local_tstates))
             {
@@ -667,46 +613,28 @@ public partial class Z80
 
         if (lddrcount != 0)
         {
-            PC = ((PC - 2) & 0xffff);
+            PC = (ushort)((PC - 2) & 0xffff);
             fH = false;
             fN = false;
             fPV = true;
         }
         else
         {
-            lddr_local_tstates += (-5);
+            lddr_local_tstates += -5;
             fH = false;
             fN = false;
             fPV = false;
         }
-        DE = lddrdest;
-        HL = lddrfrom;
-        BC = lddrcount;
+        DE = (ushort)lddrdest;
+        HL = (ushort)lddrfrom;
+        BC = (ushort)lddrcount;
         SubtractNumberOfTStatesLeft(lddr_local_tstates);
-        //int tstates = (5 + 16 * (BC)); 
-        //int tmp1 = DE; 
-        //int tmp2 = HL;	// LDDR - ok
-        //Refresh(-2);
-        //for (int n = (BC); n > 0; n--)
-        //{
-        //    WriteByteToMemory(tmp1--, ReadByteFromMemory(tmp2--));
-        //    Refresh(2);
-        //}
-        //E = tmp1 & 0xff; 
-        //D = tmp1 >> 8; 
-        //B = C = 0; 
-        //L = tmp2 & 0xff; 
-        //H = tmp2 >> 8; 
-        //F &= 0xe9;
-
-        //SubtractNumberOfTStatesLeft( tstates;
     }
 
-    int ldimemval = 0;
     public void LDI()
     {
         int ldimemval = ReadByteFromMemory(HL);
-        WriteByteToMemory(DE, ldimemval);
+        WriteByteToMemory(DE, (byte)ldimemval);
         DE = INC16(DE, 0);
         HL = INC16(HL, 0);
         BC = DEC16(BC, 0);
@@ -716,42 +644,20 @@ public partial class Z80
         fPV = BC != 0;
         fH = false;
         fN = false;
-        f5 = ((n & 0x01) == 1);
-        f3 = ((n >> 3 & 0x01) == 1);
+        f5 = (n & 0x01) == 1;
+        f3 = (n >> 3 & 0x01) == 1;
 
         SubtractNumberOfTStatesLeft(16);
     }
 
-    int ldir_local_tstates, ldircount, ldirdest, ldirfrom;
     public void LDIR()
     {
-        ldir_local_tstates = 0;
+        var ldir_local_tstates = 0;
 
-        ldircount = BC;
-        ldirdest = DE;
-        ldirfrom = HL;
+        var ldircount = BC;
+        var ldirdest = DE;
+        var ldirfrom = HL;
         Refresh(-2);
-
-        //var timeleft = NumberOfTStatesLeft/21;
-        //int lenght = count;
-        //if (timeleft < count)
-        //{
-        //    lenght = timeleft;
-        //    if (lenght == 0) //Always let it run once
-        //    {
-        //        lenght = 1;
-        //    }
-        //}
-
-        ////Buffer.BlockCopy(Memory, from * sizeof(int), Memory, dest * sizeof(int), lenght * sizeof(int));
-        //Array.Copy(Memory, from , Memory, dest , lenght);
-
-        //count = (count - lenght) & 0xffff;
-        //from = (from + lenght) & 0xffff;
-        //dest = (dest + lenght) & 0xffff;
-
-        //_local_tstates = 21 * lenght;
-        //Refresh(2 * lenght);
 
         do
         {
@@ -761,7 +667,7 @@ public partial class Z80
             ldirdest = INC16(ldirdest, 0);
             ldircount = DEC16(ldircount, 0);
 
-            ldir_local_tstates += (21);
+            ldir_local_tstates += 21;
             Refresh(2);
             if (interruptTriggered(_numberOfTStatesLeft - ldir_local_tstates))
             {
@@ -771,14 +677,14 @@ public partial class Z80
 
         if (ldircount != 0)
         {
-            PC = (PC - 2) & 0xffff;
+            PC = (ushort)((PC - 2) & 0xffff);
             fH = false;
             fN = false;
             fPV = true;
         }
         else
         {
-            ldir_local_tstates += (-5);
+            ldir_local_tstates += -5;
             fH = false;
             fN = false;
             fPV = false;
@@ -787,60 +693,17 @@ public partial class Z80
         HL = ldirfrom;
         BC = ldircount;
 
-        /*int tstates = 0;
-        int tmp1 = DE; 
-        int tmp2 = HL;
-        int nvalue = 0;
-        int count = BC;
-        Refresh(-2);
-        do //            for (int n = (BC); n > 0; n--)
-        {
-            int b = ReadByteFromMemory(tmp2);
-            WriteByteToMemory(tmp1, b);
-            tmp1 = (tmp1 + 1) & 0xffff; 
-            tmp2 = (tmp2 + 1) & 0xffff;
-            nvalue = b + A;
-            Refresh(2);
-            tstates += (21);
-            if (interruptTriggered(tstates))
-            {
-                break;
-            }
-        }while (count != 0);
-
-        if (count != 0)
-        {
-            PC = PC - 2;
-            fH = false;
-            fN = false;
-            fPV = true;
-        }
-        else
-        {
-            tstates += (-5);
-            f5=((nvalue & 0x01)==1);
-            fH=false;
-            f3=((nvalue>>3 & 0x01)==1);
-            fPV = (BC != 0);
-        }
-        E = tmp1 & 0xff;
-        D = tmp1 >> 8;
-        //B = C = 0; 
-        L = tmp2 & 0xff;
-        H = tmp2 >> 8;*/
-
         SubtractNumberOfTStatesLeft(ldir_local_tstates);
     }
 
-    int ldarvalue;
     private void LDAR()
     {
-        ldarvalue = R;
+        var ldarvalue = R;
 
-        fS = ((ldarvalue & F_S) != 0);
-        f3 = ((ldarvalue & F_3) != 0);
-        f5 = ((ldarvalue & F_5) != 0);
-        fZ = (ldarvalue == 0);
+        fS = (ldarvalue & F_S) != 0;
+        f3 = (ldarvalue & F_3) != 0;
+        f5 = (ldarvalue & F_5) != 0;
+        fZ = ldarvalue == 0;
         fPV = IFF2;
         fH = false;
         fN = false;
@@ -848,14 +711,14 @@ public partial class Z80
         SubtractNumberOfTStatesLeft(9);
         A = ldarvalue;
     }
-    int ldaivalue;
+    
     public void LDAI()
     {
-        ldaivalue = I;
+        var ldaivalue = I;
 
-        fS = ((ldaivalue & F_S) != 0);
-        f3 = ((ldaivalue & F_3) != 0);
-        f5 = ((ldaivalue & F_5) != 0);
+        fS = (ldaivalue & F_S) != 0;
+        f3 = (ldaivalue & F_3) != 0;
+        f5 = (ldaivalue & F_5) != 0;
         fZ = ldaivalue == 0;
         fPV = IFF2;
         fH = false;
@@ -868,35 +731,34 @@ public partial class Z80
     public void JP(bool argument, int position, int tstates)
     {
         if (argument)
-            PC = position;
+            PC = (ushort)position;
         SubtractNumberOfTStatesLeft(tstates);
     }
 
-    private int Sign(int nn)
+    private sbyte Sign(byte nn)
     {
-        return nn - ((nn & 128) << 1);
+        return (sbyte)(nn);// - ((nn & 128) << 1));
     }
 
     public void JR(bool argument, int position, int tstates)
     {
         if (argument)
         {
-            PC = (PC + Sign(position)) & 0xFFFF;
+            PC = (ushort)((PC + Sign((byte)position)) & 0xFFFF);
         }
         SubtractNumberOfTStatesLeft(tstates);
     }
 
-    int inbcvalue;
-    public int INBC(int tstates)
+    public byte INBC(int tstates)
     {
-        inbcvalue = In(BC);
+        var inbcvalue = (byte)In(BC);
 
         SubtractNumberOfTStatesLeft(tstates);
 
-        fZ = (inbcvalue == 0);
-        fS = ((inbcvalue & F_S) != 0);
-        f3 = ((inbcvalue & F_3) != 0);
-        f5 = ((inbcvalue & F_5) != 0);
+        fZ = inbcvalue == 0;
+        fS = (inbcvalue & F_S) != 0;
+        f3 = (inbcvalue & F_3) != 0;
+        f5 = (inbcvalue & F_5) != 0;
         fPV = Parity[inbcvalue];
         fN = false;
         fH = false;
@@ -910,19 +772,18 @@ public partial class Z80
 
         if (B != 0)  //If B is not zero Do instruction again
         {
-            PC = PC - 2;
+            PC = (ushort)(PC - 2);
             SubtractNumberOfTStatesLeft(21);
         }
         else
             SubtractNumberOfTStatesLeft(16);
     }
 
-    int indb;
     public void IND(int tstates)
     {
-        indb = DEC8(B, 0);
-        WriteByteToMemory(HL, In(BC));
-        B = indb;
+        var indb = DEC8(B, 0);
+        WriteByteToMemory(HL, (byte)In(BC));
+        B = (byte)indb;
         HL = DEC16(HL, 0);
 
         fZ = indb == 0;
@@ -937,16 +798,15 @@ public partial class Z80
             fC = false;
             fH = false;
         }
-        fPV = Parity[(((ReadByteFromMemory(HL) + ((C - 1) & 255)) & 7) ^ B)];
+        fPV = Parity[((ReadByteFromMemory(HL) + ((C - 1) & 255)) & 7) ^ B];
         SubtractNumberOfTStatesLeft(tstates);
     }
 
-    int inib, inival;
     public void INI(int tstates)
     {
-        inib = DEC8(B, 0);
-        inival = In(BC);
-        WriteByteToMemory(HL, inival);
+        var inib = DEC8(B, 0);
+        var inival = (byte)In(BC);
+        WriteByteToMemory(HL, (byte)inival);
         B = inib;
         HL = INC16(HL, 0);
 
@@ -962,7 +822,7 @@ public partial class Z80
             fC = false;
             fH = false;
         }
-        fPV = Parity[(((inival + ((C + 1) & 255)) & 7) ^ B)];
+        fPV = Parity[((inival + ((C + 1) & 255)) & 7) ^ B];
         SubtractNumberOfTStatesLeft(tstates);
     }
 
@@ -972,7 +832,7 @@ public partial class Z80
         if (B != 0)
         {
             SubtractNumberOfTStatesLeft(21);
-            PC = PC - 2;
+            PC = (ushort)(PC - 2);
         }
         else
         {
@@ -981,24 +841,23 @@ public partial class Z80
 
     }
 
-    int addadc8c, addadc8newvalue, addadc8truncated;
-    public int ADDADC8(int a, int b, bool Carry, int tStates)
+    public byte ADDADC8(byte a, byte b, bool Carry, int tStates)
     {
-        addadc8c = 0;
+        var addadc8c = 0;
         if (Carry)
             addadc8c = fC ? 1 : 0; //Add 1 if carry is set
 
-        addadc8newvalue = a + b + addadc8c;
-        addadc8truncated = addadc8newvalue & 0xff;
+        var addadc8newvalue = a + b + addadc8c;
+        var addadc8truncated = (byte)(addadc8newvalue & 0xff);
 
         //Set flags
-        fS = ((addadc8truncated & F_S) != 0);
-        f3 = ((addadc8truncated & F_3) != 0);
-        f5 = ((addadc8truncated & F_5) != 0);
-        fZ = ((addadc8truncated) == 0);
-        fC = ((addadc8newvalue & 0x100) != 0);
-        fPV = (((a ^ ~b) & (a ^ addadc8truncated) & 0x80) != 0);
-        fH = ((((a & 0x0f) + (b & 0x0f) + addadc8c) & F_H) != 0);
+        fS = (addadc8truncated & F_S) != 0;
+        f3 = (addadc8truncated & F_3) != 0;
+        f5 = (addadc8truncated & F_5) != 0;
+        fZ = addadc8truncated == 0;
+        fC = (addadc8newvalue & 0x100) != 0;
+        fPV = ((a ^ ~b) & (a ^ addadc8truncated) & 0x80) != 0;
+        fH = (((a & 0x0f) + (b & 0x0f) + addadc8c) & F_H) != 0;
         fN = false;
 
         SubtractNumberOfTStatesLeft(tStates);
@@ -1006,12 +865,11 @@ public partial class Z80
         return addadc8truncated;
     }
 
-    int addadc16c, addadc16added, addadc16truncated;
-    private int ADDADC16(int a, int b, bool Carry, int tStates)
+    private ushort ADDADC16(ushort a, ushort b, bool Carry, int tStates)
     {
-        addadc16c = fC && Carry ? 1 : 0;
-        addadc16added = a + b + addadc16c;
-        addadc16truncated = addadc16added & 0xffff;
+        var addadc16c = fC && Carry ? 1 : 0;
+        var addadc16added = a + b + addadc16c;
+        var addadc16truncated = (ushort)(addadc16added & 0xffff);
 
         f3 = (addadc16truncated & (F_3 << 8)) != 0;
         f5 = (addadc16truncated & (F_5 << 8)) != 0;
@@ -1022,16 +880,15 @@ public partial class Z80
         {
             fS = (addadc16truncated & (F_S << 8)) != 0;
             fPV = ((a ^ ~b) & (a ^ addadc16truncated) & 0x8000) != 0;
-            fZ = (addadc16truncated) == 0;
+            fZ = addadc16truncated == 0;
         }
         SubtractNumberOfTStatesLeft(tStates);
-        return (addadc16truncated);
+        return addadc16truncated;
     }
 
-    int and8newvalue;
-    public int AND8(int a, int b, int tStates)
+    public byte AND8(byte a, byte b, int tStates)
     {
-        and8newvalue = a & b;
+        var and8newvalue = a & b;
 
         fS = (and8newvalue & F_S) != 0;
         f3 = (and8newvalue & F_3) != 0;
@@ -1043,135 +900,108 @@ public partial class Z80
         fC = false;
 
         SubtractNumberOfTStatesLeft(tStates);
-        return and8newvalue;
+        return (byte)and8newvalue;
     }
 
-    bool bitbitIsSet;
     public void BIT(int bit, int regvalue, int tStates)
     {
-        bitbitIsSet = ((regvalue & bitArray[bit]) != 0);
-
-        //fN = false;
-        //fH = true;
-        //if (bit == 3)
-        //    f3 = bitIsSet;
-        //if (bit == 5)
-        //    f5 = bitIsSet;
-        //fS = ((bit == 7) ? bitIsSet : false);
-        //fZ = !bitIsSet;
-        //fPV = !bitIsSet;        
-
         SubtractNumberOfTStatesLeft(tStates);
-        //fN=false;
-        //fH=true;
-        //f3=((regvalue & F_3) != 0);
-        //f5=((regvalue & F_5) != 0);
-        //fS=((bit == F_S) ? bitIsSet : false);
-        //fZ=(!bitIsSet);
-        //fPV=(!bitIsSet);
         F = (byte)((F & F_C) |
-                        F_H |
-                        (regvalue & (F_3 | F_5)) |
-                        ((regvalue & (0x01 << bit)) != 0 ? 0 : (F_PV | F_Z)));
-
+                    F_H |
+                    (regvalue & (F_3 | F_5)) |
+                    ((regvalue & (0x01 << bit)) != 0 ? 0 : (F_PV | F_Z)));
     }
 
-    bool bitixydbitIsSet;
     public void BITixyd(int bit, int regvalue, int ixyd, int tStates)
     {
-        bitixydbitIsSet = ((regvalue & bitArray[bit]) != 0);
+        var bitixydbitIsSet = (regvalue & bitArray[bit]) != 0;
 
         fN = false;
         fH = true;
-        f3 = ((ixyd >> 11 & 0x01) == 1) ? true : false;
-        f5 = ((ixyd >> 13 & 0x01) == 1) ? true : false;
-        fS = ((bit == 7) ? bitixydbitIsSet : false);
+        f3 = (ixyd >> 11 & 0x01) == 1;
+        f5 = (ixyd >> 13 & 0x01) == 1;
+        fS = (bit == 7) && bitixydbitIsSet;
         fZ = !bitixydbitIsSet;
         fPV = !bitixydbitIsSet;
         SubtractNumberOfTStatesLeft(tStates);
     }
 
-    int callnnw;
     public void CALLnn()
     {
-        callnnw = GetNextPCWord();
+        var callnnw = GetNextPCWord();
         PCToStack();
         PC = callnnw;
         SubtractNumberOfTStatesLeft(17);
     }
 
-    int sllc;
-    private int SLL(int value, int tstates)
+    private byte SLL(byte value, int tstates)
     {
-        sllc = (value & 0x80) >> 7;
-        value = ((value << 1) | 1) & 0xff;
+        var sllc = (value & 0x80) >> 7;
+        value = (byte)(((value << 1) | 1) & 0xff);
 
-        fS = ((value & F_S) != 0);
-        f3 = ((value & F_3) != 0);
-        f5 = ((value & F_5) != 0);
-        fZ = ((value) == 0);
+        fS = (value & F_S) != 0;
+        f3 = (value & F_3) != 0;
+        f5 = (value & F_5) != 0;
+        fZ = value == 0;
         fPV = Parity[value];
         fH = false;
         fN = false;
-        fC = (sllc == 1);
+        fC = sllc == 1;
         SubtractNumberOfTStatesLeft(tstates);
         return value;
     }
 
-    int cpa, cpwvalue, cpnewvalue;
     /// <summary>
     /// Compare operand s to ackumulator
     /// </summary>
     /// <param name="s">Operand</param>
     /// <param name="tStates">Number of tstates</param>
-    private void CP(int value, int tstates)
+    private void CP(byte value, int tstates)
     {
-        cpa = A;
-        cpwvalue = cpa - value;
-        cpnewvalue = cpwvalue & 0xff;
+        var cpa = A;
+        var cpwvalue = cpa - value;
+        var cpnewvalue = (byte)(cpwvalue & 0xff);
 
-        fS = ((cpnewvalue & F_S) != 0);
-        f3 = ((value & F_3) != 0);
-        f5 = ((value & F_5) != 0);
-        fN = (true);
-        fZ = (cpnewvalue == 0);
-        fC = ((cpwvalue & 0x100) != 0);
-        fH = ((((cpa & 0x0f) - (value & 0x0f)) & F_H) != 0);
-        fPV = (((cpa ^ value) & (cpa ^ cpnewvalue) & 0x80) != 0);
+        fS = (cpnewvalue & F_S) != 0;
+        f3 = (value & F_3) != 0;
+        f5 = (value & F_5) != 0;
+        fN = true;
+        fZ = cpnewvalue == 0;
+        fC = (cpwvalue & 0x100) != 0;
+        fH = (((cpa & 0x0f) - (value & 0x0f)) & F_H) != 0;
+        fPV = ((cpa ^ value) & (cpa ^ cpnewvalue) & 0x80) != 0;
 
         SubtractNumberOfTStatesLeft(tstates);
     }
 
-    int cp2sub, cp2truncated;
-    public void CP2(int s, int tStates)
+    public void CP2(byte s, int tStates)
     {
         SubtractNumberOfTStatesLeft(tStates);
-        cp2sub = A - s;
-        cp2truncated = cp2sub & 0xff;
+        var cp2sub = A - s;
+        var cp2truncated = (byte)(cp2sub & 0xff);
 
-        fS = ((cp2truncated & F_S) != 0);
-        f3 = ((s & F_3) != 0);
-        f5 = ((s & F_5) != 0);
+        fS = (cp2truncated & F_S) != 0;
+        f3 = (s & F_3) != 0;
+        f5 = (s & F_5) != 0;
         fN = true;
-        fZ = (cp2truncated == 0);
-        fC = ((cp2sub & 0x100) != 0);
-        fH = ((((A & 0x0f) - (s & 0x0f)) & F_H) != 0);
-        fPV = (((A ^ s) & (A ^ cp2truncated) & 0x80) != 0);
+        fZ = cp2truncated == 0;
+        fC = (cp2sub & 0x100) != 0;
+        fH = (((A & 0x0f) - (s & 0x0f)) & F_H) != 0;
+        fPV = ((A ^ s) & (A ^ cp2truncated) & 0x80) != 0;
     }
 
-    int callw;
     public void CALL(bool argument)
     {
         if (argument)
         {
-            callw = GetNextPCWord();
+            var callw = GetNextPCWord();
             PCToStack();
             PC = callw;
             SubtractNumberOfTStatesLeft(17);
         }
         else
         {
-            PC = ((PC + 2) & 0xffff);
+            PC = (ushort)((PC + 2) & 0xffff);
             SubtractNumberOfTStatesLeft(10);
         }
     }
@@ -1181,75 +1011,72 @@ public partial class Z80
     /// </summary>
     public void CCF()
     {
-        f3 = ((A & F_3) != 0);
-        f5 = ((A & F_5) != 0);
+        f3 = (A & F_3) != 0;
+        f5 = (A & F_5) != 0;
         fN = false;
         fC = !fC;
         SubtractNumberOfTStatesLeft(4);
     }
 
-    bool cpdc, cpdpv;
-    int cpdn;
     public void CPD()
     {
-        cpdc = fC;
+        var cpdc = fC;
 
         CP(ReadByteFromMemory(HL), 0);
         HL = DEC16(HL, 0);
         BC = DEC16(BC, 0);
 
-        fPV = (BC != 0);
+        fPV = BC != 0;
         fC = cpdc;
         //---------------
-        cpdn = A - ReadByteFromMemory(HL) - (fH ? 1 : 0);
-        cpdpv = (BC != 0);
+        var cpdn = (byte)(A - ReadByteFromMemory(HL) - (fH ? 1 : 0));
+        var cpdpv = BC != 0;
 
         fN = true;
         fC = cpdc;
-        f5 = ((cpdn & 0x01) == 1);
-        f3 = ((cpdn >> 3 & 0x01) == 1);
+        f5 = (cpdn & 0x01) == 1;
+        f3 = (cpdn >> 3 & 0x01) == 1;
         //-----------------------
 
         SubtractNumberOfTStatesLeft(16);
     }
-    bool cpic; int cpimemvalue; int cpin;
+
     public void CPI()
     {
-        cpic = fC;
-        cpimemvalue = ReadByteFromMemory(HL);
+        var cpic = fC;
+        var cpimemvalue = ReadByteFromMemory(HL);
         CP(cpimemvalue, 0);
         HL = INC16(HL, 0);
         BC = DEC16(BC, 0);
-        cpin = A - cpimemvalue - (fH ? 1 : 0);
-        f5 = ((cpin & 0x01) == 1);
-        f3 = ((cpin >> 3 & 0x01) == 1);
-        fPV = (BC != 0);
+        var cpin = A - cpimemvalue - (fH ? 1 : 0);
+        f5 = (cpin & 0x01) == 1;
+        f3 = (cpin >> 3 & 0x01) == 1;
+        fPV = BC != 0;
         fC = cpic;
         SubtractNumberOfTStatesLeft(16);
     }
 
-    bool cpirc; int cpirvalue; int cpirn; bool cpirpv;
     public void CPIR()
     {
-        cpirc = fC;
-        cpirvalue = ReadByteFromMemory(HL);
+        var cpirc = fC;
+        var cpirvalue = ReadByteFromMemory(HL);
         CP(cpirvalue, 0);
 
         HL = INC16(HL, 0);
         BC = DEC16(BC, 0);
 
-        cpirn = A - cpirvalue - (fH ? 1 : 0);
-        cpirpv = (BC != 0);
+        var cpirn = A - cpirvalue - (fH ? 1 : 0);
+        var cpirpv = BC != 0;
 
         fN = true;
         fPV = cpirpv;
         fC = cpirc;
-        f5 = ((cpirn & 0x01) == 1);
-        f3 = ((cpirn >> 3 & 0x01) == 1);
+        f5 = (cpirn & 0x01) == 1;
+        f3 = (cpirn >> 3 & 0x01) == 1;
 
         if (BC != 0 && A != cpirvalue)
         {   //Repeat until BC ==0
-            PC = ((PC - 2) & 0xffff);
+            PC = (ushort)((PC - 2) & 0xffff);
             SubtractNumberOfTStatesLeft(21);
         }
         else
@@ -1258,24 +1085,23 @@ public partial class Z80
         }
     }
 
-    private int INC16(int value, int tStates)
+    private ushort INC16(ushort value, int tStates)
     {
         SubtractNumberOfTStatesLeft(tStates);
-        return (value + 1) & 0xffff;
+        return (ushort)((value + 1) & 0xffff);
     }
 
-    bool inc8pv, inc8h;
-    private int INC8(int value, int tStates)
+    private byte INC8(byte value, int tStates)
     {
-        inc8pv = (value == 0x7f);
-        inc8h = (((value & 0x0f) + 1) & F_H) != 0;
-        value = (value + 1) & 0xff;
+        var inc8pv = value == 0x7f;
+        var inc8h = (((value & 0x0f) + 1) & F_H) != 0;
+        value = (byte)((value + 1) & 0xff);
 
-        fS = ((value & F_S) != 0);
-        f3 = ((value & F_3) != 0);
-        f5 = ((value & F_5) != 0);
-        fZ = ((value) == 0);
-        fPV = (inc8pv);
+        fS = (value & F_S) != 0;
+        f3 = (value & F_3) != 0;
+        f5 = (value & F_5) != 0;
+        fZ = value == 0;
+        fPV = inc8pv;
         fH = inc8h;
         fN = false;
 
@@ -1289,30 +1115,29 @@ public partial class Z80
     /// <param name="value">Value to decrement with</param>
     /// <param name="tStates">Number of tstates</param>
     /// <returns>Decremented value</returns>
-    private int DEC16(int value, int tStates)
+    private ushort DEC16(ushort value, int tStates)
     {
         SubtractNumberOfTStatesLeft(tStates);
-        return (value - 1) & 0xffff;
+        return (ushort)((value - 1) & 0xffff);
     }
 
-    bool dec8pv, dev8h;
     /// <summary>
     /// Decrement for 8bit register
     /// </summary>
     /// <param name="value">Value to decrement</param>
     /// <param name="tStates">Number of tstates</param>
     /// <returns>Decremented value</returns>
-    private int DEC8(int value, int tStates)
+    private byte DEC8(byte value, int tStates)
     {
         SubtractNumberOfTStatesLeft(tStates);
-        dec8pv = (value == 0x80);
-        dev8h = (((value & 0x0f) - 1) & F_H) != 0;
-        value = (value - 1) & 0xff;
+        var dec8pv = value == 0x80;
+        var dev8h = (((value & 0x0f) - 1) & F_H) != 0;
+        value = (byte)((value - 1) & 0xff);
 
-        fS = ((value & F_S) != 0);
-        f3 = ((value & F_3) != 0);
-        f5 = ((value & F_5) != 0);
-        fZ = ((value) == 0);
+        fS = (value & F_S) != 0;
+        f3 = (value & F_3) != 0;
+        f5 = (value & F_5) != 0;
+        fZ = value == 0;
         fPV = dec8pv;
         fH = dev8h;
         fN = true;
@@ -1320,41 +1145,35 @@ public partial class Z80
         return value;
     }
 
-    //private int INC16NoFlags(int a) 
-    //{
-    //        return (a + 1) & 0xffff; 
-    //}
-
-    private int INC8NoFlags(int a)
+    private byte INC8NoFlags(byte a)
     {
-        return (a + 1) & 0xff;
+        return (byte)((a + 1) & 0xff);
     }
 
-    private int DEC8NoFlags(int a)
+    private byte DEC8NoFlags(byte a)
     {
-        return (a - 1) & 0xff;
+        return (byte)((a - 1) & 0xff);
     }
 
-    bool cpdrc, cpdrpv;
     /// <summary>
     /// Block compare with decrement
     /// </summary>
     public void CPDR()
     {
-        bool cpdrc = fC;
+        var cpdrc = fC;
 
         CP(ReadByteFromMemory(HL), 0);
         HL = DEC16(HL, 0);
         BC = DEC16(BC, 0);
 
-        cpdrpv = (BC != 0);
+        var cpdrpv = BC != 0;
 
         fPV = cpdrpv;
         fC = cpdrc;
         if (cpdrpv && !fZ)
         {
             //Repeat until BC==0
-            PC = ((PC - 2) & 0xffff);
+            PC = (ushort)((PC - 2) & 0xffff);
             SubtractNumberOfTStatesLeft(21);
         }
         else
@@ -1369,7 +1188,7 @@ public partial class Z80
     public void CPL()
     {
         SubtractNumberOfTStatesLeft(4);
-        int comp = A ^ 0xff;
+        var comp = (byte)(A ^ 0xff);
 
         f3 = (comp & F_3) != 0;
         f5 = (comp & F_5) != 0;
@@ -1379,18 +1198,16 @@ public partial class Z80
         A = comp;
     }
 
-    int daaa, daaincrement;
-    bool daac;
     /// <summary>
     /// Deciaml Adjust accumulator (4 tstates)
     /// </summary>
     public void DAA()
     {
-        daaa = A;
-        daaincrement = 0;
-        daac = fC;
+        var daaa = A;
+        byte daaincrement = 0;
+        var daac = fC;
 
-        if ((fH) || ((daaa & 0x0f) > 0x09))
+        if (fH || ((daaa & 0x0f) > 0x09))
         {
             daaincrement |= 0x06;
         }
@@ -1408,7 +1225,7 @@ public partial class Z80
         }
         else
         {
-            A = ADDADC8(A, daaincrement, false, 0);
+            A = (byte)ADDADC8(A, daaincrement, false, 0);
         }
 
         fC = daac;
@@ -1416,20 +1233,19 @@ public partial class Z80
         SubtractNumberOfTStatesLeft(4);
     }
 
-    int suba, subsubtracted, subtruncated;
-    public void SUB(int b, int tStates)
+    public void SUB(byte b, int tStates)
     {
-        suba = A;
-        subsubtracted = suba - b;
-        subtruncated = subsubtracted & 0xff;
+        var suba = A;
+        var subsubtracted = suba - b;
+        var subtruncated = (byte)(subsubtracted & 0xff);
 
-        fS = ((subtruncated & F_S) != 0);
-        f3 = ((subtruncated & F_3) != 0);
-        f5 = ((subtruncated & F_5) != 0);
-        fZ = ((subtruncated) == 0);
-        fC = ((subsubtracted & 0x100) != 0);
-        fPV = (((suba ^ b) & (suba ^ subtruncated) & 0x80) != 0);
-        fH = ((((suba & 0x0f) - (b & 0x0f)) & F_H) != 0);
+        fS = (subtruncated & F_S) != 0;
+        f3 = (subtruncated & F_3) != 0;
+        f5 = (subtruncated & F_5) != 0;
+        fZ = subtruncated == 0;
+        fC = (subsubtracted & 0x100) != 0;
+        fPV = ((suba ^ b) & (suba ^ subtruncated) & 0x80) != 0;
+        fH = (((suba & 0x0f) - (b & 0x0f)) & F_H) != 0;
         fN = true;
 
         A = subtruncated;
@@ -1438,28 +1254,11 @@ public partial class Z80
 
     public void DNJZ()
     {
-        ////No effects on flags
-        //int f = F;
-
-        //B--;
-        //if (B != 0)
-        //{
-        //    int d = GetNextPCByte();
-        //    PC = (PC + d) & 0xffff;
-        //    SubtractNumberOfTStatesLeft( 13;
-        //}
-        //else
-        //{
-        //    PC = INC16(PC, 0);
-        //    SubtractNumberOfTStatesLeft( 8;
-        //}
-        //F = f;
-
-        B = (B - 1) & 0xff;
+        B = (byte)((B - 1) & 0xff);
         if (B != 0)
         {
             SubtractNumberOfTStatesLeft(13);
-            PC += Sign(GetNextPCByte());
+            PC = (ushort)(PC + Sign(GetNextPCByte()));
             PC++;
         }
         else
@@ -1469,10 +1268,9 @@ public partial class Z80
         }
     }
 
-    int exxtmp;
     public void EXX()
     {
-        exxtmp = BC;
+        var exxtmp = BC;
         BC = BCPrim;
         BCPrim = exxtmp;
 
@@ -1487,5 +1285,4 @@ public partial class Z80
         SubtractNumberOfTStatesLeft(4);
     }
     #endregion
-
 }

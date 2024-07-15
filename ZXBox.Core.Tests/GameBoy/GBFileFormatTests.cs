@@ -25,8 +25,8 @@ public class GBFileFormatTests
         ff.LoadSnapshot(bytes, gb);
         List<int> tiles = new List<int>();
         //gb.PC = 0x100; //Entry point
-        gb.DoIntructions(1000000000);
-        for (int b = 0x8000; b <= 0x97FF; b++)
+        gb.DoInstructions(1000000000);
+        for (ushort b = 0x8000; b <= 0x97FF; b++)
         {
             tiles.Add(gb.ReadByteFromMemory(b));
         }

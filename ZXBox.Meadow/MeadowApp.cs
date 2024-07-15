@@ -71,7 +71,7 @@ namespace ZXBox.MeadowApp
             {
                 try
                 {
-                    speccy.DoIntructions(69888*50);
+                    speccy.DoInstructions(69888*50);
                     Console.WriteLine("OnCycle");
                     var screen = speccy.GetScreenInUint(true);
                     Console.WriteLine("Got screen");
