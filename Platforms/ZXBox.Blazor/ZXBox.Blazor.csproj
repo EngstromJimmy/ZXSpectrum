@@ -2,8 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
-	<!--<RunAOTCompilation>true</RunAOTCompilation>-->
-	  
+	  <RunAOTCompilation>true</RunAOTCompilation> 
+	   
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
