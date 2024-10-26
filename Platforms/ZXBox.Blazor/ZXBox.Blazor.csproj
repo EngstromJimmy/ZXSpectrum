@@ -1,9 +1,9 @@
-<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+﻿<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
-	  <RunAOTCompilation>false</RunAOTCompilation>
-	    
+	  <RunAOTCompilation>true</RunAOTCompilation>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -13,6 +13,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="8.0.10" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="8.0.10" PrivateAssets="all" />
+    <PackageReference Include="SkiaSharp.Views.Blazor" Version="2.88.8" />
     
     <PackageReference Include="System.Net.Http.Json" Version="8.0.1" />
     <PackageReference Include="Toolbelt.Blazor.Gamepad" Version="9.0.0" />

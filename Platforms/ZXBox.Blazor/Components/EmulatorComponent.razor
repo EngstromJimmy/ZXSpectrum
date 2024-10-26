@@ -1,4 +1,5 @@
-﻿@using ZXBox.Blazor.Pages
+﻿@using SkiaSharp.Views.Blazor
+@using ZXBox.Blazor.Pages
 @using ZXBox.Snapshot
 @using System.Timers
 @using Toolbelt.Blazor.Gamepad;
@@ -6,7 +7,10 @@
 @inject Toolbelt.Blazor.Gamepad.GamepadList GamePadList;
 @inherits EmulatorComponentModel
 
-<canvas id="emulatorCanvas" width="296" height="232" style="@(gameLoop.Enabled?"":"display:none;")"></canvas>
+@*<canvas id="emulatorCanvas" width="296" height="232" style="@(gameLoop.Enabled?"":"display:none;")"></canvas> *@
+
+<SKCanvasView id="emulatorCanvas" @ref="_canvasView" style="@(gameLoop.Enabled?"":"display:none;")" OnPaintSurface="OnPaintSurface" Width="296" Height="232" />
+
 @if (gameLoop.Enabled)
 {
     <div style="text-align:center; color:white">

@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.JSInterop;
 using Microsoft.JSInterop.WebAssembly;
+using SkiaSharp.Views.Blazor;
+using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -28,6 +30,7 @@ namespace ZXBox.Blazor.Pages
         Kempston kempston;
         Beeper<byte> beeper;
         public TapePlayer tapePlayer;
+        public SKCanvasView _canvasView;
 
         [Inject]
         Toolbelt.Blazor.Gamepad.GamepadList GamePadList { get; set; }
@@ -147,16 +150,14 @@ namespace ZXBox.Blazor.Pages
         public double PercentLoaded = 0;
         protected async override void OnAfterRender(bool firstRender)
         {
-            if (firstRender)
-            {
-                await JSRuntime.InvokeAsync<bool>("InitCanvas");
-            }
+
             base.OnAfterRender(firstRender);
         }
 
         GCHandle gchscreen;
         IntPtr pinnedscreen;
-        //uint[] screen = new uint[68672]; //Height * width (256+20+20)*(192+20+20)
+      
+        uint[] screen = new uint[68672]; //Height * width (256+20+20)*(192+20+20)
         public async void Paint()
         {
             if (flashcounter == 0)
@@ -169,13 +170,42 @@ namespace ZXBox.Blazor.Pages
                 flashcounter--;
             }
 
-            var screen = speccy.GetScreenInUint(flash);
+             screen = speccy.GetScreenInUint(flash);
+ 
+            ////Allocate memory
+            //gchscreen = GCHandle.Alloc(screen, GCHandleType.Pinned);
+            //pinnedscreen = gchscreen.AddrOfPinnedObject();
+            //mono.InvokeUnmarshalled<IntPtr, string>("PaintCanvas", pinnedscreen);
+            //gchscreen.Free();
 
-            //Allocate memory
-            gchscreen = GCHandle.Alloc(screen, GCHandleType.Pinned);
-            pinnedscreen = gchscreen.AddrOfPinnedObject();
-            mono.InvokeUnmarshalled<IntPtr, string>("PaintCanvas", pinnedscreen);
-            gchscreen.Free();
+            _canvasView?.Invalidate();
+        }
+
+        SKBitmap bitmap = new SKBitmap(296, 232);
+
+        //SKPaint paint = new SKPaint
+        //{
+        //    FilterQuality = SKFilterQuality.High, // High-quality filter for smoother rendering
+        //    IsAntialias = true // Additional anti-aliasing if necessary
+        //};
+        public void OnPaintSurface(SKPaintSurfaceEventArgs e)
+        {
+         
+            var canvas = e.Surface.Canvas;
+            unsafe
+            {
+                var ptr = (uint*)bitmap.GetPixels().ToPointer();
+
+                fixed (uint* srcPtr = screen)
+                {
+                    // Use Buffer.MemoryCopy for fast memory copying
+                    Buffer.MemoryCopy(srcPtr, ptr, screen.Length * sizeof(uint), screen.Length * sizeof(uint));
+                }
+            }
+          
+            // Draw the bitmap onto the canvas
+            canvas.DrawBitmap(bitmap, new SKRect(0, 0, e.Info.Width, e.Info.Height));
+          
         }
 
         public ValueTask DisposeAsync()
