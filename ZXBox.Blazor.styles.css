@@ -1,0 +1,75 @@
+/* /Components/TapePlayerComponent.razor.rz.scp.css */
+
+@font-face {
+    font-family: 'Easy Speech';
+    src: url('/css/Easy Speech_free.ttf');
+}
+.cls-1[b-gy1nqnueb7] {
+    fill: none;
+    stroke: #fff;
+    stroke-dasharray: 0 0 19.37 19.37;
+    stroke-width: 11px;
+}
+
+.cls-1[b-gy1nqnueb7], .cls-2[b-gy1nqnueb7], .cls-3[b-gy1nqnueb7], .cls-4[b-gy1nqnueb7], .cls-5[b-gy1nqnueb7] {
+    stroke-miterlimit: 10;
+}
+
+.cls-2[b-gy1nqnueb7], .cls-3[b-gy1nqnueb7], .cls-4[b-gy1nqnueb7], .cls-5[b-gy1nqnueb7] {
+    stroke: #000;
+}
+
+.cls-2[b-gy1nqnueb7], .cls-3[b-gy1nqnueb7], .cls-5[b-gy1nqnueb7] {
+    stroke-width: 6px;
+}
+
+.cls-2[b-gy1nqnueb7], .cls-4[b-gy1nqnueb7] {
+    fill: #5e5858;
+}
+
+.cls-6[b-gy1nqnueb7], .cls-3[b-gy1nqnueb7] {
+    fill: #fff;
+}
+
+.cls-7[b-gy1nqnueb7] {
+    fill: #3a1f0d;
+}
+
+.cls-4[b-gy1nqnueb7] {
+    stroke-width: 3px;
+}
+
+.cls-8[b-gy1nqnueb7] {
+    font-family: MyriadPro-Regular, 'Myriad Pro';
+}
+
+.cls-8[b-gy1nqnueb7], .cls-9[b-gy1nqnueb7] {
+    font-size: 75px;
+}
+
+.cls-9[b-gy1nqnueb7] {
+    fill: #173577;
+    font-family: EasySpeech, 'Easy Speech';
+    text-align:center;
+}
+
+.cls-5[b-gy1nqnueb7] {
+    fill: #898989;
+}
+
+#Spool_Left[b-gy1nqnueb7],#Spool_Right[b-gy1nqnueb7] {
+    animation: SpoolRotation-b-gy1nqnueb7 3000ms linear reverse infinite;
+    transform-box: fill-box;
+    transform-origin: center;
+}
+
+@keyframes SpoolRotation-b-gy1nqnueb7 {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
