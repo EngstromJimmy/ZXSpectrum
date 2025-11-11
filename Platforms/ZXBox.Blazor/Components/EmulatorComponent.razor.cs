@@ -138,19 +138,20 @@ namespace ZXBox.Blazor.Pages
         IntPtr pinnedsound;
         WebAssemblyJSRuntime mono;
         byte[] soundbytes;
+
         protected async Task BufferSound()
         {
             soundbytes = beeper.GetSoundBuffer();
-            gchsound = GCHandle.Alloc(soundbytes, GCHandleType.Pinned);
-            pinnedsound = gchsound.AddrOfPinnedObject();
-            mono.InvokeUnmarshalled<IntPtr, string>("addAudioBuffer", pinnedsound);
-            gchsound.Free();
+            mono.InvokeVoid("addAudioBuffer", soundbytes);
         }
 
         public double PercentLoaded = 0;
         protected async override void OnAfterRender(bool firstRender)
         {
-
+            if (firstRender)
+            {
+                await JSRuntime.InvokeAsync<bool>("InitCanvas");
+            }
             base.OnAfterRender(firstRender);
         }
 

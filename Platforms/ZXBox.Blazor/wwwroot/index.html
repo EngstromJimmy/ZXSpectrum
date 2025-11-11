@@ -13,62 +13,37 @@
 
 <body>
     <script>
-        //Sound
-        var audiobuffer = [];
+        // Variables
         var nextStartTime = 0;
-        var lastcall = performance.now()
-        var audiocontext = new (window.AudioContext || window.webkitAudioContext)();
-        var gainNode = audiocontext.createGain();
-        gainNode.gain.value = 0.01;
+        var buffersize = 960;
 
-        function addAudioBuffer
-            (dataPtr) {
-            var buffersize = 960;
-            var myArrayBuffer = audiocontext.createBuffer(1, buffersize, audiocontext.sampleRate);
-            var nowBuffering = myArrayBuffer.getChannelData(0);
+        // Create audioContext and gain node.
+        // Gain is set to 10% as we will add data 256 times larger than the normal max to our audio buffer source node.
+        var audioContext = new AudioContext();
+        var gainNode = new GainNode(audioContext, { gain: 0.1 / 256 });
 
-            for (var d = 0; d < buffersize; d++) {
-                nowBuffering[d] = Module.HEAPU8[dataPtr + d];
-                //console.log(nowBuffering[d]);
-            }
-            let source = audiocontext.createBufferSource();
-            source.buffer = myArrayBuffer;
+        // Connect the gain node.
+        gainNode.connect(audioContext.destination);
 
-            gainNode.connect(audiocontext.destination);
+        function addAudioBuffer(byteData) {
+            // Create audiobuffer
+            var audioBuffer = audioContext.createBuffer(1, buffersize, audioContext.sampleRate);
+
+            // Create Float32Array from UInt8Array via constructor.
+            var newChannelData = new Float32Array(byteData)
+            audioBuffer.copyToChannel(newChannelData, 0);
+
+            // Create audio source from audio buffer
+            let source = new AudioBufferSourceNode(audioContext, { buffer: audioBuffer })
+
+            // Connect the new source node to the main gain node.
             source.connect(gainNode);
-            if (nextStartTime == 0) nextStartTime = audiocontext.currentTime + (myArrayBuffer.length / myArrayBuffer.sampleRate);
 
+            // Update nextStartTime and start source node.
+            if (nextStartTime == 0) nextStartTime = audioContext.currentTime + (audioBuffer.length / audioBuffer.sampleRate);
             source.start(nextStartTime);
-            nextStartTime += myArrayBuffer.length / myArrayBuffer.sampleRate;
-            gainNode.gain.value = 0.0005;
-
-            //console.log(dataPtr);
+            nextStartTime += audioBuffer.length / audioBuffer.sampleRate;
         }
-
-
-
-        //function play() {
-        //    console.log("Playing sound");
-        //    soundon = true;
-        //    //end of stream has been reached
-        //    if (audiobuffer.length === 0)
-        //    {
-        //        console.log("To slow");
-        //        soundon = false;
-        //        return;
-        //    }
-        //    let source = audiocontext.createBufferSource();
-        //    //get the latest buffer that should play next
-        //    source.buffer = audiobuffer.shift();
-        //    source.connect(audiocontext.destination);
-
-        //    //add this function as a callback to play next buffer
-        //    //when current buffer has reached its end
-        //    source.onended = play;
-        //    source.start();
-        //}
-
-
 
         var pressedKeys = [];
 
