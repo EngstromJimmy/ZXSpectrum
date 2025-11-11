@@ -204,8 +204,7 @@ namespace ZXBox.Blazor.Pages
             }
           
             // Draw the bitmap onto the canvas
-            canvas.DrawBitmap(bitmap, new SKRect(0, 0, e.Info.Width, e.Info.Height));
-          
+            canvas.DrawBitmap(bitmap, new SKRect(0, 0, e.Info.Width, e.Info.Height)); 
         }
 
         public ValueTask DisposeAsync()
