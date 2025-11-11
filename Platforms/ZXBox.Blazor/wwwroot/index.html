@@ -111,27 +111,27 @@
             return pressedKeys;
         }
 
-        var canvas;
-        var context;
-        var imageData;
-        window.InitCanvas = function InitCanvas() {
+        // var canvas;
+        // var context;
+        // var imageData;
+        // window.InitCanvas = function InitCanvas() {
 
-            canvas = document.getElementById('emulatorCanvas');
-            context = canvas.getContext('2d');
-            context.mozImageSmoothingEnabled = false;
-            context.webkitImageSmoothingEnabled = false;
-            context.msImageSmoothingEnabled = false;
-            context.imageSmoothingEnabled = false;
-            imageData = context.createImageData(256 + 20 + 20, 192 + 20 + 20);
-            return true;
-        }
+        //     canvas = document.getElementById('emulatorCanvas');
+        //     context = canvas.getContext('2d');
+        //     context.mozImageSmoothingEnabled = false;
+        //     context.webkitImageSmoothingEnabled = false;
+        //     context.msImageSmoothingEnabled = false;
+        //     context.imageSmoothingEnabled = false;
+        //     imageData = context.createImageData(256 + 20 + 20, 192 + 20 + 20);
+        //     return true;
+        // }
 
-        window.PaintCanvas = function PaintCanvas(dataPtr) {
-            imageData.data.set(Uint8ClampedArray.from(Module.HEAPU8.subarray(dataPtr, dataPtr + imageData.data.length)));
-            context.putImageData(imageData, 0, 0);
-            context.drawImage(canvas, 0, 0, canvas.width, canvas.height);
-            return true;
-        }
+        // window.PaintCanvas = function PaintCanvas(dataPtr) {
+        //     imageData.data.set(Uint8ClampedArray.from(Module.HEAPU8.subarray(dataPtr, dataPtr + imageData.data.length)));
+        //     context.putImageData(imageData, 0, 0);
+        //     context.drawImage(canvas, 0, 0, canvas.width, canvas.height);
+        //     return true;
+        // }
     </script>
     <div id="app">
         <div style="height:100vh;text-align:center;padding-top:200px;">Loading...</div>
