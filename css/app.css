@@ -1,0 +1,100 @@
+﻿@import url('open-iconic/font/css/open-iconic-bootstrap.min.css');
+
+#emulatorCanvas {
+    
+    width: 592px;
+    height: 464px;
+} 
+
+html {
+    min-height: 100%;
+    background-attachment: scroll;
+    background-image: url('../images/zxwallpaper.png');
+    background-repeat: no-repeat;
+    background-position: bottom right;
+    background-color: black;
+}
+
+
+body {
+    color: white;
+    background-color:transparent;
+    
+}
+.about {
+    width: 80%;
+    color: white;
+    margin:auto;
+    padding-top:25px;
+}
+#emulatorCanvas {
+ 
+    padding: 0;
+    margin: auto;
+    display: block;
+
+}
+
+
+@font-face {
+    font-family: 'zx';
+    src: url('zx.ttf');
+}
+
+
+footer {
+ 
+    position: fixed;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    color: white;
+    text-align: center;
+    background-color:black;
+}
+
+
+body {
+    font-family: 'zx','Helvetica Neue', Helvetica, Arial, sans-serif;
+    padding-bottom:150px;
+}
+
+
+.btn-primary {
+    color: #fff;
+    background-color: #1b6ec2;
+    border-color: #1861ac;
+}
+
+.invalid {
+    outline: 1px solid red;
+}
+
+.validation-message {
+    color: red;
+}
+
+#blazor-error-ui {
+    background: lightyellow;
+    bottom: 0;
+    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
+    display: none;
+    left: 0;
+    padding: 0.6rem 1.25rem 0.7rem 1.25rem;
+    position: fixed;
+    width: 100%;
+    z-index: 1000;
+}
+
+#blazor-error-ui .dismiss {
+    cursor: pointer;
+    position: absolute;
+    right: 0.75rem;
+    top: 0.5rem;
+}
+@media (min-width: 768px) {
+    .navbar-toggler {
+        display: none;
+    }
+
+}

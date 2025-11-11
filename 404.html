@@ -1,0 +1,150 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>ZX Spectrum emulator running on Blazor</title>
+    <base href="/" />
+    <link href="css/bootstrap/bootstrap.min.css" rel="stylesheet" />
+    <link href="css/app.css" rel="stylesheet" />
+    <link href="ZXBox.Blazor.styles.css" rel="stylesheet" />
+</head>
+
+<body>
+    <script>
+        // Variables
+        var nextStartTime = 0;
+        var buffersize = 960;
+
+        // Create audioContext and gain node.
+        // Gain is set to 10% as we will add data 256 times larger than the normal max to our audio buffer source node.
+        var audioContext = new AudioContext();
+        var gainNode = new GainNode(audioContext, { gain: 0.1 / 256 });
+
+        // Connect the gain node.
+        gainNode.connect(audioContext.destination);
+
+        function addAudioBuffer(byteData) {
+            // Create audiobuffer
+            var audioBuffer = audioContext.createBuffer(1, buffersize, audioContext.sampleRate);
+
+            // Create Float32Array from UInt8Array via constructor.
+            var newChannelData = new Float32Array(byteData)
+            audioBuffer.copyToChannel(newChannelData, 0);
+
+            // Create audio source from audio buffer
+            let source = new AudioBufferSourceNode(audioContext, { buffer: audioBuffer })
+
+            // Connect the new source node to the main gain node.
+            source.connect(gainNode);
+
+            // Update nextStartTime and start source node.
+            if (nextStartTime == 0) nextStartTime = audioContext.currentTime + (audioBuffer.length / audioBuffer.sampleRate);
+            source.start(nextStartTime);
+            nextStartTime += audioBuffer.length / audioBuffer.sampleRate;
+        }
+
+        var pressedKeys = [];
+
+        function GetKey(keyCode) {
+            var key = String.fromCharCode(keyCode);
+            //console.log(keyCode);
+            switch (keyCode) {
+                case 32:
+                    key = "space";
+                    break;
+                case 8:
+                    key = "backspace";
+                    break;
+                case 16:
+                    key = "shift";
+                    break;
+                case 17:
+                    key = "control";
+                    break;
+                case 9:
+                    key = "tab";
+                    break;
+                case 18:
+                    key = "alt";
+                    break;
+                case 38:
+                    key = "arrowup";
+                    break;
+                case 40:
+                    key = "arrowdown";
+                    break;
+                case 37:
+                    key = "arrowleft";
+                    break;
+                case 39:
+                    key = "arrowright";
+                    break;
+                case 13:
+                    key = "enter";
+                    break;
+
+            }
+            return key;
+        }
+
+        window.onkeyup = function (e) {
+            var key = GetKey(e.keyCode);
+            const index = pressedKeys.indexOf(key);
+            if (index > -1) {
+                pressedKeys.splice(index, 1);
+            }
+            event.preventDefault();
+            //console.log(pressedKeys);
+        }
+        window.onkeydown = function (e) {
+            var key = GetKey(e.keyCode);
+            const index = pressedKeys.indexOf(key);
+            if (index == -1) {
+                pressedKeys.push(key);
+            }
+            event.preventDefault();
+        }
+
+        window.getKeyStatus = function () {
+            return pressedKeys;
+        }
+
+        // var canvas;
+        // var context;
+        // var imageData;
+        // window.InitCanvas = function InitCanvas() {
+
+        //     canvas = document.getElementById('emulatorCanvas');
+        //     context = canvas.getContext('2d');
+        //     context.mozImageSmoothingEnabled = false;
+        //     context.webkitImageSmoothingEnabled = false;
+        //     context.msImageSmoothingEnabled = false;
+        //     context.imageSmoothingEnabled = false;
+        //     imageData = context.createImageData(256 + 20 + 20, 192 + 20 + 20);
+        //     return true;
+        // }
+
+        // window.PaintCanvas = function PaintCanvas(dataPtr) {
+        //     imageData.data.set(Uint8ClampedArray.from(Module.HEAPU8.subarray(dataPtr, dataPtr + imageData.data.length)));
+        //     context.putImageData(imageData, 0, 0);
+        //     context.drawImage(canvas, 0, 0, canvas.width, canvas.height);
+        //     return true;
+        // }
+    </script>
+    <div id="app">
+        <div style="height:100vh;text-align:center;padding-top:200px;">Loading...</div>
+    </div>
+
+    <div id="blazor-error-ui">
+        An unhandled error has occurred.
+        <a href="" class="reload">Reload</a>
+        <a class="dismiss">🗙</a>
+    </div>
+    <script src="JavaScript.js"></script>
+    <script src="_framework/blazor.webassembly.js"></script>
+
+</body>
+
+</html>
