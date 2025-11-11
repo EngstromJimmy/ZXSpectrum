@@ -148,10 +148,10 @@ namespace ZXBox.Blazor.Pages
         public double PercentLoaded = 0;
         protected async override void OnAfterRender(bool firstRender)
         {
-            if (firstRender)
-            {
-                await JSRuntime.InvokeAsync<bool>("InitCanvas");
-            }
+            //if (firstRender)
+            //{
+            //    await JSRuntime.InvokeAsync<bool>("InitCanvas");
+            //}
             base.OnAfterRender(firstRender);
         }
 
