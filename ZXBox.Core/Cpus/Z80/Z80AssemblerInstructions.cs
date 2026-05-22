@@ -17,7 +17,7 @@ public partial class Z80
 
     public bool interruptTriggered(int tstates)
     {
-        return (tstates <= 0);
+        return AutoInterruptAtEndOfTimeslice && (tstates <= 0);
     }
 
     int pushsp;
@@ -222,7 +222,7 @@ public partial class Z80
     {
         tmphaltsToInterrupt = (((_numberOfTStatesLeft - 1) / 4) + 1);
         SubtractNumberOfTStatesLeft((tmphaltsToInterrupt * 4));
-        Refresh(tmphaltsToInterrupt - 1);
+        Refresh(tmphaltsToInterrupt);
     }
 
     public void RST(int position)

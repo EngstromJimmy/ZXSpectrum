@@ -6,7 +6,6 @@ public partial class Z80
     {
 
         //TODO: Check i values are read from the right places
-        Refresh(1);
         switch (opcode)
         {
             case 0x36:		//SLL (HL)*

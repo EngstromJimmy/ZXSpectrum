@@ -166,6 +166,7 @@ public partial class Z80
                 break;
             case 0xF3:      //DI
                 IFF = IFF2 = false;
+                ClearInterruptInhibit();
                 SubtractNumberOfTStatesLeft(4);
                 break;
             case 0x10:      //DNJZ
@@ -173,6 +174,7 @@ public partial class Z80
                 break;
             case 0xFB:      //EI
                 IFF = IFF2 = true;
+                BeginInterruptInhibit();
                 SubtractNumberOfTStatesLeft(4);
                 break;
             case 0xE3:		//EX (SP),HL
