@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using ZXBox.Core.Tape;
 using ZXBox.Hardware.Interfaces;
@@ -6,80 +7,63 @@ using ZXBox.Hardware.Output;
 
 namespace ZXBox.Core.Hardware.Input
 {
-    /// <summary>
-    ///A Pilot consisting of 8063 (for header blocks) or 3223 (data blocks) pulses, each of which has a duration of 2168 tstates.
-    ///A first sync pulse of 667 tstates.
-    ///A second sync pulse of 735 tstates.
-    ///The block data: a reset bit is encoded as two pulses of 855 tstates each, a set bit as two pulses of 1710 tstates each.The lowest byte in memory is first on tape, with the most significant bit first within each byte.
-    /// </summary>
     public class TapePlayer : IInput
     {
-        private Beeper<byte> _beeper;
+        private const int TStatesPerMillisecond = 3500;
+        private readonly Beeper<byte> _beeper;
+
         public TapePlayer(Beeper<byte> beeper)
         {
             _beeper = beeper;
         }
-        public TapFormat tf = new TapFormat();
 
-        public void LoadTape(byte[] data)
+        public TapeImage Tape { get; private set; } = new();
+
+        public void LoadTape(byte[] data, string fileName = null)
         {
-            tf.ReadFile(data);
-            bool ear = false;
+            LoadTape(TapeFormatFactory.ReadTape(data, fileName));
+        }
+
+        public void LoadTape(TapeImage tape)
+        {
+            ResetTapeState();
+            Tape = tape;
+
+            var ear = false;
             long tstate = 0;
-            long b = 0;
-            int bitmask;
-            bool signal;
-            foreach (var block in tf.Blocks)
+
+            foreach (var block in tape.Blocks)
             {
-                for (int pilotcount = 0; pilotcount < (block.Data[0] < 128 ? 8063 : 3223); pilotcount++)
+                switch (block)
                 {
-                    ear = !ear;
-                    tstate += 2168;
-                    EarValues.Add(new EarValue() { Ear = ear, TState = tstate, Pulse = PulseTypeEnum.Pilot });
-
+                    case TapeDataBlock dataBlock:
+                        AppendDataBlock(dataBlock, ref ear, ref tstate);
+                        break;
+                    case TapePureToneBlock pureToneBlock:
+                        AppendPulseRepeats(pureToneBlock.PulseCount, pureToneBlock.PulseLength, PulseTypeEnum.Data, ref ear, ref tstate);
+                        break;
+                    case TapePulseSequenceBlock pulseSequenceBlock:
+                        AppendPulseSequence(pulseSequenceBlock.PulseLengths, PulseTypeEnum.Data, ref ear, ref tstate);
+                        break;
+                    case TapePauseBlock pauseBlock:
+                        AppendPause(pauseBlock.DurationMilliseconds, ref ear, ref tstate);
+                        break;
+                    case TapeSetSignalLevelBlock signalLevelBlock:
+                        ear = signalLevelBlock.High;
+                        break;
+                    case TapeStopBlock:
+                        EarValues.Add(new EarValue { Ear = false, TState = tstate, Pulse = PulseTypeEnum.Stop });
+                        break;
                 }
-
-                //Add sync1
-                ear = !ear;
-                tstate += 667;
-                EarValues.Add(new EarValue() { Ear = ear, TState = tstate, Pulse = PulseTypeEnum.Sync1 });
-
-                //Add sync2
-                ear = !ear;
-                tstate += 735;
-                EarValues.Add(new EarValue() { Ear = ear, TState = tstate, Pulse = PulseTypeEnum.Sync2 });
-                b = 0;
-                for (; b < block.Data.Length; b++)
-                {
-                    for (bitmask = 0x80; bitmask > 0; bitmask = bitmask >> 1)
-                    {
-                        signal = (block.Data[b] & bitmask) == bitmask;
-
-                        //Add two pulses
-                        ear = !ear;
-                        tstate += signal ? 1710 : 855;
-                        EarValues.Add(new() { Ear = ear, TState = tstate, Pulse = PulseTypeEnum.Data });
-
-                        ear = !ear;
-                        tstate += signal ? 1710 : 855;
-                        EarValues.Add(new() { Ear = ear, TState = tstate, Pulse = PulseTypeEnum.Data });
-                    }
-                }
-                ear = !ear;
-                tstate += 3500 * 5; //5ms
-                EarValues.Add(new() { Ear = ear, TState = tstate, Pulse = PulseTypeEnum.Pause });
-                //Pause
-                ear = false;
-                tstate += 3500 * 1000; //1second;
-                EarValues.Add(new() { Ear = ear, TState = tstate, Pulse = PulseTypeEnum.Pause });
-
             }
 
-            //Add Termination 
-            ear = !ear;
-            tstate += 947;
-            EarValues.Add(new() { Ear = ear, TState = tstate, Pulse = PulseTypeEnum.Termination });
-            EarValues.Add(new() { Ear = false, TState = tstate, Pulse = PulseTypeEnum.Stop });
+            if (EarValues.Count == 0 || EarValues[^1].Pulse != PulseTypeEnum.Stop)
+            {
+                ear = !ear;
+                tstate += 947;
+                EarValues.Add(new EarValue { Ear = ear, TState = tstate, Pulse = PulseTypeEnum.Termination });
+                EarValues.Add(new EarValue { Ear = false, TState = tstate, Pulse = PulseTypeEnum.Stop });
+            }
         }
 
         public void AddTStates(int tstates)
@@ -90,41 +74,47 @@ namespace ZXBox.Core.Hardware.Input
             }
         }
 
-        public List<EarValue> EarValues = new();
+        public List<EarValue> EarValues { get; } = new();
+
         public void Play()
         {
+            if (EarValues.Count == 0)
+            {
+                return;
+            }
+
             TotalTstates = EarValues.Last().TState;
             IsPlaying = true;
         }
-        public bool IsPlaying { get; set; } = false;
 
-        public long CurrentTstate = 0;
-        public long TotalTstates = 0;
+        public bool IsPlaying { get; set; }
 
-        private long lastTstate = 0;
-        private long diff = 0;
-        int returnvalue = 0xff;
-        EarValue ear;
-        bool firstread = true;
-        int tapeposition = 0;
+        public long CurrentTstate;
+        public long TotalTstates;
+
+        private int _returnValue = 0xFF;
+        private EarValue _ear;
+        private bool _firstRead = true;
+        private int _tapePosition;
+
         public int Input(int Port, int tact)
         {
             if (IsPlaying)
             {
-                returnvalue = 0xff;
+                _returnValue = 0xFF;
                 if ((Port & 0xff) == 0xfe)
                 {
-                    if (firstread)
+                    if (_firstRead)
                     {
                         CurrentTstate = 0;
-                        firstread = false;
+                        _firstRead = false;
                     }
 
-                    for (; tapeposition < EarValues.Count - 1;)
+                    for (; _tapePosition < EarValues.Count - 1;)
                     {
-                        if (EarValues[tapeposition + 1].TState < CurrentTstate)
+                        if (EarValues[_tapePosition + 1].TState < CurrentTstate)
                         {
-                            tapeposition++;
+                            _tapePosition++;
                         }
                         else
                         {
@@ -132,35 +122,140 @@ namespace ZXBox.Core.Hardware.Input
                         }
                     }
 
-                    ear = EarValues[tapeposition];
-                    _beeper.Output(0xfe, (ear.Ear ? 1 : 0) << 4, tact);
-                    if (ear != null)
+                    _ear = EarValues[_tapePosition];
+                    _beeper?.Output(0xfe, (_ear.Ear ? 1 : 0) << 4, tact);
+                    if (_ear != null)
                     {
-                        if (ear.Pulse == PulseTypeEnum.Stop)
+                        if (_ear.Pulse == PulseTypeEnum.Stop)
                         {
                             IsPlaying = false;
                         }
-                        if (ear.Ear)
-                            return returnvalue |= 1 << 6;
-                        else
-                            return returnvalue &= ~(1 << 6);
+
+                        if (_ear.Ear)
+                        {
+                            return _returnValue |= 1 << 6;
+                        }
+
+                        return _returnValue &= ~(1 << 6);
                     }
                 }
+
                 if (CurrentTstate > TotalTstates)
                 {
                     IsPlaying = false;
                 }
             }
 
-            return returnvalue;
+            return _returnValue;
+        }
+
+        private void AppendDataBlock(TapeDataBlock block, ref bool ear, ref long tstate)
+        {
+            if (block.PilotPulseCount > 0 && block.PilotPulseLength > 0)
+            {
+                AppendPulseRepeats(block.PilotPulseCount, block.PilotPulseLength, PulseTypeEnum.Pilot, ref ear, ref tstate);
+            }
+
+            if (block.SyncFirstPulseLength > 0)
+            {
+                ear = !ear;
+                tstate += block.SyncFirstPulseLength;
+                EarValues.Add(new EarValue { Ear = ear, TState = tstate, Pulse = PulseTypeEnum.Sync1 });
+            }
+
+            if (block.SyncSecondPulseLength > 0)
+            {
+                ear = !ear;
+                tstate += block.SyncSecondPulseLength;
+                EarValues.Add(new EarValue { Ear = ear, TState = tstate, Pulse = PulseTypeEnum.Sync2 });
+            }
+
+            var lastByteBits = block.UsedBitsInLastByte is >= 1 and <= 8 ? block.UsedBitsInLastByte : 8;
+            for (var byteIndex = 0; byteIndex < block.Data.Length; byteIndex++)
+            {
+                var bitsInByte = byteIndex == block.Data.Length - 1 ? lastByteBits : 8;
+                for (var bitIndex = 0; bitIndex < bitsInByte; bitIndex++)
+                {
+                    var bitMask = 0x80 >> bitIndex;
+                    var signal = (block.Data[byteIndex] & bitMask) == bitMask;
+                    var pulseLength = signal ? block.OneBitPulseLength : block.ZeroBitPulseLength;
+
+                    ear = !ear;
+                    tstate += pulseLength;
+                    EarValues.Add(new EarValue { Ear = ear, TState = tstate, Pulse = PulseTypeEnum.Data });
+
+                    ear = !ear;
+                    tstate += pulseLength;
+                    EarValues.Add(new EarValue { Ear = ear, TState = tstate, Pulse = PulseTypeEnum.Data });
+                }
+            }
+
+            AppendPauseOrStop(block.PauseAfterMilliseconds, ref ear, ref tstate);
+        }
+
+        private void AppendPulseRepeats(int count, int pulseLength, PulseTypeEnum pulseType, ref bool ear, ref long tstate)
+        {
+            for (var pulseIndex = 0; pulseIndex < count; pulseIndex++)
+            {
+                ear = !ear;
+                tstate += pulseLength;
+                EarValues.Add(new EarValue { Ear = ear, TState = tstate, Pulse = pulseType });
+            }
+        }
+
+        private void AppendPulseSequence(IReadOnlyList<int> pulseLengths, PulseTypeEnum pulseType, ref bool ear, ref long tstate)
+        {
+            for (var pulseIndex = 0; pulseIndex < pulseLengths.Count; pulseIndex++)
+            {
+                ear = !ear;
+                tstate += pulseLengths[pulseIndex];
+                EarValues.Add(new EarValue { Ear = ear, TState = tstate, Pulse = pulseType });
+            }
+        }
+
+        private void AppendPause(int durationMilliseconds, ref bool ear, ref long tstate)
+        {
+            AppendPauseOrStop(durationMilliseconds, ref ear, ref tstate);
+        }
+
+        private void AppendPauseOrStop(int durationMilliseconds, ref bool ear, ref long tstate)
+        {
+            if (durationMilliseconds <= 0)
+            {
+                EarValues.Add(new EarValue { Ear = false, TState = tstate, Pulse = PulseTypeEnum.Stop });
+                return;
+            }
+
+            ear = !ear;
+            tstate += TStatesPerMillisecond;
+            EarValues.Add(new EarValue { Ear = ear, TState = tstate, Pulse = PulseTypeEnum.Pause });
+
+            ear = false;
+            tstate += Math.Max(durationMilliseconds - 1, 0) * TStatesPerMillisecond;
+            EarValues.Add(new EarValue { Ear = ear, TState = tstate, Pulse = PulseTypeEnum.Pause });
+        }
+
+        private void ResetTapeState()
+        {
+            Tape = new TapeImage();
+            EarValues.Clear();
+            IsPlaying = false;
+            CurrentTstate = 0;
+            TotalTstates = 0;
+            _returnValue = 0xFF;
+            _ear = null;
+            _firstRead = true;
+            _tapePosition = 0;
         }
     }
+
     public class EarValue
     {
         public long TState { get; set; }
         public bool Ear { get; set; }
         public PulseTypeEnum Pulse { get; set; }
     }
+
     public enum PulseTypeEnum
     {
         Data,
@@ -171,5 +266,4 @@ namespace ZXBox.Core.Hardware.Input
         Stop,
         Pause
     }
-
 }

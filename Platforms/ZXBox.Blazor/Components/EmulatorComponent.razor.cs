@@ -19,6 +19,7 @@ using ZXBox.Hardware.Input;
 using ZXBox.Hardware.Input.Joystick;
 using ZXBox.Hardware.Output;
 using ZXBox.Snapshot;
+using ZXBox.Core.Tape;
 
 namespace ZXBox.Blazor.Pages
 {
@@ -27,6 +28,7 @@ namespace ZXBox.Blazor.Pages
         private const float BeeperMixGain = 0.45f;
         private const float SpeechMixGain = 6.0f;
         private const float AyMixGain = 0.35f;
+        private const byte ScanlineAlpha = 0x48;
         private const int PrinterDisplayScale = 3;
         private const uint PrinterPaperColor = 0xFFB8BCC0;
         private const uint PrinterInkColor = 0xFF1F1F1F;
@@ -84,29 +86,25 @@ namespace ZXBox.Blazor.Pages
             gameLoop.Start();
         }
 
+        public bool ScanlinesEnabled { get; set; } = true;
+
         public string TapeName { get; set; }
         public async Task HandleFileSelected(InputFileChangeEventArgs args)
         {
-            if (args.File.Name.ToLower().EndsWith(".tap"))
+            var file = args.File;
+            var ms = new MemoryStream();
+            await file.OpenReadStream().CopyToAsync(ms);
+            var bytes = ms.ToArray();
+
+            if (TapeFormatFactory.IsSupportedTapeFile(args.File.Name))
             {
-                //Load the tape
-                var file = args.File;
-                var ms = new MemoryStream();
-                await file.OpenReadStream().CopyToAsync(ms);
-                tapePlayer.LoadTape(ms.ToArray());
+                tapePlayer.LoadTape(bytes, args.File.Name);
                 TapeName = Path.GetFileNameWithoutExtension(args.File.Name);
+                return;
             }
-            else
-            {
-                var file = args.File;
-                var ms = new MemoryStream();
 
-                await file.OpenReadStream().CopyToAsync(ms);
-
-                var handler = FileFormatFactory.GetSnapShotHandler(file.Name);
-                var bytes = ms.ToArray();
-                handler.LoadSnapshot(bytes, speccy);
-            }
+            var handler = FileFormatFactory.GetSnapShotHandler(file.Name);
+            handler.LoadSnapshot(bytes, speccy);
         }
 
         public async Task ConnectCurrahMicroSpeech()
@@ -371,9 +369,39 @@ namespace ZXBox.Blazor.Pages
                     Buffer.MemoryCopy(srcPtr, ptr, screen.Length * sizeof(uint), screen.Length * sizeof(uint));
                 }
             }
-          
+           
             // Draw the bitmap onto the canvas
-            canvas.DrawBitmap(bitmap, new SKRect(0, 0, e.Info.Width, e.Info.Height)); 
+            canvas.DrawBitmap(bitmap, new SKRect(0, 0, e.Info.Width, e.Info.Height));
+
+            if (ScanlinesEnabled)
+            {
+                DrawScanlineOverlay(canvas, e.Info);
+            }
+        }
+
+        private void DrawScanlineOverlay(SKCanvas canvas, SKImageInfo info)
+        {
+            var scanlinePitch = Math.Max(info.Height / (float)bitmap.Height, 2f);
+            using var shader = SKShader.CreateLinearGradient(
+                new SKPoint(0, 0),
+                new SKPoint(0, scanlinePitch),
+                new[]
+                {
+                    SKColors.Transparent,
+                    SKColors.Transparent,
+                    new SKColor(0, 0, 0, ScanlineAlpha),
+                    new SKColor(0, 0, 0, ScanlineAlpha)
+                },
+                new[] { 0f, 0.5f, 0.5f, 1f },
+                SKShaderTileMode.Repeat);
+            using var paint = new SKPaint
+            {
+                Shader = shader,
+                BlendMode = SKBlendMode.SrcOver,
+                IsAntialias = false
+            };
+
+            canvas.DrawRect(SKRect.Create(info.Width, info.Height), paint);
         }
 
         public int PrinterCanvasDisplayHeight
