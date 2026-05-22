@@ -41,6 +41,12 @@ There are still things left to do for example implementing sound (for Blazor) an
 
 It supports SNA and Z80-formats and you can connect an XBox gamepad to emulate Kempston Joystick.
 
+## Currah uSpeech / SP0256 ROM ownership
+
+Currah uSpeech support uses a local Currah ROM plus the SP0256-AL2 speech ROM image during development.
+
+The SP0256-AL2 ROM image (`al2.bin`) is owned by **Microchip Technology Inc.** Microchip retains the intellectual property rights to the algorithms and data contained in that ROM image. Distribution of that ROM image is based on the permission described by Microchip's legal department in the material provided with the ROM.
+
 ## Thanks to
 
 Jessica Engström - For loving me and letting me have a storage room filled with old computers =D  

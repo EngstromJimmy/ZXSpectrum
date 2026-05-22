@@ -8,8 +8,10 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Net;
 using System.Net.Http;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
 using ZXBox.Core.Hardware.Input;
@@ -22,7 +24,11 @@ namespace ZXBox.Blazor.Pages
 {
     public partial class EmulatorComponentModel : ComponentBase, IAsyncDisposable
     {
-        private ZXSpectrum speccy;
+        private const float BeeperMixGain = 0.45f;
+        private const float SpeechMixGain = 6.0f;
+        private const string CurrahRomAssetPath = "Roms/CURRAH.ROM";
+        private const string Sp0256RomAssetPath = "Roms/SP0256-AL2.BIN";
+        public ZXSpectrum speccy;
         public System.Timers.Timer gameLoop;
         int flashcounter = 16;
         bool flash = false;
@@ -91,6 +97,22 @@ namespace ZXBox.Blazor.Pages
                 handler.LoadSnapshot(bytes, speccy);
             }
         }
+
+        public async Task ConnectCurrahMicroSpeech()
+        {
+            if (speccy is null)
+            {
+                return;
+            }
+
+            speccy.ConnectCurrahMicroSpeech();
+            await TryLoadCurrahAssetsAsync();
+        }
+
+        public void DisconnectCurrahMicroSpeech()
+        {
+            speccy?.DisconnectCurrahMicroSpeech();
+        }
         [Inject]
         HttpClient httpClient { get; set; }
         public string Instructions = "";
@@ -105,46 +127,136 @@ namespace ZXBox.Blazor.Pages
             Instructions = instructions;
         }
 
+        private async Task TryLoadCurrahAssetsAsync()
+        {
+            var currahRom = await TryLoadAssetAsync(CurrahRomAssetPath);
+            var speechRom = await TryLoadAssetAsync(Sp0256RomAssetPath);
+
+            if (currahRom is { Length: >= 0x800 })
+            {
+                speccy.LoadCurrahMicroSpeechRom(currahRom);
+            }
+
+            if (speechRom is { Length: >= 0x800 })
+            {
+                speccy.CurrahMicroSpeech.LoadSpeechRom(speechRom);
+            }
+
+        }
+
+        private async Task<byte[]?> TryLoadAssetAsync(string assetPath)
+        {
+            using var response = await httpClient.GetAsync(assetPath);
+
+            if (response.StatusCode == HttpStatusCode.NotFound)
+            {
+                return null;
+            }
+
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadAsByteArrayAsync();
+        }
+
         private async void GameLoop_Elapsed(object sender, ElapsedEventArgs e)
         {
+            if (Interlocked.Exchange(ref _frameInProgress, 1) != 0)
+            {
+                return;
+            }
+
             Stopwatch sw = new Stopwatch();
 
-            //Get gamepads
-            kempston.Gamepads = await GamePadList.GetGamepadsAsync();
-            //Run JavaScriptInterop to find the currently pressed buttons
-            Keyboard.KeyBuffer = await JSRuntime.InvokeAsync<List<string>>("getKeyStatus");
-            sw.Start();
-            speccy.DoIntructions(69888);
-
-            beeper.GenerateSound();
-            await BufferSound();
-
-            Paint();
-            sw.Stop();
-            if (tapePlayer != null && tapePlayer.IsPlaying)
+            try
             {
-                TapeStopped = false;
-                PercentLoaded = ((Convert.ToDouble(tapePlayer.CurrentTstate) / Convert.ToDouble(tapePlayer.TotalTstates)) * 100);
-                await InvokeAsync(() => StateHasChanged());
+                //Get gamepads
+                kempston.Gamepads = await GamePadList.GetGamepadsAsync();
+                //Run JavaScriptInterop to find the currently pressed buttons
+                Keyboard.KeyBuffer = await JSRuntime.InvokeAsync<List<string>>("getKeyStatus");
+                sw.Start();
+                speccy.DoIntructions(69888);
+
+                beeper.GenerateSound();
+                await BufferSound();
+
+                Paint();
+                sw.Stop();
+                if (tapePlayer != null && tapePlayer.IsPlaying)
+                {
+                    TapeStopped = false;
+                    PercentLoaded = ((Convert.ToDouble(tapePlayer.CurrentTstate) / Convert.ToDouble(tapePlayer.TotalTstates)) * 100);
+                    await InvokeAsync(() => StateHasChanged());
+                }
+                if (!TapeStopped && !tapePlayer.IsPlaying)
+                {
+                    TapeStopped = true;
+                    await InvokeAsync(() => StateHasChanged());
+                }
             }
-            if (!TapeStopped && !tapePlayer.IsPlaying)
+            finally
             {
-                TapeStopped = true;
-                await InvokeAsync(() => StateHasChanged());
+                Interlocked.Exchange(ref _frameInProgress, 0);
             }
         }
         bool TapeStopped = false;
+        private int _frameInProgress;
         GCHandle gchsound;
         IntPtr pinnedsound;
         WebAssemblyJSRuntime mono;
-        byte[] soundbytes;
+        float[] soundbytes;
 
         protected async Task BufferSound()
         {
-            soundbytes = beeper.GetSoundBuffer();
+            soundbytes = MixAudioBuffers(
+                ConvertBeeperBuffer(beeper.GetSoundBuffer()),
+                speccy.CurrahMicroSpeech.RenderAudioFrame(48000 / 50, 69888),
+                BeeperMixGain,
+                SpeechMixGain);
             mono.InvokeVoid("addAudioBuffer", soundbytes);
         }
 
+        private static float[] ConvertBeeperBuffer(byte[] beeperBuffer)
+        {
+            if (beeperBuffer.Length == 0)
+            {
+                return Array.Empty<float>();
+            }
+
+            var converted = new float[beeperBuffer.Length];
+            var sum = 0f;
+
+            for (var i = 0; i < beeperBuffer.Length; i++)
+            {
+                sum += beeperBuffer[i];
+            }
+
+            var average = sum / beeperBuffer.Length;
+
+            for (var i = 0; i < beeperBuffer.Length; i++)
+            {
+                converted[i] = Math.Clamp((beeperBuffer[i] - average) / 63.5f, -1f, 1f);
+            }
+
+            return converted;
+        }
+
+        private static float[] MixAudioBuffers(float[] primary, float[] secondary, float primaryGain, float secondaryGain)
+        {
+            if (primary.Length == 0 && secondary.Length == 0)
+            {
+                return Array.Empty<float>();
+            }
+
+            var mixed = new float[Math.Max(primary.Length, secondary.Length)];
+
+            for (var sample = 0; sample < mixed.Length; sample++)
+            {
+                var primarySample = sample < primary.Length ? primary[sample] * primaryGain : 0f;
+                var secondarySample = sample < secondary.Length ? secondary[sample] * secondaryGain : 0f;
+                mixed[sample] = Math.Clamp(primarySample + secondarySample, -1f, 1f);
+            }
+
+            return mixed;
+        }
         public double PercentLoaded = 0;
         protected async override void OnAfterRender(bool firstRender)
         {

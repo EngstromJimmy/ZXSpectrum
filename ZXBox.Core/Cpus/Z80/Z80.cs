@@ -420,6 +420,11 @@ public abstract partial class Z80
 
     public abstract int ReadByteFromMemory(int address);
 
+    protected virtual int ReadOpcodeByteFromMemory(int address)
+    {
+        return ReadByteFromMemory(address);
+    }
+
     public int ReadWordFromMemory(int address)
     {
         return (ReadByteFromMemory(address + 1 & 0xffff) << 8 | ReadByteFromMemory(address & 0xffff)) & 0xffff;
@@ -520,7 +525,7 @@ public abstract partial class Z80
     //System.Text.StringBuilder sb = new StringBuilder();
     public void NextOpcode()
     {
-        opcode = (ReadByteFromMemory(PC) & 0xff);
+        opcode = (ReadOpcodeByteFromMemory(PC) & 0xff);
         PC = (PC + 1) & 0xffff;
     }
 

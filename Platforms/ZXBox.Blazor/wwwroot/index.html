@@ -18,19 +18,18 @@
         var buffersize = 960;
 
         // Create audioContext and gain node.
-        // Gain is set to 10% as we will add data 256 times larger than the normal max to our audio buffer source node.
         var audioContext = new AudioContext();
-        var gainNode = new GainNode(audioContext, { gain: 0.1 / 256 });
+        var gainNode = new GainNode(audioContext, { gain: 0.35 });
 
         // Connect the gain node.
         gainNode.connect(audioContext.destination);
 
-        function addAudioBuffer(byteData) {
+        function addAudioBuffer(floatData) {
             // Create audiobuffer
             var audioBuffer = audioContext.createBuffer(1, buffersize, audioContext.sampleRate);
 
-            // Create Float32Array from UInt8Array via constructor.
-            var newChannelData = new Float32Array(byteData)
+            // Create Float32Array from normalized float samples.
+            var newChannelData = new Float32Array(floatData)
             audioBuffer.copyToChannel(newChannelData, 0);
 
             // Create audio source from audio buffer
@@ -40,7 +39,7 @@
             source.connect(gainNode);
 
             // Update nextStartTime and start source node.
-            if (nextStartTime == 0) nextStartTime = audioContext.currentTime + (audioBuffer.length / audioBuffer.sampleRate);
+            if (nextStartTime == 0 || nextStartTime < audioContext.currentTime) nextStartTime = audioContext.currentTime + (audioBuffer.length / audioBuffer.sampleRate);
             source.start(nextStartTime);
             nextStartTime += audioBuffer.length / audioBuffer.sampleRate;
         }

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using ZXBox.Hardware.Interfaces;
 using ZXBox.Hardware.Output;
+using ZXBox.Hardware.Speech;
 
 namespace ZXBox;
 
@@ -64,13 +65,43 @@ public class ZXSpectrum : Zilog.Z80
 
     public List<IInput> InputHardware = new List<IInput>();
     public List<IOutput> OutputHardware = new List<IOutput>();
+    public CurrahMicroSpeech CurrahMicroSpeech { get; } = new();
 
     public int bordercolor = 1;
     int retvalue = 0xFF;
     int i = 0;
+    private int CurrentFrameTState => NumberOfTstates - Math.Abs(_numberOfTStatesLeft);
+
+    public void ConnectCurrahMicroSpeech()
+    {
+        CurrahMicroSpeech.Connect();
+    }
+
+    public void DisconnectCurrahMicroSpeech()
+    {
+        CurrahMicroSpeech.Disconnect();
+    }
+
+    public void LoadCurrahMicroSpeechRom(byte[] romBytes)
+    {
+        CurrahMicroSpeech.LoadRom(romBytes);
+    }
+
+    public new void Reset()
+    {
+        base.Reset();
+        CurrahMicroSpeech.ResetRuntime();
+    }
+
     public override int In(int port)
     {
         retvalue = 0xFF;
+
+        if (CurrahMicroSpeech.TryReadPort(port, CurrentFrameTState, out var currahPortValue))
+        {
+            retvalue &= currahPortValue;
+        }
+
         for (i = 0; i < InputHardware.Count; i++)
         {
             retvalue &= InputHardware[i].Input(port, NumberOfTstates - Math.Abs(_numberOfTStatesLeft));
@@ -97,6 +128,8 @@ public class ZXSpectrum : Zilog.Z80
             disablepaging = ((ByteValue >> 5) & 0x01) == 1;
         }
 
+        CurrahMicroSpeech.HandlePortWrite(Port, ByteValue, CurrentFrameTState);
+
         for (int o = 0; o < OutputHardware.Count; o++)
         {
             OutputHardware[o].Output(Port, ByteValue, tStates);
@@ -106,6 +139,10 @@ public class ZXSpectrum : Zilog.Z80
     int rom = 0;
     public override void WriteByteToMemory(int address, int bytetowrite)
     {
+        if (CurrahMicroSpeech.HandleMemoryWrite(address, bytetowrite, CurrentFrameTState))
+        {
+            return;
+        }
 
         if (address < 0x4000) //rom
         {
@@ -149,6 +186,28 @@ public class ZXSpectrum : Zilog.Z80
 
     public override int ReadByteFromMemory(int address)
     {
+        return ReadByteFromMemoryCore(address, opcodeFetch: false);
+    }
+
+    protected override int ReadOpcodeByteFromMemory(int address)
+    {
+        return ReadByteFromMemoryCore(address, opcodeFetch: true);
+    }
+
+    private int ReadByteFromMemoryCore(int address, bool opcodeFetch)
+    {
+        if (opcodeFetch)
+        {
+            if (CurrahMicroSpeech.TryReadOpcodeFetch(address, CurrentFrameTState, out var currahOpcodeValue))
+            {
+                return currahOpcodeValue;
+            }
+        }
+        else if (CurrahMicroSpeech.TryReadMemory(address, CurrentFrameTState, out var currahMemoryValue))
+        {
+            return currahMemoryValue;
+        }
+
         if (address < 0x4000) //rom
         {
             return Roms[rom][address & 0xffff];
@@ -165,6 +224,7 @@ public class ZXSpectrum : Zilog.Z80
         {
             return Banks[bank][address - 0xc000];
         }
+
         return 0;
     }
 }
