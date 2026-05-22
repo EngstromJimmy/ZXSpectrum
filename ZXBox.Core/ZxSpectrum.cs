@@ -3,13 +3,14 @@ using System.Collections.Generic;
 using ZXBox.Hardware.Interfaces;
 using ZXBox.Hardware.Output;
 using ZXBox.Hardware.Speech;
+using ZXBox.Hardware.Sound;
 
 namespace ZXBox;
 
 public class ZXSpectrum : Zilog.Z80
 {
     public List<byte[]> Roms = new List<byte[]> { new byte[0x4000], new byte[0x4000] };
-    public List<byte[]> Banks = new List<byte[]> { new byte[0x4000], new byte[0x4000], new byte[0x4000], new byte[0x4000], new byte[0x4000], new byte[0x4000], new byte[0x4000] };
+    public List<byte[]> Banks = new List<byte[]> { new byte[0x4000], new byte[0x4000], new byte[0x4000], new byte[0x4000], new byte[0x4000], new byte[0x4000], new byte[0x4000], new byte[0x4000] };
 
     Screen speccyscreen;
     byte[] romBytes;
@@ -28,6 +29,8 @@ public class ZXSpectrum : Zilog.Z80
     //https://tomeko.net/online_tools/file_to_hex.php?lang=en
     public void LoadRom(RomEnum rom)
     {
+        _machineModel = rom;
+
         switch (rom)
         {
             case RomEnum.ZXSpectrum48k:
@@ -66,11 +69,17 @@ public class ZXSpectrum : Zilog.Z80
     public List<IInput> InputHardware = new List<IInput>();
     public List<IOutput> OutputHardware = new List<IOutput>();
     public CurrahMicroSpeech CurrahMicroSpeech { get; } = new();
+    public Ay38912Chip AyChip { get; } = new();
 
     public int bordercolor = 1;
     int retvalue = 0xFF;
     int i = 0;
     private int CurrentFrameTState => NumberOfTstates - Math.Abs(_numberOfTStatesLeft);
+    private RomEnum _machineModel = RomEnum.ZXSpectrum48k;
+
+    public bool Is128KModel => _machineModel == RomEnum.ZXSpectrumPlus;
+
+    public int FrameTStates => Is128KModel ? Ay38912Chip.FrameTStates128k : 69888;
 
     public void ConnectCurrahMicroSpeech()
     {
@@ -90,12 +99,19 @@ public class ZXSpectrum : Zilog.Z80
     public new void Reset()
     {
         base.Reset();
+        ResetPagingState();
         CurrahMicroSpeech.ResetRuntime();
+        AyChip.Reset();
     }
 
     public override int In(int port)
     {
         retvalue = 0xFF;
+
+        if (Is128KModel && AyChip.TryReadPort(port, CurrentFrameTState, out var ayPortValue))
+        {
+            retvalue &= ayPortValue;
+        }
 
         if (CurrahMicroSpeech.TryReadPort(port, CurrentFrameTState, out var currahPortValue))
         {
@@ -119,13 +135,14 @@ public class ZXSpectrum : Zilog.Z80
     bool disablepaging = false;
     public override void Out(int Port, int ByteValue, int tStates)
     {
-        //128k
-        if (Port == 0x7ffd)
+        if (Is128KModel && !disablepaging && Is128kPagingPort(Port))
         {
-            bank = ByteValue & 0x03;
-            rom = (ByteValue >> 4) & 0x01;
-            activescreen = (ByteValue >> 3) & 0x01;
-            disablepaging = ((ByteValue >> 5) & 0x01) == 1;
+            Apply128kPaging(ByteValue);
+        }
+
+        if (Is128KModel)
+        {
+            AyChip.HandlePortWrite(Port, ByteValue, CurrentFrameTState);
         }
 
         CurrahMicroSpeech.HandlePortWrite(Port, ByteValue, CurrentFrameTState);
@@ -137,6 +154,28 @@ public class ZXSpectrum : Zilog.Z80
     }
     int bank = 0;
     int rom = 0;
+
+    private void ResetPagingState()
+    {
+        bank = 0;
+        rom = 0;
+        activescreen = 0;
+        disablepaging = false;
+    }
+
+    private void Apply128kPaging(int value)
+    {
+        bank = value & 0x07;
+        rom = (value >> 4) & 0x01;
+        activescreen = (value >> 3) & 0x01;
+        disablepaging = ((value >> 5) & 0x01) == 1;
+    }
+
+    private static bool Is128kPagingPort(int port)
+    {
+        return (port & 0x8002) == 0;
+    }
+
     public override void WriteByteToMemory(int address, int bytetowrite)
     {
         if (CurrahMicroSpeech.HandleMemoryWrite(address, bytetowrite, CurrentFrameTState))
