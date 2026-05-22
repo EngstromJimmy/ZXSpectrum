@@ -75,9 +75,13 @@
             <SKCanvasView id="emulatorCanvas" @ref="_canvasView" class="printer-canvas" OnPaintSurface="OnPaintSurface" Width="296" Height="232" />
 
             <div class="emulator-controls">
-                Load a game (supported formats: TAP, Z80, and SNA)<br />
+                Load a game (supported formats: TAP, TZX, Z80, and SNA)<br />
                 <InputFile OnChange="HandleFileSelected" /><br />
                 Use a gamepad for Kempston joystick<br />
+                <label style="display:block; margin:8px 0;">
+                    <input type="checkbox" @bind="ScanlinesEnabled" />
+                    Scanlines
+                </label>
                 @if (!speccy.CurrahMicroSpeech.Connected)
                 {
                     <button @onclick="ConnectCurrahMicroSpeech">Connect Currah uSpeech</button>
