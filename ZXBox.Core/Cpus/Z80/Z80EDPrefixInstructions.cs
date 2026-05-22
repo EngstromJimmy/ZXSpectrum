@@ -6,7 +6,6 @@ public partial class Z80
 {
     public void DoEDPrefixInstruction()
     {
-        Refresh(1);
         switch (opcode)
         {
             case 0x4A:      //ADC HL,BC

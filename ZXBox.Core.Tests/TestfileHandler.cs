@@ -113,7 +113,7 @@ namespace ZXBox.Core.Tests
 
             //To get a generic tester I have a copy of the Z80 memory in the teststate
             //Fill the memory with data
-            ts.Memory = MemoryPreset;
+            ts.Memory = (int[])MemoryPreset.Clone();
             for (int a = LineToStarttRead + 2; a < rows.Length; a++)
             {
                 rowdata = rows[a].Split(' ');
