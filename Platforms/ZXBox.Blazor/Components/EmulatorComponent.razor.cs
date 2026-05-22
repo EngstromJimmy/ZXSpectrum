@@ -27,6 +27,9 @@ namespace ZXBox.Blazor.Pages
         private const float BeeperMixGain = 0.45f;
         private const float SpeechMixGain = 6.0f;
         private const float AyMixGain = 0.35f;
+        private const int PrinterDisplayScale = 3;
+        private const uint PrinterPaperColor = 0xFFB8BCC0;
+        private const uint PrinterInkColor = 0xFF1F1F1F;
         private const string CurrahRomAssetPath = "Roms/CURRAH.ROM";
         private const string Sp0256RomAssetPath = "Roms/SP0256-AL2.BIN";
         public ZXSpectrum speccy;
@@ -38,6 +41,11 @@ namespace ZXBox.Blazor.Pages
         Beeper<byte> beeper;
         public TapePlayer tapePlayer;
         public SKCanvasView _canvasView;
+        public SKCanvasView _printerCanvasView;
+        private SKBitmap _printerBitmap = new(1, 1);
+        private uint[] _printerPixels = new uint[1];
+        private int _lastPrinterVersion = -1;
+        private int _lastPrinterHeight;
 
         [Inject]
         Toolbelt.Blazor.Gamepad.GamepadList GamePadList { get; set; }
@@ -61,6 +69,8 @@ namespace ZXBox.Blazor.Pages
         {
             speccy = GetZXSpectrum(rom);
             speccy.InputHardware.Add(Keyboard);
+            _lastPrinterVersion = -1;
+            _lastPrinterHeight = 0;
 
             kempston = new Kempston();
             speccy.InputHardware.Add(kempston);
@@ -113,6 +123,30 @@ namespace ZXBox.Blazor.Pages
         public void DisconnectCurrahMicroSpeech()
         {
             speccy?.DisconnectCurrahMicroSpeech();
+        }
+
+        public void ConnectZxPrinter()
+        {
+            if (speccy is null)
+            {
+                return;
+            }
+
+            speccy.ConnectZxPrinter();
+            _lastPrinterVersion = -1;
+            _lastPrinterHeight = speccy.ZxPrinter.PaperHeight;
+        }
+
+        public void DisconnectZxPrinter()
+        {
+            if (speccy is null)
+            {
+                return;
+            }
+
+            speccy.DisconnectZxPrinter();
+            _lastPrinterVersion = -1;
+            _lastPrinterHeight = 0;
         }
         [Inject]
         HttpClient httpClient { get; set; }
@@ -297,6 +331,23 @@ namespace ZXBox.Blazor.Pages
             //gchscreen.Free();
 
             _canvasView?.Invalidate();
+
+            if (speccy?.ZxPrinter.Connected == true)
+            {
+                var printerVersion = speccy.ZxPrinter.PaperVersion;
+                if (printerVersion != _lastPrinterVersion)
+                {
+                    _lastPrinterVersion = printerVersion;
+                    _printerCanvasView?.Invalidate();
+
+                    var printerHeight = speccy.ZxPrinter.PaperHeight;
+                    if (printerHeight != _lastPrinterHeight)
+                    {
+                        _lastPrinterHeight = printerHeight;
+                        _ = InvokeAsync(() => StateHasChanged());
+                    }
+                }
+            }
         }
 
         SKBitmap bitmap = new SKBitmap(296, 232);
@@ -325,10 +376,97 @@ namespace ZXBox.Blazor.Pages
             canvas.DrawBitmap(bitmap, new SKRect(0, 0, e.Info.Width, e.Info.Height)); 
         }
 
+        public int PrinterCanvasDisplayHeight
+        {
+            get
+            {
+                var printerHeight = speccy?.ZxPrinter.PaperHeight ?? 0;
+                return Math.Max(printerHeight * PrinterDisplayScale, 96);
+            }
+        }
+
+        public int PrinterCanvasDisplayWidth => ZxPrinter.PaperWidth * PrinterDisplayScale;
+
+        public string PrinterCanvasStyle => $"display:block; width:{PrinterCanvasDisplayWidth}px; height:{PrinterCanvasDisplayHeight}px;";
+
+        private int PrinterRenderedPaperHeight
+        {
+            get
+            {
+                var printerHeight = speccy?.ZxPrinter.PaperHeight ?? 0;
+                return printerHeight * PrinterDisplayScale;
+            }
+        }
+
+        public void OnPaintPrinterSurface(SKPaintSurfaceEventArgs e)
+        {
+            var canvas = e.Surface.Canvas;
+            canvas.Clear(new SKColor(184, 188, 192));
+
+            if (speccy?.ZxPrinter.Connected != true)
+            {
+                return;
+            }
+
+            var snapshot = speccy.ZxPrinter.GetPaperSnapshot();
+            var bitmapHeight = Math.Max(snapshot.Height, 1);
+            EnsurePrinterBitmap(snapshot.Width, bitmapHeight);
+            Array.Fill(_printerPixels, PrinterPaperColor);
+
+            for (var y = 0; y < snapshot.Height; y++)
+            {
+                var lineOffset = y * snapshot.Width;
+                for (var x = 0; x < snapshot.Width; x++)
+                {
+                    if (snapshot.Pixels[lineOffset + x] != 0)
+                    {
+                        _printerPixels[lineOffset + x] = PrinterInkColor;
+                    }
+                }
+            }
+
+            unsafe
+            {
+                var ptr = (uint*)_printerBitmap.GetPixels().ToPointer();
+                fixed (uint* srcPtr = _printerPixels)
+                {
+                    Buffer.MemoryCopy(srcPtr, ptr, _printerPixels.Length * sizeof(uint), _printerPixels.Length * sizeof(uint));
+                }
+            }
+
+            using var paint = new SKPaint
+            {
+                FilterQuality = SKFilterQuality.None,
+                IsAntialias = false
+            };
+
+            var renderedHeight = Math.Min(PrinterRenderedPaperHeight, e.Info.Height);
+            if (renderedHeight <= 0)
+            {
+                return;
+            }
+
+            canvas.DrawBitmap(_printerBitmap, new SKRect(0, 0, e.Info.Width, renderedHeight), paint);
+        }
+
+        private void EnsurePrinterBitmap(int width, int height)
+        {
+            if (_printerBitmap.Width == width && _printerBitmap.Height == height && _printerPixels.Length == width * height)
+            {
+                return;
+            }
+
+            _printerBitmap.Dispose();
+            _printerBitmap = new SKBitmap(width, height);
+            _printerPixels = new uint[width * height];
+        }
+
         public ValueTask DisposeAsync()
         {
             gameLoop.Stop();
             gameLoop.Dispose();
+            _printerBitmap.Dispose();
+            bitmap.Dispose();
             return ValueTask.CompletedTask;
         }
     }
