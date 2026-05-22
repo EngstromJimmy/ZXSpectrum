@@ -7,38 +7,124 @@
 @inject Toolbelt.Blazor.Gamepad.GamepadList GamePadList;
 @inherits EmulatorComponentModel
 
-@*<canvas id="emulatorCanvas" width="296" height="232" style="@(gameLoop.Enabled?"":"display:none;")"></canvas> *@
+<style>
+    .emulator-layout {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+        color: white;
+    }
 
-<SKCanvasView id="emulatorCanvas" @ref="_canvasView" style="@(gameLoop.Enabled?"":"display:none;")" OnPaintSurface="OnPaintSurface" Width="296" Height="232" />
+    .emulator-main {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .emulator-controls {
+        text-align: center;
+    }
+
+    .emulator-printer {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        background: #8f9296;
+        border: 1px solid #676b6f;
+        padding: 12px;
+        color: #1f1f1f;
+    }
+
+    .emulator-printer-paper {
+        background: #b8bcc0;
+        border: 1px solid #7b7f83;
+        padding: 8px;
+        overflow: auto;
+        max-width: min(100vw - 48px, 792px);
+    }
+
+    .printer-canvas {
+        display: block;
+    }
+
+    @@media (min-width: 1100px) {
+        .emulator-layout {
+            flex-direction: row;
+            align-items: flex-start;
+            justify-content: center;
+        }
+
+        .emulator-printer {
+            align-self: flex-start;
+            position: sticky;
+            top: 20px;
+        }
+
+        .emulator-printer-paper {
+            max-height: calc(100vh - 120px);
+        }
+    }
+</style>
 
 @if (gameLoop.Enabled)
 {
-    <div style="text-align:center; color:white">
-        Load a game (supported formats: TAP, Z80, and SNA)<br />
-        <InputFile OnChange="HandleFileSelected" /><br />
-        Use a gamepad for Kempston joystick<br />
-        @if (!speccy.CurrahMicroSpeech.Connected)
+    <div class="emulator-layout">
+        <div class="emulator-main">
+            <SKCanvasView id="emulatorCanvas" @ref="_canvasView" class="printer-canvas" OnPaintSurface="OnPaintSurface" Width="296" Height="232" />
+
+            <div class="emulator-controls">
+                Load a game (supported formats: TAP, Z80, and SNA)<br />
+                <InputFile OnChange="HandleFileSelected" /><br />
+                Use a gamepad for Kempston joystick<br />
+                @if (!speccy.CurrahMicroSpeech.Connected)
+                {
+                    <button @onclick="ConnectCurrahMicroSpeech">Connect Currah uSpeech</button>
+                }
+                else
+                {
+                    <button @onclick="DisconnectCurrahMicroSpeech">Disconnect Currah uSpeech</button>
+                }
+                @if (!speccy.ZxPrinter.Connected)
+                {
+                    <button @onclick="ConnectZxPrinter">Connect ZX Printer</button>
+                }
+                else
+                {
+                    <button @onclick="DisconnectZxPrinter">Disconnect ZX Printer</button>
+                }
+                @((MarkupString)Instructions)<br />
+                <button @onclick="@(()=>LoadGame("ManicMiner.z80","left - q<br/>right - w<br/>jump - space"))">Load Manic Miner (1983)(Bug-Byte Software)</button>
+                @if (tapePlayer.EarValues.Count > 0)
+                {
+                    @if (!tapePlayer.IsPlaying)
+                    {
+                        <button @onclick="tapePlayer.Play">Start tape</button>
+                    }
+                    else
+                    {
+                        <div style="height:300px;">
+                            <TapePlayerComponent Percent="@PercentLoaded" TapeName="@TapeName"></TapePlayerComponent>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+
+        @if (speccy.ZxPrinter.Connected)
         {
-            <button @onclick="ConnectCurrahMicroSpeech">Connect Currah uSpeech</button>
-        }
-        else
-        {
-            <button @onclick="DisconnectCurrahMicroSpeech">Disconnect Currah uSpeech</button>
-        }
-        @((MarkupString)Instructions)<br />
-        <button @onclick="@(()=>LoadGame("ManicMiner.z80","left - q<br/>right - w<br/>jump - space"))">Load Manic Miner (1983)(Bug-Byte Software)</button>
-        @if (tapePlayer.EarValues.Count > 0)
-        {
-            @if (!tapePlayer.IsPlaying)
-            {
-                <button @onclick="tapePlayer.Play">Start tape</button>
-            }
-            else
-            {
-                <div style="height:300px;">
-                    <TapePlayerComponent Percent="@PercentLoaded" TapeName="@TapeName"></TapePlayerComponent>
+            <div class="emulator-printer">
+                <div style="font-weight:bold;">ZX Printer</div>
+                <div class="emulator-printer-paper">
+                    <SKCanvasView @ref="_printerCanvasView"
+                                  class="printer-canvas"
+                                  style="@PrinterCanvasStyle"
+                                  OnPaintSurface="OnPaintPrinterSurface"
+                                  Width="@PrinterCanvasDisplayWidth"
+                                  Height="@PrinterCanvasDisplayHeight" />
                 </div>
-            }
+            </div>
         }
     </div>
 }

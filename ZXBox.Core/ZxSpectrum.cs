@@ -70,6 +70,7 @@ public class ZXSpectrum : Zilog.Z80
     public List<IOutput> OutputHardware = new List<IOutput>();
     public CurrahMicroSpeech CurrahMicroSpeech { get; } = new();
     public Ay38912Chip AyChip { get; } = new();
+    public ZxPrinter ZxPrinter { get; } = new();
 
     public int bordercolor = 1;
     int retvalue = 0xFF;
@@ -96,12 +97,23 @@ public class ZXSpectrum : Zilog.Z80
         CurrahMicroSpeech.LoadRom(romBytes);
     }
 
+    public void ConnectZxPrinter()
+    {
+        ZxPrinter.Connect();
+    }
+
+    public void DisconnectZxPrinter()
+    {
+        ZxPrinter.Disconnect();
+    }
+
     public new void Reset()
     {
         base.Reset();
         ResetPagingState();
         CurrahMicroSpeech.ResetRuntime();
         AyChip.Reset();
+        ZxPrinter.ResetRuntime();
     }
 
     public override int In(int port)
@@ -118,6 +130,11 @@ public class ZXSpectrum : Zilog.Z80
             retvalue &= currahPortValue;
         }
 
+        if (ZxPrinter.TryReadPort(port, out var printerPortValue))
+        {
+            return printerPortValue;
+        }
+
         for (i = 0; i < InputHardware.Count; i++)
         {
             retvalue &= InputHardware[i].Input(port, NumberOfTstates - Math.Abs(_numberOfTStatesLeft));
@@ -126,6 +143,7 @@ public class ZXSpectrum : Zilog.Z80
     }
     public override void TstateChange(int diff)
     {
+        ZxPrinter.AdvanceTStates(diff);
         for (i = 0; i < InputHardware.Count; i++)
         {
             InputHardware[i].AddTStates(diff);
@@ -146,6 +164,7 @@ public class ZXSpectrum : Zilog.Z80
         }
 
         CurrahMicroSpeech.HandlePortWrite(Port, ByteValue, CurrentFrameTState);
+        ZxPrinter.HandlePortWrite(Port, ByteValue);
 
         for (int o = 0; o < OutputHardware.Count; o++)
         {
