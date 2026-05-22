@@ -7,7 +7,7 @@ namespace ZXBox.Hardware.Output;
 public class Beeper<T> : Interfaces.IOutput where T : IComparable, IComparable<T>, IConvertible, IEquatable<T>
 {
 
-    public Beeper(T low, T high, int samplesPerFrame, int channels)
+    public Beeper(T low, T high, int samplesPerFrame, int channels, int tStatesPerFrame = 69888)
     {
         bufferCount = samplesPerFrame;
         highBuffer = Enumerable.Repeat<T>(high, bufferCount).ToArray();
@@ -16,6 +16,7 @@ public class Beeper<T> : Interfaces.IOutput where T : IComparable, IComparable<T
         this.high = high;
         this.low = low;
         this.channels = channels;
+        this.tStatesPerFrame = tStatesPerFrame;
         returnbuffer = new T[samplesPerFrame * channels];
         buffer = new T[samplesPerFrame];
     }
@@ -33,6 +34,7 @@ public class Beeper<T> : Interfaces.IOutput where T : IComparable, IComparable<T
     private T[] returnbuffer;
     private int bufferPosition;
     private int channels;
+    private int tStatesPerFrame;
 
     public T[] GetSoundBuffer()
     {
@@ -46,8 +48,13 @@ public class Beeper<T> : Interfaces.IOutput where T : IComparable, IComparable<T
         }
     }
 
-    public void GenerateSound(int tStates = 69888)
+    public void GenerateSound(int tStates = -1)
     {
+        if (tStates <= 0)
+        {
+            tStates = tStatesPerFrame;
+        }
+
         if (lastTstate < tStates)
         {
             if (bufferPosition <= bufferCount)
@@ -95,7 +102,7 @@ public class Beeper<T> : Interfaces.IOutput where T : IComparable, IComparable<T
     //The output is is not dependent on the way the sound will be outputted but rather all the values the buzzer would have at any given tstate
     public void Output(int Port, int ByteValue, int tState)
     {
-        double buffertstate = Convert.ToDouble(samplesPerFrame) / 69888d;
+        double buffertstate = Convert.ToDouble(samplesPerFrame) / tStatesPerFrame;
 
         if ((Port & 0xff) == 0xfe)
         {

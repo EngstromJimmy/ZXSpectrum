@@ -26,6 +26,7 @@ namespace ZXBox.Blazor.Pages
     {
         private const float BeeperMixGain = 0.45f;
         private const float SpeechMixGain = 6.0f;
+        private const float AyMixGain = 0.35f;
         private const string CurrahRomAssetPath = "Roms/CURRAH.ROM";
         private const string Sp0256RomAssetPath = "Roms/SP0256-AL2.BIN";
         public ZXSpectrum speccy;
@@ -64,7 +65,7 @@ namespace ZXBox.Blazor.Pages
             kempston = new Kempston();
             speccy.InputHardware.Add(kempston);
             //48000 samples per second, 50 frames per second (20ms per frame) Mono
-            beeper = new Beeper<byte>(0, 127, 48000 / 50, 1);
+            beeper = new Beeper<byte>(0, 127, 48000 / 50, 1, speccy.FrameTStates);
             speccy.OutputHardware.Add(beeper);
             tapePlayer = new(beeper);
             speccy.InputHardware.Add(tapePlayer);
@@ -173,9 +174,10 @@ namespace ZXBox.Blazor.Pages
                 //Run JavaScriptInterop to find the currently pressed buttons
                 Keyboard.KeyBuffer = await JSRuntime.InvokeAsync<List<string>>("getKeyStatus");
                 sw.Start();
-                speccy.DoIntructions(69888);
+                var frameTStates = speccy.FrameTStates;
+                speccy.DoIntructions(frameTStates);
 
-                beeper.GenerateSound();
+                beeper.GenerateSound(frameTStates);
                 await BufferSound();
 
                 Paint();
@@ -208,9 +210,11 @@ namespace ZXBox.Blazor.Pages
         {
             soundbytes = MixAudioBuffers(
                 ConvertBeeperBuffer(beeper.GetSoundBuffer()),
-                speccy.CurrahMicroSpeech.RenderAudioFrame(48000 / 50, 69888),
+                speccy.CurrahMicroSpeech.RenderAudioFrame(48000 / 50, speccy.FrameTStates),
+                speccy.AyChip.RenderAudioFrame(48000 / 50, speccy.FrameTStates),
                 BeeperMixGain,
-                SpeechMixGain);
+                SpeechMixGain,
+                AyMixGain);
             mono.InvokeVoid("addAudioBuffer", soundbytes);
         }
 
@@ -239,20 +243,21 @@ namespace ZXBox.Blazor.Pages
             return converted;
         }
 
-        private static float[] MixAudioBuffers(float[] primary, float[] secondary, float primaryGain, float secondaryGain)
+        private static float[] MixAudioBuffers(float[] primary, float[] secondary, float[] tertiary, float primaryGain, float secondaryGain, float tertiaryGain)
         {
-            if (primary.Length == 0 && secondary.Length == 0)
+            if (primary.Length == 0 && secondary.Length == 0 && tertiary.Length == 0)
             {
                 return Array.Empty<float>();
             }
 
-            var mixed = new float[Math.Max(primary.Length, secondary.Length)];
+            var mixed = new float[Math.Max(primary.Length, Math.Max(secondary.Length, tertiary.Length))];
 
             for (var sample = 0; sample < mixed.Length; sample++)
             {
                 var primarySample = sample < primary.Length ? primary[sample] * primaryGain : 0f;
                 var secondarySample = sample < secondary.Length ? secondary[sample] * secondaryGain : 0f;
-                mixed[sample] = Math.Clamp(primarySample + secondarySample, -1f, 1f);
+                var tertiarySample = sample < tertiary.Length ? tertiary[sample] * tertiaryGain : 0f;
+                mixed[sample] = Math.Clamp(primarySample + secondarySample + tertiarySample, -1f, 1f);
             }
 
             return mixed;
