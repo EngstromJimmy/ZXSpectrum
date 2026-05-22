@@ -17,6 +17,14 @@
         Load a game (supported formats: TAP, Z80, and SNA)<br />
         <InputFile OnChange="HandleFileSelected" /><br />
         Use a gamepad for Kempston joystick<br />
+        @if (!speccy.CurrahMicroSpeech.Connected)
+        {
+            <button @onclick="ConnectCurrahMicroSpeech">Connect Currah uSpeech</button>
+        }
+        else
+        {
+            <button @onclick="DisconnectCurrahMicroSpeech">Disconnect Currah uSpeech</button>
+        }
         @((MarkupString)Instructions)<br />
         <button @onclick="@(()=>LoadGame("ManicMiner.z80","left - q<br/>right - w<br/>jump - space"))">Load Manic Miner (1983)(Bug-Byte Software)</button>
         @if (tapePlayer.EarValues.Count > 0)
