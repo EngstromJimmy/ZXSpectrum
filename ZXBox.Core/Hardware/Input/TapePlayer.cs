@@ -137,7 +137,7 @@ namespace ZXBox.Core.Hardware.Input
                             return _returnValue;
                         }
 
-                        _returnValue &= (byte)~(1 << 6);
+                        _returnValue &= unchecked((byte)~(1 << 6));
                         return _returnValue;
                     }
                 }

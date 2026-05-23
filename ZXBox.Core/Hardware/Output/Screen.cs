@@ -13,6 +13,7 @@ public class ScreenAttribute
 
 public class Screen : IOutput
 {
+    private const int MaxBorderEventsPerFrame = 69888;
     //32*24
     public ScreenAttribute[] ScreenAttributes { get; set; } = new ScreenAttribute[768];
 
@@ -127,6 +128,8 @@ public class Screen : IOutput
         screenflash = new uint[Height * Width];
         pixels = new bool[Height * Width];
         this.cpu = cpu;
+        borderChanges[0] = new Border(LastBorderColor, 0);
+        borderCount = 1;
     }
 
     uint[] colours;
@@ -142,21 +145,20 @@ public class Screen : IOutput
         {
             bordercounter = 0;
         }
-        if ((border.Count - 1) > bordercounter)
+
+        var lastBorderIndex = borderCount - 1;
+        if (lastBorderIndex > bordercounter)
         {
-            if (border[bordercounter + 1].tState <= tState)
+            if (borderChanges[bordercounter + 1].TState <= tState)
                 bordercounter++;
         }
-        if (bordercounter > border.Count - 1)
-            bordercounter = border.Count - 1;
-        if (bordercounter > 0)
+
+        if (bordercounter > lastBorderIndex)
         {
-            LastBorderColor = border[bordercounter].ColorByte;
+            bordercounter = lastBorderIndex;
         }
-        if (tState == 69887)
-            border.Clear();
-        if (border.Count == 0)
-            return LastBorderColor;
+
+        LastBorderColor = borderChanges[bordercounter].ColorByte;
         return colours[LastBorderColor];
     }
 
@@ -174,14 +176,15 @@ public class Screen : IOutput
     private uint[] screen = null;
     private uint[] screenflash = null;
     private bool[] pixels = null;
-    private List<Border> border = new List<Border>();
+    private readonly Border[] borderChanges = new Border[MaxBorderEventsPerFrame];
+    private int borderCount;
     public uint LastBorderColor;
 
     public void Output(ushort Port, byte ByteValue, int tState)
     {
-        if ((Port & 0x0001) == 0)
+        if ((Port & 0x0001) == 0 && borderCount < borderChanges.Length)
         {
-            border.Add(new Border(((uint)ByteValue & 0x07), tState));
+            borderChanges[borderCount++] = new Border((uint)(ByteValue & 0x07), tState);
         }
     }
 
@@ -227,8 +230,9 @@ public class Screen : IOutput
                 screenflash[p] = GetBorderColor(p * tstatesperpixel);
             }
         }
-        border.Clear();
-        border.Add(new Border(LastBorderColor, 0));
+        bordercounter = 0;
+        borderCount = 1;
+        borderChanges[0] = new Border(LastBorderColor, 0);
 
         if (flash)
         {

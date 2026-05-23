@@ -198,11 +198,11 @@ namespace ZXBox.Hardware.Output
         private List<Border> border = new List<Border>();
         public uint LastBorderColor;
 
-        public void Output(int Port, int ByteValue, int tState)
+        public void Output(ushort port, byte byteValue, int tState)
         {
-            if ((Port & 0x0001) == 0)
+            if ((port & 0x0001) == 0)
             {
-                border.Add(new Border(((uint)ByteValue & 0x07), tState));
+                border.Add(new Border(((uint)byteValue & 0x07), tState));
             }
         }
 

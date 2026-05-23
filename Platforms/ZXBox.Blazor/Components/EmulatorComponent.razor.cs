@@ -11,6 +11,7 @@ using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
@@ -23,6 +24,7 @@ using ZXBox.Core.Tape;
 
 namespace ZXBox.Blazor.Pages
 {
+    [SupportedOSPlatform("browser")]
     public partial class EmulatorComponentModel : ComponentBase, IAsyncDisposable
     {
         private const float BeeperMixGain = 0.45f;
@@ -272,7 +274,7 @@ half4 main(float2 fragCoord)
                 //Get gamepads
                 kempston.Gamepads = await GamePadList.GetGamepadsAsync();
                 //Run JavaScriptInterop to find the currently pressed buttons
-                Keyboard.KeyBuffer = await JSRuntime.InvokeAsync<List<string>>("getKeyStatus");
+                Keyboard.SetKeyBuffer(await JSRuntime.InvokeAsync<List<string>>("getKeyStatus"));
                 sw.Start();
                 var frameTStates = speccy.FrameTStates;
                 speccy.DoInstructions(frameTStates);
