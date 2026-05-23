@@ -28,12 +28,56 @@ namespace ZXBox.Blazor.Pages
         private const float BeeperMixGain = 0.45f;
         private const float SpeechMixGain = 6.0f;
         private const float AyMixGain = 0.35f;
-        private const byte ScanlineAlpha = 0x48;
+        private const float ConsumerTvCurvature = 0.07f;
+        private const float ConsumerTvScanlineStrength = 0.24f;
+        private const float ConsumerTvVignetteStrength = 0.16f;
+        private const float ConsumerTvSaturation = 0.92f;
+        private const float ConsumerTvBrightness = 1.04f;
         private const int PrinterDisplayScale = 3;
         private const uint PrinterPaperColor = 0xFFB8BCC0;
         private const uint PrinterInkColor = 0xFF1F1F1F;
         private const string CurrahRomAssetPath = "Roms/CURRAH.ROM";
         private const string Sp0256RomAssetPath = "Roms/SP0256-AL2.BIN";
+        private const string ConsumerTvShaderSource = @"
+uniform shader content;
+uniform float2 outputSize;
+uniform float2 inputSize;
+uniform float curvature;
+uniform float scanlineStrength;
+uniform float vignetteStrength;
+uniform float saturation;
+uniform float brightness;
+
+half4 main(float2 fragCoord)
+{
+    float2 uv = fragCoord / outputSize;
+    float2 centered = uv * 2.0 - 1.0;
+    float radius2 = dot(centered, centered);
+    centered *= 1.0 + curvature * radius2;
+    float2 warpedUv = centered * 0.5 + 0.5;
+
+    if (warpedUv.x < 0.0 || warpedUv.y < 0.0 || warpedUv.x > 1.0 || warpedUv.y > 1.0)
+    {
+        return half4(0.0, 0.0, 0.0, 1.0);
+    }
+
+    float2 sampleCoord = warpedUv * inputSize;
+    half3 color = content.eval(sampleCoord).rgb;
+
+    float sourceY = warpedUv.y * inputSize.y;
+    float beamPosition = abs(fract(sourceY) - 0.5) * 2.0;
+    float scanline = 1.0 - scanlineStrength * beamPosition * beamPosition;
+    color *= clamp(scanline, 0.0, 1.0);
+
+    float vignette = 1.0 - vignetteStrength * radius2;
+    color *= vignette * brightness;
+
+    float greyscale = dot(color, half3(0.299, 0.587, 0.114));
+    color = mix(half3(greyscale, greyscale, greyscale), color, saturation);
+
+    return half4(color, 1.0);
+}";
+        private static readonly SKSamplingOptions ConsumerTvSampling = new(SKFilterMode.Linear);
         public ZXSpectrum speccy;
         public System.Timers.Timer gameLoop;
         int flashcounter = 16;
@@ -46,6 +90,9 @@ namespace ZXBox.Blazor.Pages
         public SKCanvasView _printerCanvasView;
         private SKBitmap _printerBitmap = new(1, 1);
         private uint[] _printerPixels = new uint[1];
+        private SKRuntimeEffect _consumerTvEffect;
+        private SKRuntimeShaderBuilder _consumerTvShaderBuilder;
+        private string _consumerTvShaderError = string.Empty;
         private int _lastPrinterVersion = -1;
         private int _lastPrinterHeight;
 
@@ -71,6 +118,7 @@ namespace ZXBox.Blazor.Pages
         {
             speccy = GetZXSpectrum(rom);
             speccy.InputHardware.Add(Keyboard);
+            IsSettingsOpen = false;
             _lastPrinterVersion = -1;
             _lastPrinterHeight = 0;
 
@@ -82,13 +130,33 @@ namespace ZXBox.Blazor.Pages
             tapePlayer = new(beeper);
             speccy.InputHardware.Add(tapePlayer);
             mono = JSRuntime as WebAssemblyJSRuntime;
+            flashcounter = 16;
+            flash = false;
             speccy.Reset();
             gameLoop.Start();
+
+            if (ConsumerTvShaderEnabled)
+            {
+                EnsureConsumerTvShader();
+            }
         }
 
-        public bool ScanlinesEnabled { get; set; } = true;
+        public bool IsSettingsOpen { get; set; } = true;
+        public bool ConsumerTvShaderEnabled { get; set; }
+        public string ConsumerTvShaderError => _consumerTvShaderError;
 
         public string TapeName { get; set; }
+
+        public void ToggleSettingsPanel()
+        {
+            IsSettingsOpen = !IsSettingsOpen;
+        }
+
+        public void CloseSettingsPanel()
+        {
+            IsSettingsOpen = false;
+        }
+
         public async Task HandleFileSelected(InputFileChangeEventArgs args)
         {
             var file = args.File;
@@ -357,8 +425,9 @@ namespace ZXBox.Blazor.Pages
         //};
         public void OnPaintSurface(SKPaintSurfaceEventArgs e)
         {
-         
+          
             var canvas = e.Surface.Canvas;
+            canvas.Clear(SKColors.Black);
             unsafe
             {
                 var ptr = (uint*)bitmap.GetPixels().ToPointer();
@@ -370,34 +439,56 @@ namespace ZXBox.Blazor.Pages
                 }
             }
            
-            // Draw the bitmap onto the canvas
-            canvas.DrawBitmap(bitmap, new SKRect(0, 0, e.Info.Width, e.Info.Height));
-
-            if (ScanlinesEnabled)
+            if (ConsumerTvShaderEnabled && EnsureConsumerTvShader())
             {
-                DrawScanlineOverlay(canvas, e.Info);
+                DrawConsumerTvShader(canvas, e.Info);
+                return;
             }
+
+            canvas.DrawBitmap(bitmap, new SKRect(0, 0, e.Info.Width, e.Info.Height));
         }
 
-        private void DrawScanlineOverlay(SKCanvas canvas, SKImageInfo info)
+        private bool EnsureConsumerTvShader()
         {
-            var scanlinePitch = Math.Max(info.Height / (float)bitmap.Height, 2f);
-            using var shader = SKShader.CreateLinearGradient(
-                new SKPoint(0, 0),
-                new SKPoint(0, scanlinePitch),
-                new[]
-                {
-                    SKColors.Transparent,
-                    SKColors.Transparent,
-                    new SKColor(0, 0, 0, ScanlineAlpha),
-                    new SKColor(0, 0, 0, ScanlineAlpha)
-                },
-                new[] { 0f, 0.5f, 0.5f, 1f },
-                SKShaderTileMode.Repeat);
+            if (_consumerTvShaderBuilder != null)
+            {
+                return true;
+            }
+
+            if (!string.IsNullOrEmpty(_consumerTvShaderError))
+            {
+                return false;
+            }
+
+            _consumerTvEffect = SKRuntimeEffect.CreateShader(ConsumerTvShaderSource, out var shaderErrors);
+            if (_consumerTvEffect == null)
+            {
+                _consumerTvShaderError = string.IsNullOrWhiteSpace(shaderErrors)
+                    ? "Failed to compile the CRT shader."
+                    : shaderErrors;
+                _ = InvokeAsync(StateHasChanged);
+                return false;
+            }
+
+            _consumerTvShaderBuilder = new SKRuntimeShaderBuilder(_consumerTvEffect);
+            return true;
+        }
+
+        private void DrawConsumerTvShader(SKCanvas canvas, SKImageInfo info)
+        {
+            using var sourceShader = bitmap.ToShader(SKShaderTileMode.Clamp, SKShaderTileMode.Clamp, ConsumerTvSampling);
+            _consumerTvShaderBuilder.Children["content"] = sourceShader;
+            _consumerTvShaderBuilder.Uniforms["outputSize"] = new SKSize(info.Width, info.Height);
+            _consumerTvShaderBuilder.Uniforms["inputSize"] = new SKSize(bitmap.Width, bitmap.Height);
+            _consumerTvShaderBuilder.Uniforms["curvature"] = ConsumerTvCurvature;
+            _consumerTvShaderBuilder.Uniforms["scanlineStrength"] = ConsumerTvScanlineStrength;
+            _consumerTvShaderBuilder.Uniforms["vignetteStrength"] = ConsumerTvVignetteStrength;
+            _consumerTvShaderBuilder.Uniforms["saturation"] = ConsumerTvSaturation;
+            _consumerTvShaderBuilder.Uniforms["brightness"] = ConsumerTvBrightness;
+            using var crtShader = _consumerTvShaderBuilder.Build();
             using var paint = new SKPaint
             {
-                Shader = shader,
-                BlendMode = SKBlendMode.SrcOver,
+                Shader = crtShader,
                 IsAntialias = false
             };
 
@@ -415,7 +506,7 @@ namespace ZXBox.Blazor.Pages
 
         public int PrinterCanvasDisplayWidth => ZxPrinter.PaperWidth * PrinterDisplayScale;
 
-        public string PrinterCanvasStyle => $"display:block; width:{PrinterCanvasDisplayWidth}px; height:{PrinterCanvasDisplayHeight}px;";
+        public string PrinterCanvasStyle => $"display:block; width:min(100%, {PrinterCanvasDisplayWidth}px); height:auto;";
 
         private int PrinterRenderedPaperHeight
         {
@@ -493,6 +584,8 @@ namespace ZXBox.Blazor.Pages
         {
             gameLoop.Stop();
             gameLoop.Dispose();
+            _consumerTvShaderBuilder?.Dispose();
+            _consumerTvEffect?.Dispose();
             _printerBitmap.Dispose();
             bitmap.Dispose();
             return ValueTask.CompletedTask;
