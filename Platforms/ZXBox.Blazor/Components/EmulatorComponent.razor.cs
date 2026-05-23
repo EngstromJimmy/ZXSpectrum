@@ -1,12 +1,10 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.JSInterop;
-using Microsoft.JSInterop.WebAssembly;
 using SkiaSharp.Views.Blazor;
 using SkiaSharp;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Http;
@@ -101,6 +99,8 @@ half4 main(float2 fragCoord)
         private readonly float[] _speechAudioBuffer = new float[AudioSamplesPerFrame];
         private readonly float[] _ayAudioBuffer = new float[AudioSamplesPerFrame];
         private readonly float[] _mixedAudioBuffer = new float[AudioSamplesPerFrame];
+        private IJSInProcessObjectReference _audioModule;
+        private bool _audioInteropReady;
 
         [Inject]
         Toolbelt.Blazor.Gamepad.GamepadList GamePadList { get; set; }
@@ -135,7 +135,6 @@ half4 main(float2 fragCoord)
             speccy.OutputHardware.Add(beeper);
             tapePlayer = new(beeper);
             speccy.InputHardware.Add(tapePlayer);
-            mono = JSRuntime as WebAssemblyJSRuntime;
             flashcounter = 16;
             flash = false;
             speccy.Reset();
@@ -303,15 +302,19 @@ half4 main(float2 fragCoord)
         }
         bool TapeStopped = false;
         private int _frameInProgress;
-        WebAssemblyJSRuntime mono;
 
         protected void BufferSound()
         {
+            if (!_audioInteropReady)
+            {
+                return;
+            }
+
             ConvertBeeperBuffer(beeper.GetSoundBuffer(), _mixedAudioBuffer, BeeperMixGain);
             speccy.CurrahMicroSpeech.RenderAudioFrame(_speechAudioBuffer, speccy.FrameTStates);
             speccy.AyChip.RenderAudioFrame(_ayAudioBuffer, speccy.FrameTStates);
             MixAudioBuffers(_mixedAudioBuffer, _speechAudioBuffer, _ayAudioBuffer, SpeechMixGain, AyMixGain);
-            mono.InvokeVoid("addAudioBuffer", _mixedAudioBuffer);
+            _audioModule.InvokeVoid("addAudioBuffer", _mixedAudioBuffer);
         }
 
         private static void ConvertBeeperBuffer(byte[] beeperBuffer, float[] destination, float gain)
@@ -353,13 +356,23 @@ half4 main(float2 fragCoord)
             }
         }
         public double PercentLoaded = 0;
-        protected override void OnAfterRender(bool firstRender)
+        protected override async Task OnAfterRenderAsync(bool firstRender)
         {
             //if (firstRender)
             //{
             //    await JSRuntime.InvokeAsync<bool>("InitCanvas");
             //}
-            base.OnAfterRender(firstRender);
+            await base.OnAfterRenderAsync(firstRender);
+
+            if (!firstRender || _audioInteropReady || !OperatingSystem.IsBrowser())
+            {
+                return;
+            }
+
+            var audioModule = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./audioInterop.js");
+            _audioModule = (IJSInProcessObjectReference)audioModule;
+            _audioModule.InvokeVoid("initializeAudio", AudioSamplesPerFrame, 0.35f);
+            _audioInteropReady = true;
         }
 
         GCHandle gchscreen;
@@ -570,15 +583,18 @@ half4 main(float2 fragCoord)
             _printerPixels = new uint[width * height];
         }
 
-        public ValueTask DisposeAsync()
+        public async ValueTask DisposeAsync()
         {
             gameLoop.Stop();
             gameLoop.Dispose();
             _consumerTvShaderBuilder?.Dispose();
             _consumerTvEffect?.Dispose();
+            if (_audioModule is not null)
+            {
+                await _audioModule.DisposeAsync();
+            }
             _printerBitmap.Dispose();
             bitmap.Dispose();
-            return ValueTask.CompletedTask;
         }
     }
 }

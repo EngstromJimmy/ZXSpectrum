@@ -26,37 +26,6 @@
                 }, window);
         };
 
-        // Variables
-        var nextStartTime = 0;
-        var buffersize = 960;
-
-        // Create audioContext and gain node.
-        var audioContext = new AudioContext();
-        var gainNode = new GainNode(audioContext, { gain: 0.35 });
-
-        // Connect the gain node.
-        gainNode.connect(audioContext.destination);
-
-        function addAudioBuffer(floatData) {
-            // Create audiobuffer
-            var audioBuffer = audioContext.createBuffer(1, buffersize, audioContext.sampleRate);
-
-            // Create Float32Array from normalized float samples.
-            var newChannelData = new Float32Array(floatData)
-            audioBuffer.copyToChannel(newChannelData, 0);
-
-            // Create audio source from audio buffer
-            let source = new AudioBufferSourceNode(audioContext, { buffer: audioBuffer })
-
-            // Connect the new source node to the main gain node.
-            source.connect(gainNode);
-
-            // Update nextStartTime and start source node.
-            if (nextStartTime == 0 || nextStartTime < audioContext.currentTime) nextStartTime = audioContext.currentTime + (audioBuffer.length / audioBuffer.sampleRate);
-            source.start(nextStartTime);
-            nextStartTime += audioBuffer.length / audioBuffer.sampleRate;
-        }
-
         var pressedKeyMask = 0;
         var pressedKeyValues = Object.create(null);
 
