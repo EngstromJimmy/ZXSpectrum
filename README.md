@@ -56,6 +56,18 @@ Current emulator support includes:
 
 There are still things left to do, especially around adding more file formats and improving hardware accuracy even further.
 
+## Building
+
+### Blazor
+
+1. Install the .NET 10 SDK and restore workloads with `dotnet workload restore`.
+2. Run `dotnet run --project Platforms\ZXBox.Blazor\ZXBox.Blazor.csproj`.
+
+### MonoGame
+
+1. Install the .NET 10 SDK.
+2. Run `dotnet run --project Platforms\ZXBox.Monogame\ZXBox.Monogame.csproj`.
+
 ## Currah uSpeech / SP0256 ROM ownership
 
 Currah uSpeech support uses the bundled Currah ROM plus the SP0256-AL2 speech ROM image.

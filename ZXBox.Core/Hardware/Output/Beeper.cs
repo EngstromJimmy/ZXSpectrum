@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace ZXBox.Hardware.Output;
 
@@ -10,20 +9,44 @@ public class Beeper<T> : Interfaces.IOutput where T : IComparable, IComparable<T
     public Beeper(T low, T high, int samplesPerFrame, int channels, int tStatesPerFrame = 69888)
     {
         bufferCount = samplesPerFrame;
-        highBuffer = Enumerable.Repeat<T>(high, bufferCount).ToArray();
-        lowBuffer = Enumerable.Repeat<T>(low, bufferCount).ToArray();
+        highBuffer = new T[bufferCount];
+        lowBuffer = new T[bufferCount];
+        Array.Fill(highBuffer, high);
+        Array.Fill(lowBuffer, low);
         this.samplesPerFrame = samplesPerFrame;
         this.high = high;
         this.low = low;
         this.channels = channels;
-        this.tStatesPerFrame = tStatesPerFrame;
-        returnbuffer = new T[samplesPerFrame * channels];
+        bufferTstate = (double)samplesPerFrame / tStatesPerFrame;
+        outputBuffers = new[]
+        {
+            new T[samplesPerFrame * channels],
+            new T[samplesPerFrame * channels]
+        };
+        silentOutputBuffer = new T[samplesPerFrame * channels];
         buffer = new T[samplesPerFrame];
+
+        if (channels == 1)
+        {
+            Array.Copy(lowBuffer, silentOutputBuffer, bufferCount);
+        }
+        else
+        {
+            for (int sample = 0, outputIndex = 0; sample < bufferCount; sample++)
+            {
+                for (int channel = 0; channel < channels; channel++)
+                {
+                    silentOutputBuffer[outputIndex++] = low;
+                }
+            }
+        }
+
+        lastValue = low;
     }
 
     public T[] highBuffer = null;
     public T[] lowBuffer = null;
-    private Queue<T[]> BufferQueue = new Queue<T[]>();
+    private Queue<T[]> BufferQueue = new Queue<T[]>(2);
     private int bufferCount;
     private int lastTstate;
     private int samplesPerFrame;
@@ -31,10 +54,12 @@ public class Beeper<T> : Interfaces.IOutput where T : IComparable, IComparable<T
     private T low;
     private T high;
     private T[] buffer;
-    private T[] returnbuffer;
+    private readonly T[][] outputBuffers;
+    private readonly T[] silentOutputBuffer;
+    private readonly double bufferTstate;
+    private int outputBufferIndex;
     private int bufferPosition;
     private int channels;
-    private int tStatesPerFrame;
 
     public T[] GetSoundBuffer()
     {
@@ -44,17 +69,12 @@ public class Beeper<T> : Interfaces.IOutput where T : IComparable, IComparable<T
         }
         else
         {
-            return lowBuffer;
+            return silentOutputBuffer;
         }
     }
 
-    public void GenerateSound(int tStates = -1)
+    public void GenerateSound(int tStates = 69888)
     {
-        if (tStates <= 0)
-        {
-            tStates = tStatesPerFrame;
-        }
-
         if (lastTstate < tStates)
         {
             if (bufferPosition <= bufferCount)
@@ -74,24 +94,26 @@ public class Beeper<T> : Interfaces.IOutput where T : IComparable, IComparable<T
 
         }
         counter = 0;
+        var outputBuffer = outputBuffers[outputBufferIndex];
         if (channels > 1)
         {
             for (c = 0; c < bufferCount; c++)
             {
                 for (int channel = 0; channel < channels; channel++)
                 {
-                    returnbuffer[counter++] = buffer[c];
+                    outputBuffer[counter++] = buffer[c];
                 }
             }
-            BufferQueue.Enqueue(returnbuffer);
         }
         else
         {
-            BufferQueue.Enqueue(buffer);
+            Array.Copy(buffer, outputBuffer, bufferCount);
         }
+        BufferQueue.Enqueue(outputBuffer);
+        outputBufferIndex = (outputBufferIndex + 1) % outputBuffers.Length;
 
         lastTstate = 0;
-        buffer = new T[samplesPerFrame];
+        Array.Clear(buffer, 0, bufferCount);
         bufferPosition = 0;
     }
 
@@ -100,10 +122,8 @@ public class Beeper<T> : Interfaces.IOutput where T : IComparable, IComparable<T
     int counter = 0;
     #region IOutput Members
     //The output is is not dependent on the way the sound will be outputted but rather all the values the buzzer would have at any given tstate
-    public void Output(int Port, int ByteValue, int tState)
+    public void Output(ushort Port, byte ByteValue, int tState)
     {
-        double buffertstate = Convert.ToDouble(samplesPerFrame) / tStatesPerFrame;
-
         if ((Port & 0xff) == 0xfe)
         {
             if (lastTstate > tState)
@@ -111,12 +131,12 @@ public class Beeper<T> : Interfaces.IOutput where T : IComparable, IComparable<T
                 lastTstate = 0;
             }
 
-            lastbufferPosition = Convert.ToInt32(lastTstate * buffertstate);
-            bufferPosition = Convert.ToInt32(tState * buffertstate);
+            lastbufferPosition = (int)(lastTstate * bufferTstate);
+            bufferPosition = (int)(tState * bufferTstate);
 
-            if (bufferPosition >= buffer.Count())
+            if (bufferPosition >= bufferCount)
             {
-                bufferPosition = buffer.Count() - 1;
+                bufferPosition = bufferCount - 1;
             }
 
             int diff = bufferPosition - lastbufferPosition;
@@ -134,7 +154,7 @@ public class Beeper<T> : Interfaces.IOutput where T : IComparable, IComparable<T
             }
             //}
 
-            lastValue = (T)((((ByteValue & 16) == 16)) ? high : low);
+            lastValue = ((ByteValue & 16) == 16) ? high : low;
             //Debug.WriteLine(tState + " - " + (tState / Samplesperframe));
 
             buffer[bufferPosition] = lastValue;

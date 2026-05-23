@@ -122,7 +122,7 @@ namespace Zilog
                         case 0x61:		//OUT (C),H
                         case 0x69:		//OUT (C),L
                             NumberOfTStatesLeft -= 8;
-                            Out(BC, RegisterValueFromOP(3), NumberOfTstates - Math.Abs(NumberOfTStatesLeft));
+                            Out(BC, (byte)RegisterValueFromOP(3), NumberOfTstates - Math.Abs(NumberOfTStatesLeft));
                             NumberOfTStatesLeft -= 4; //12
                             break;
                         case 0xAB:  //OUTD

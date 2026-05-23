@@ -196,7 +196,7 @@ namespace Zilog
                     break;
                 case 0xDB:     //IN A,(n)
                     
-                    int port=(A << 8) | GetNextPCByte();
+                    ushort port = (ushort)((A << 8) | GetNextPCByte());
                     A = In(port);
                     Debug.WriteLine(PC +  "\tIN A,(n) Port=" + port);
                     NumberOfTStatesLeft -= 11;
@@ -675,4 +675,3 @@ namespace Zilog
         }
     }
 }
-

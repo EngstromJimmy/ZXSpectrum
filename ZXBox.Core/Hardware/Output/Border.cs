@@ -1,12 +1,13 @@
 namespace ZXBox.Hardware.Output;
 
-internal class Border
+internal readonly struct Border
 {
-    public uint ColorByte;
-    public int tState;
+    public readonly uint ColorByte;
+    public readonly int TState;
+
     public Border(uint ColorByte, int tState)
     {
         this.ColorByte = ColorByte;
-        this.tState = tState;
+        TState = tState;
     }
 }

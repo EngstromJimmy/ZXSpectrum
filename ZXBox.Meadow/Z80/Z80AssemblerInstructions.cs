@@ -503,7 +503,7 @@ namespace Zilog
             NumberOfTStatesLeft -= 7;
         }
 
-        int outdvalue;
+        byte outdvalue;
         public void OUTD()
         {
             B=DEC8(B,0);
@@ -529,7 +529,7 @@ namespace Zilog
             NumberOfTStatesLeft -= 7;
         }
 
-        int otirvalue;
+        byte otirvalue;
         public void OTIR()
         {
             otirvalue = ReadByteFromMemory(HL);
@@ -939,7 +939,8 @@ namespace Zilog
             NumberOfTStatesLeft -= tstates;
         }
 
-        int inib, inival;
+        int inib;
+        byte inival;
         public void INI(int tstates)
         {
             inib = DEC8(B,0);

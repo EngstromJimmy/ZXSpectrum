@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Components;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Toolbelt.Blazor.Gamepad;
 using ZXBox.Hardware.Interfaces;
@@ -11,7 +10,7 @@ namespace ZXBox.Hardware.Input.Joystick
     /// <summary>
     /// The Kempston joystick interface differs from the other common types in that it does not map to the ZX Spectrum keyboard directly. Rather, it maps to a particular hardware port (0x1f) and support must therefore be 'built-in' to the software. Fortunately, the Kempston joystick interface was enormously popular, and support was very easy to provide, making Kempston control a common, almost standard, feature of most games.
     /// Assuming an appropriate interface is attached, reading from port 0x1f returns the current state of the Kempston joystick in the form 000FUDLR, with active bits high.
-    /// © www.worldofspectrum.com
+    /// ï¿½ www.worldofspectrum.com
     /// </summary>
 
     public class Kempston:IInput
@@ -38,21 +37,28 @@ namespace ZXBox.Hardware.Input.Joystick
 
         #region IInput Members
 
-        public int Input(int Port,int tact)
+        public void AddTStates(int tstates) { }
+
+        public byte Input(ushort Port,int tact)
         {
-            int returnvalue = 0xFF;
+            byte returnvalue = 0xFF;
             if ((Port &0xff) == 0x1f)
             {
                 returnvalue = 0x0;
 
-                this.Gamepad = Gamepads.FirstOrDefault();
+                if (Gamepads == null || Gamepads.Count == 0)
+                {
+                    return returnvalue;
+                }
+
+                this.Gamepad = Gamepads[0];
                 if (Gamepad == null)
                 {
                     return returnvalue;
                 }
                 //GamePadState currentState = GamePad.GetState(playerIndex);
                 //000FUDLR
-                if (Gamepad.Buttons.Count() > 0)
+                if (Gamepad.Buttons.Count > 0)
                     {
                     if (Gamepad.Buttons[0].Pressed)
                         returnvalue |= 16;

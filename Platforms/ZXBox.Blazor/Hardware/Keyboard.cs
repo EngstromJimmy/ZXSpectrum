@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 //using Microsoft.Xna.Framework.Input;
@@ -10,7 +9,8 @@ namespace ZXBox.Hardware.Input
 {
     public class JavaScriptKeyboard : IInput
     {
-        public List<string> KeyBuffer = new List<string>();
+        private readonly HashSet<string> _pressedKeys = new(StringComparer.OrdinalIgnoreCase);
+        public IReadOnlyCollection<string> KeyBuffer { get; private set; } = Array.Empty<string>();
         int NoKeyCounter = 0;
         bool SymbolShift = false;
         int sectionnumber = 1;
@@ -21,12 +21,24 @@ namespace ZXBox.Hardware.Input
         bool fire = false;
         public JoystickTypeEnum JoystickType { get; set; }
 
-        public bool GetKeyStatus(string key)
+        public void SetKeyBuffer(IReadOnlyCollection<string> keys)
         {
-            return KeyBuffer.Any(k => k.ToLower() == key.ToLower());
+            KeyBuffer = keys;
+            _pressedKeys.Clear();
+            foreach (var key in keys)
+            {
+                _pressedKeys.Add(key);
+            }
         }
 
-        public int Input(int Port, int tstates)
+        public bool GetKeyStatus(string key)
+        {
+            return _pressedKeys.Contains(key);
+        }
+
+        public void AddTStates(int tstates) { }
+
+        public byte Input(ushort Port, int tstates)
         {
 
             if ((Port & 0xFF) == 0xFE)
@@ -57,16 +69,15 @@ namespace ZXBox.Hardware.Input
                     right = true;
                 }
 
-                bool symbol = false;
-                int returnvalue = 0xFF;
+                var returnvalue = 0xFF;
 
                 //Special cace for any key
                 if (((Port >> 8) & 0xFF) == 0x01 || ((Port >> 8) & 0xFF) == 0x00 || ((Port >> 8) & 0xFF) == 0x02)
                 {   //Check for any key including joy, we might need to add more joy buttons later on
 
-                    if (KeyBuffer.Count() > 0)
+                    if (KeyBuffer.Count > 0)
                     {
-                        return returnvalue &= ~1;
+                        return (byte)(returnvalue &= ~1);
                     }
 
                 }
@@ -197,7 +208,7 @@ namespace ZXBox.Hardware.Input
                         break;
                 }
 
-                return returnvalue;
+                return (byte)returnvalue;
             }
             return 0xFF;
         }

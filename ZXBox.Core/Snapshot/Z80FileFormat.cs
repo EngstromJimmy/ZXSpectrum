@@ -17,8 +17,8 @@ public class Z80FileFormat : ISnapshot
         cpu.B = snapshotbytes[3];
         cpu.L = snapshotbytes[4];
         cpu.H = snapshotbytes[5];
-        cpu.PC = (snapshotbytes[7] << 8) | snapshotbytes[6];
-        cpu.SP = (snapshotbytes[9] << 8) | snapshotbytes[8];
+        cpu.PC = (ushort)((snapshotbytes[7] << 8) | snapshotbytes[6]);
+        cpu.SP = (ushort)((snapshotbytes[9] << 8) | snapshotbytes[8]);
         cpu.I = snapshotbytes[10];
         cpu.R = snapshotbytes[11];
 
@@ -54,8 +54,8 @@ public class Z80FileFormat : ISnapshot
         cpu.APrim = snapshotbytes[21];
         cpu.FPrim = snapshotbytes[22];
 
-        cpu.IY = snapshotbytes[23] | (snapshotbytes[24] << 8);
-        cpu.IX = snapshotbytes[25] | (snapshotbytes[26] << 8);
+        cpu.IY = (ushort)(snapshotbytes[23] | (snapshotbytes[24] << 8));
+        cpu.IX = (ushort)(snapshotbytes[25] | (snapshotbytes[26] << 8));
 
         cpu.IFF = (snapshotbytes[27] != 0);
         cpu.IFF2 = (snapshotbytes[28] != 0);
@@ -94,7 +94,7 @@ public class Z80FileFormat : ISnapshot
             Most bytes in the extended section will be discarded since there are no support for them
           */
             int numberofheaderbytes = snapshotbytes[snappshotposition++] | (snapshotbytes[snappshotposition++] << 8);
-            cpu.PC = (snapshotbytes[32]) | (snapshotbytes[33] << 8);
+            cpu.PC = (ushort)(snapshotbytes[32] | (snapshotbytes[33] << 8));
 
             //The rest of the header information is not relevant for this emulator
             snappshotposition += numberofheaderbytes;
@@ -159,7 +159,6 @@ public class Z80FileFormat : ISnapshot
                     break;
                 case 5:     //Normal c000-ffff
                     MemoryHandler.LoadBytesintoMemory(mb.MemoryData.ToArray(), 0xc000, cpu);
-                    break;
                     break;
                 //case 3:
                 case 8:     //Normal 4000-7ffff

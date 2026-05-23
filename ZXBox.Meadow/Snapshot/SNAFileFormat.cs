@@ -60,7 +60,8 @@ namespace ZXBox.Snapshot
             //Memory
             MemoryHandler.LoadBytesintoMemory(snapshotbytes,27, 0x4000, cpu);
 
-            int pc = cpu.ReadWordFromMemory(cpu.SP);
+            ushort sp = (ushort)cpu.SP;
+            ushort pc = cpu.ReadWordFromMemory(sp);
             Debug.WriteLine("Load PC:" + pc);
             //cpu.SP++;
             //cpu.SP++;
@@ -118,16 +119,17 @@ namespace ZXBox.Snapshot
  
             var mempos = 27;
 
-            for (int a = 0x4001; a < 64 * 1024; a++)
+            for (ushort address = 0x4001; address != 0; address++)
             {
-                snapshotData[mempos++] = (byte)cpu.ReadByteFromMemory(a);
+                snapshotData[mempos++] = cpu.ReadByteFromMemory(address);
             }
             //foreach (byte b in cpu.Memory.Skip(0x4000))
             //{
             //    snapshotData[mempos++] = b;
             //}
 
-            int pc = cpu.ReadWordFromMemory(cpu.SP);
+            sp = (ushort)cpu.SP;
+            ushort pc = cpu.ReadWordFromMemory(sp);
             Debug.WriteLine("save PC:" + pc);
 
             return snapshotData;

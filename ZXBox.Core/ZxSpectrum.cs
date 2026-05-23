@@ -116,23 +116,23 @@ public class ZXSpectrum : Zilog.Z80
         ZxPrinter.ResetRuntime();
     }
 
-    public override int In(int port)
+    public override byte In(ushort port)
     {
-        retvalue = 0xFF;
+        byte retvalue = 0xFF;
 
         if (Is128KModel && AyChip.TryReadPort(port, CurrentFrameTState, out var ayPortValue))
         {
-            retvalue &= ayPortValue;
+            retvalue = (byte)(retvalue & ayPortValue);
         }
 
         if (CurrahMicroSpeech.TryReadPort(port, CurrentFrameTState, out var currahPortValue))
         {
-            retvalue &= currahPortValue;
+            retvalue = (byte)(retvalue & currahPortValue);
         }
 
         if (ZxPrinter.TryReadPort(port, out var printerPortValue))
         {
-            return printerPortValue;
+            return (byte)printerPortValue;
         }
 
         for (i = 0; i < InputHardware.Count; i++)
@@ -151,7 +151,7 @@ public class ZXSpectrum : Zilog.Z80
     }
     int activescreen = 0;
     bool disablepaging = false;
-    public override void Out(int Port, int ByteValue, int tStates)
+    public override void Out(ushort Port, byte ByteValue, int tStates)
     {
         if (Is128KModel && !disablepaging && Is128kPagingPort(Port))
         {
@@ -182,7 +182,7 @@ public class ZXSpectrum : Zilog.Z80
         disablepaging = false;
     }
 
-    private void Apply128kPaging(int value)
+    private void Apply128kPaging(byte value)
     {
         bank = value & 0x07;
         rom = (value >> 4) & 0x01;
@@ -190,12 +190,12 @@ public class ZXSpectrum : Zilog.Z80
         disablepaging = ((value >> 5) & 0x01) == 1;
     }
 
-    private static bool Is128kPagingPort(int port)
+    private static bool Is128kPagingPort(ushort port)
     {
         return (port & 0x8002) == 0;
     }
 
-    public override void WriteByteToMemory(int address, int bytetowrite)
+    public override void WriteByteToMemory(ushort address, byte bytetowrite)
     {
         if (CurrahMicroSpeech.HandleMemoryWrite(address, bytetowrite, CurrentFrameTState))
         {
@@ -204,19 +204,19 @@ public class ZXSpectrum : Zilog.Z80
 
         if (address < 0x4000) //rom
         {
-            Roms[rom][address & 0xffff] = (byte)(bytetowrite & 0xff);
+            Roms[rom][address & 0xffff] = bytetowrite;
         }
         else if (address >= 0x4000 && address < 0x8000) //Video memory
         {
-            Banks[5][address - 0x4000] = (byte)(bytetowrite & 0xff);
+            Banks[5][address - 0x4000] = bytetowrite;
         }
         else if (address >= 0x8000 && address < 0xc000) //Bank2
         {
-            Banks[2][address - 0x8000] = (byte)(bytetowrite & 0xff);
+            Banks[2][address - 0x8000] = bytetowrite;
         }
         else if (address >= 0xc000) //Bank 0 - 7
         {
-            Banks[bank][address - 0xc000] = (byte)(bytetowrite & 0xff);
+            Banks[bank][address - 0xc000] = bytetowrite;
         }
 
         //Video memory
@@ -225,7 +225,7 @@ public class ZXSpectrum : Zilog.Z80
             int x = (address & 0x1F) * 8;
             int y = ((address & 0x700) >> 8) + ((address & 0xE0) >> 2) + ((address & 0x1800) >> 5);
 
-            speccyscreen.SetPixels(x, y, (byte)(bytetowrite & 0xFF));
+            speccyscreen.SetPixels(x, y, bytetowrite);
         }
 
         if ((address & 0xffff) >= 0x5800 && (address & 0xffff) <= 0x5AFF)
@@ -235,35 +235,35 @@ public class ZXSpectrum : Zilog.Z80
         }
     }
 
-    public override void WriteWordToMemory(int address, int word)
+    public override void WriteWordToMemory(ushort address, ushort word)
     {
-        WriteByteToMemory(address, word & 0xff);
+        WriteByteToMemory(address, (byte)(word & 0xff));
         address++;
-        WriteByteToMemory(address, word >> 8);
+        WriteByteToMemory(address, (byte)(word >> 8));
     }
 
-    public override int ReadByteFromMemory(int address)
+    public override byte ReadByteFromMemory(ushort address)
     {
         return ReadByteFromMemoryCore(address, opcodeFetch: false);
     }
 
-    protected override int ReadOpcodeByteFromMemory(int address)
+    protected override byte ReadOpcodeByteFromMemory(ushort address)
     {
         return ReadByteFromMemoryCore(address, opcodeFetch: true);
     }
 
-    private int ReadByteFromMemoryCore(int address, bool opcodeFetch)
+    private byte ReadByteFromMemoryCore(ushort address, bool opcodeFetch)
     {
         if (opcodeFetch)
         {
             if (CurrahMicroSpeech.TryReadOpcodeFetch(address, CurrentFrameTState, out var currahOpcodeValue))
             {
-                return currahOpcodeValue;
+                return (byte)currahOpcodeValue;
             }
         }
         else if (CurrahMicroSpeech.TryReadMemory(address, CurrentFrameTState, out var currahMemoryValue))
         {
-            return currahMemoryValue;
+            return (byte)currahMemoryValue;
         }
 
         if (address < 0x4000) //rom
