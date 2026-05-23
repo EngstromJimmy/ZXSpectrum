@@ -1,6 +1,4 @@
 using System;
-using System.Text;
-
 namespace Zilog;
 
 public abstract partial class Z80
@@ -405,6 +403,11 @@ public abstract partial class Z80
 
     public abstract byte ReadByteFromMemory(ushort address);
 
+    protected virtual byte ReadOpcodeByteFromMemory(ushort address)
+    {
+        return ReadByteFromMemory(address);
+    }
+
     public ushort ReadWordFromMemory(ushort address)
     {
         return (ushort)((ReadByteFromMemory((ushort)(address + 1 & 0xffff)) << 8 | ReadByteFromMemory((ushort)(address & 0xffff))) & 0xffff);
@@ -497,7 +500,7 @@ public abstract partial class Z80
     //System.Text.StringBuilder sb = new StringBuilder();
     public void NextOpcode()
     {
-        opcode = (ushort)(ReadByteFromMemory(PC) & 0xff);
+        opcode = (ushort)(ReadOpcodeByteFromMemory(PC) & 0xff);
         PC = (ushort)((PC + 1) & 0xffff);
     }
 
@@ -531,7 +534,6 @@ public abstract partial class Z80
 
     public int NumberOfTstates = 0;
 
-    public StringBuilder sb = new StringBuilder();
     // private DateTime start;
     public void DoInstructions(int numberOfTStates = 69888)
     {

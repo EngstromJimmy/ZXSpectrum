@@ -85,11 +85,11 @@ namespace ZXBox.Hardware.Output
         int lastbufferPosition = 0;
         #region IOutput Members
         //The output is is not dependent on the way the sound will be outputted but rather all the values the buzzer would have at any given tstate
-        public void Output(int Port, int ByteValue, int tState)
+        public void Output(ushort port, byte byteValue, int tState)
         {
             double buffertstate = Convert.ToDouble(samplesPerFrame) / 69888d;
             
-            if ((Port & 0xff) == 0xfe)
+            if ((port & 0xff) == 0xfe)
             {
                 if (lastTstate > tState)
                 {
@@ -122,7 +122,7 @@ namespace ZXBox.Hardware.Output
                 //}
 
 
-                lastValue = (T)((((ByteValue & 16) == 16)) ? high : low);
+                lastValue = (T)((((byteValue & 16) == 16)) ? high : low);
                 //Debug.WriteLine(tState + " - " + (tState / Samplesperframe));
 
                 

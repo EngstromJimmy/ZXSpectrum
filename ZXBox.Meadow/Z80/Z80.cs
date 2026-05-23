@@ -34,12 +34,12 @@ namespace Zilog
 
         #region Ports
         //Override these
-        public virtual int In(int port)
+        public virtual byte In(ushort port)
         {
             return 0xff;
         }
 
-        public virtual void Out(int Port, int ByteValue, int tStates)
+        public virtual void Out(ushort port, byte byteValue, int tStates)
         {
         }
         
@@ -386,14 +386,14 @@ namespace Zilog
 
             private byte GetNextPCByte()
             {
-                byte b = ReadByteFromMemory(PC);
+                byte b = ReadByteFromMemory((ushort)PC);
                 PC = PC+1  & 0xffff;
                 return b;
             }
             private ushort GetNextPCWord()
             {
-                ushort w = ReadByteFromMemory(PC++);
-                w |= (ReadByteFromMemory(PC++  & 0xffff) << 8);
+                ushort w = ReadByteFromMemory((ushort)(PC++ & 0xffff));
+                w |= (ushort)(ReadByteFromMemory((ushort)(PC++ & 0xffff)) << 8);
                 return w;
             }
         #endregion
@@ -403,15 +403,15 @@ namespace Zilog
             {
                 int sp = ((SP - 2) & 0xffff);
                 SP=sp;
-                WriteWordToMemory(sp, word);
+                WriteWordToMemory((ushort)sp, word);
             }
             public ushort StackpopWord()
             {
-                int w = ReadByteFromMemory(SP);
+                int w = ReadByteFromMemory((ushort)SP);
                 SP++;
-                w |= (ReadByteFromMemory(SP & 0xffff) << 8);
+                w |= (ReadByteFromMemory((ushort)(SP & 0xffff)) << 8);
                 SP=(SP+1 & 0xffff);
-                return w;
+                return (ushort)w;
             }
         #endregion
 
@@ -427,7 +427,7 @@ namespace Zilog
 
         public ushort ReadWordFromMemory(ushort address)
         {
-            return (ReadByteFromMemory(address+1 & 0xffff) << 8 | ReadByteFromMemory(address  & 0xffff)) & 0xffff;
+            return (ushort)((ReadByteFromMemory((ushort)((address + 1) & 0xffff)) << 8) | ReadByteFromMemory((ushort)(address & 0xffff)));
         }
         #endregion
 
@@ -511,14 +511,14 @@ namespace Zilog
             //Clear Memory
             for (int a = 16384; a < 3* 16384; a++)
             {
-                WriteByteToMemory(a, 0);
+                WriteByteToMemory((ushort)a, 0);
             }
         }
 
         //System.Text.StringBuilder sb = new StringBuilder();
         public void NextOpcode()
         {
-            opcode = (ReadByteFromMemory(PC) & 0xff);
+            opcode = (ReadByteFromMemory((ushort)PC) & 0xff);
             PC = (PC + 1) & 0xffff;
         }
 
@@ -545,7 +545,7 @@ namespace Zilog
                     IFF = false;
                     IFF2 = false;
                     int t = (I << 8) | 0x00ff;
-                    PC = ReadWordFromMemory(t);
+                    PC = ReadWordFromMemory((ushort)t);
                     return 19;
             }
 
@@ -621,4 +621,3 @@ namespace Zilog
         }
     }
 }
-

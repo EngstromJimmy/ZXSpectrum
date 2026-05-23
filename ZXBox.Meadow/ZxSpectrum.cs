@@ -72,8 +72,8 @@ namespace ZXBox
         public List<IOutput> OutputHardware = new List<IOutput>();
 
         public int bordercolor=1;
-        int retvalue = 0xFF;
-        public override int In(int port)
+        byte retvalue = 0xFF;
+        public override byte In(ushort port)
         {
             retvalue = 0xFF;
             for (int i = 0; i < InputHardware.Count;i++ )
@@ -84,7 +84,7 @@ namespace ZXBox
         }
         int activescreen=0;
         bool disablepaging = false;
-        public override void Out(int Port, int ByteValue, int tStates)
+        public override void Out(ushort Port, byte ByteValue, int tStates)
         {
             //128k
             if (Port == 0x7ffd)
@@ -104,7 +104,7 @@ namespace ZXBox
         }
         int bank = 0;
         int rom = 0;
-        public override void WriteByteToMemory(int address, int bytetowrite)
+        public override void WriteByteToMemory(ushort address, byte bytetowrite)
         {
 
             if (address < 0x4000) //rom
@@ -140,14 +140,14 @@ namespace ZXBox
             }
         }
 
-        public override void WriteWordToMemory(int address, int word)
+        public override void WriteWordToMemory(ushort address, ushort word)
         {
-            WriteByteToMemory(address, word & 0xff);
+            WriteByteToMemory(address, (byte)(word & 0xff));
             address++;
-            WriteByteToMemory(address, word >> 8);
+            WriteByteToMemory(address, (byte)(word >> 8));
         }
 
-        public override int ReadByteFromMemory(int address)
+        public override byte ReadByteFromMemory(ushort address)
         {
             if (address < 0x4000) //rom
             {

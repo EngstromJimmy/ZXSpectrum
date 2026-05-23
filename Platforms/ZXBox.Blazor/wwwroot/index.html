@@ -6,13 +6,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>ZX Spectrum emulator running on Blazor</title>
     <base href="/" />
+    <link rel="preload" id="webassembly" />
     <link href="css/bootstrap/bootstrap.min.css" rel="stylesheet" />
     <link href="css/app.css" rel="stylesheet" />
     <link href="ZXBox.Blazor.styles.css" rel="stylesheet" />
+    <script type="importmap"></script>
 </head>
 
 <body>
     <script>
+        window.Toolbelt = window.Toolbelt || {};
+        window.Toolbelt.Blazor = window.Toolbelt.Blazor || {};
+        window.Toolbelt.Blazor.getProperty = function (path) {
+            return path
+                .replace(/^window\./, '')
+                .split('.')
+                .reduce(function (target, part) {
+                    return target == null ? target : target[part];
+                }, window);
+        };
+
         // Variables
         var nextStartTime = 0;
         var buffersize = 960;
@@ -141,8 +154,8 @@
         <a href="" class="reload">Reload</a>
         <a class="dismiss">🗙</a>
     </div>
-    <script src="JavaScript.js"></script>
-    <script src="_framework/blazor.webassembly.js"></script>
+    <script src="JavaScript#[.{fingerprint}].js"></script>
+    <script src="_framework/blazor.webassembly#[.{fingerprint}].js"></script>
 
 </body>
 

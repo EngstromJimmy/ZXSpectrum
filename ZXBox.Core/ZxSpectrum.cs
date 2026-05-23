@@ -122,17 +122,17 @@ public class ZXSpectrum : Zilog.Z80
 
         if (Is128KModel && AyChip.TryReadPort(port, CurrentFrameTState, out var ayPortValue))
         {
-            retvalue &= ayPortValue;
+            retvalue = (byte)(retvalue & ayPortValue);
         }
 
         if (CurrahMicroSpeech.TryReadPort(port, CurrentFrameTState, out var currahPortValue))
         {
-            retvalue &= currahPortValue;
+            retvalue = (byte)(retvalue & currahPortValue);
         }
 
         if (ZxPrinter.TryReadPort(port, out var printerPortValue))
         {
-            return printerPortValue;
+            return (byte)printerPortValue;
         }
 
         for (i = 0; i < InputHardware.Count; i++)
@@ -247,9 +247,9 @@ public class ZXSpectrum : Zilog.Z80
         return ReadByteFromMemoryCore(address, opcodeFetch: false);
     }
 
-    protected override int ReadOpcodeByteFromMemory(int address)
+    protected override byte ReadOpcodeByteFromMemory(ushort address)
     {
-        return ReadByteFromMemoryCore((ushort)address, opcodeFetch: true);
+        return ReadByteFromMemoryCore(address, opcodeFetch: true);
     }
 
     private byte ReadByteFromMemoryCore(ushort address, bool opcodeFetch)
