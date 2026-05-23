@@ -25,6 +25,7 @@ namespace ZXBox.Core.Tests
             file = $"{Directory.GetParent(Directory.GetCurrentDirectory()).Parent.Parent.FullName}\\Testfiles\\" + file;
             ZXSpectrum z80 = new ZXSpectrum();
             z80.Reset();
+            z80.AutoInterruptAtEndOfTimeslice = false;
 
             TestState ts = TestfileHandler.ReadINFile(file);
             z80.AF = ts.af;
@@ -79,8 +80,8 @@ namespace ZXBox.Core.Tests
             Assert.AreEqual (ts.hl , z80.hl,"hl");
             Assert.AreEqual (ts.hl_ , z80.hl_,"hl_");
             Assert.AreEqual (ts.i , z80.i, "i");
-            //Assert.AreEqual (ts.iff1 , z80.iff1, "iff1");
-            //Assert.AreEqual (ts.iff2 , z80.iff2, "iff2");
+            Assert.AreEqual (ts.iff1 , z80.iff1, "iff1");
+            Assert.AreEqual (ts.iff2 , z80.iff2, "iff2");
             Assert.AreEqual (ts.im , z80.im, "im");
             Assert.AreEqual (ts.ix , z80.ix, "ix");
             Assert.AreEqual(ts.iy, z80.iy, "iy");
@@ -98,9 +99,9 @@ namespace ZXBox.Core.Tests
                 }
             }
             Assert.IsTrue(equalMemory,"memory");
-            //Assert.AreEqual(ts.pc, z80.pc, "pc");
-            //Assert.AreEqual(ts.r, z80.r, "r");
-            //Assert.AreEqual(ts.sp, z80.sp, "sp");
+            Assert.AreEqual(ts.pc, z80.pc, "pc");
+            Assert.AreEqual(ts.r, z80.r, "r");
+            Assert.AreEqual(ts.sp, z80.sp, "sp");
                 
 
             return comparetrue;
@@ -205,4 +206,3 @@ namespace ZXBox.Core.Tests
         }
     }
 }
-

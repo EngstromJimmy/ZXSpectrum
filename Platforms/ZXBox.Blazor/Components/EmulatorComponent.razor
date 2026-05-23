@@ -7,39 +7,339 @@
 @inject Toolbelt.Blazor.Gamepad.GamepadList GamePadList;
 @inherits EmulatorComponentModel
 
-@*<canvas id="emulatorCanvas" width="296" height="232" style="@(gameLoop.Enabled?"":"display:none;")"></canvas> *@
+<style>
+    .emulator-shell {
+        min-height: calc(100vh - var(--app-nav-height, 59px));
+        color: #f4f4f4;
+        overflow: hidden;
+    }
 
-<SKCanvasView id="emulatorCanvas" @ref="_canvasView" style="@(gameLoop.Enabled?"":"display:none;")" OnPaintSurface="OnPaintSurface" Width="296" Height="232" />
+    .emulator-stage {
+        height: calc(100vh - var(--app-nav-height, 59px));
+        padding: 16px;
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .emulator-screen-frame {
+        height: 100%;
+        max-width: 100%;
+        max-height: 100%;
+        aspect-ratio: 296 / 232;
+        display: flex;
+        align-items: stretch;
+        justify-content: stretch;
+        background: #000;
+        box-shadow: 0 0 0 1px #1a1a1a, 0 24px 60px rgba(0, 0, 0, 0.55);
+    }
+
+    .emulator-screen {
+        display: block;
+        width: 100%;
+        height: 100%;
+        background: #000;
+    }
+
+    .emulator-menu-scrim {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.45);
+        z-index: 19;
+    }
+
+    .emulator-menu {
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: min(360px, 92vw);
+        z-index: 20;
+        background: rgba(18, 18, 18, 0.98);
+        border-right: 1px solid #2a2a2a;
+        box-shadow: 16px 0 40px rgba(0, 0, 0, 0.45);
+        overflow-y: auto;
+        transform: translateX(-100%);
+        transition: transform 0.18s ease-out;
+        font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    }
+
+    .emulator-menu.open {
+        transform: none;
+    }
+
+    .emulator-menu-content {
+        padding: 20px 16px 32px;
+    }
+
+    .emulator-menu-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+
+    .emulator-menu-title {
+        font-family: 'zx', "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+        font-size: 20px;
+        font-weight: 400;
+        line-height: 1.2;
+    }
+
+    .emulator-menu-close {
+        background: #262626;
+        border: 1px solid #3c3c3c;
+        color: #f4f4f4;
+        padding: 8px 12px;
+        cursor: pointer;
+    }
+
+    .emulator-section {
+        margin-bottom: 18px;
+        padding-bottom: 18px;
+        border-bottom: 1px solid #262626;
+    }
+
+    .emulator-section:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+
+    .emulator-section-title {
+        font-family: 'zx', "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+        font-size: 16px;
+        font-weight: 400;
+        letter-spacing: 0;
+        text-transform: uppercase;
+        color: #d8d8d8;
+        margin-bottom: 10px;
+        line-height: 1.2;
+    }
+
+    .emulator-section p {
+        margin: 0 0 10px;
+        color: #cfcfcf;
+        font-size: 14px;
+        line-height: 1.4;
+    }
+
+    .emulator-section button,
+    .emulator-section input[type=file] {
+        margin-bottom: 8px;
+    }
+
+    .emulator-button-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .emulator-checkbox {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .emulator-status {
+        font-size: 14px;
+        line-height: 1.4;
+        color: #cfcfcf;
+    }
+
+    .emulator-printer {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        background: #8f9296;
+        border: 1px solid #676b6f;
+        padding: 12px;
+        color: #1f1f1f;
+    }
+
+    .emulator-printer-paper {
+        background: #b8bcc0;
+        border: 1px solid #7b7f83;
+        padding: 8px;
+        overflow: auto;
+    }
+
+    .launcher-shell {
+        min-height: calc(100vh - var(--app-nav-height, 59px));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        box-sizing: border-box;
+        color: #f4f4f4;
+    }
+
+    .launcher-panel {
+        text-align: center;
+        background: rgba(18, 18, 18, 0.95);
+        border: 1px solid #2c2c2c;
+        padding: 24px;
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+    }
+
+    .launcher-options {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 24px;
+        margin-top: 20px;
+    }
+
+    .launcher-option {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px;
+    }
+</style>
 
 @if (gameLoop.Enabled)
 {
-    <div style="text-align:center; color:white">
-        Load a game (supported formats: TAP, Z80, and SNA)<br />
-        <InputFile OnChange="HandleFileSelected" /><br />
-        Use a gamepad for Kempston joystick<br />
-        @((MarkupString)Instructions)<br />
-        <button @onclick="@(()=>LoadGame("ManicMiner.z80","left - q<br/>right - w<br/>jump - space"))">Load Manic Miner (1983)(Bug-Byte Software)</button>
-        @if (tapePlayer.EarValues.Count > 0)
+    <div class="emulator-shell">
+        @if (IsSettingsOpen)
         {
-            @if (!tapePlayer.IsPlaying)
-            {
-                <button @onclick="tapePlayer.Play">Start tape</button>
-            }
-            else
-            {
-                <div style="height:300px;">
-                    <TapePlayerComponent Percent="@PercentLoaded" TapeName="@TapeName"></TapePlayerComponent>
-                </div>
-            }
+            <div class="emulator-menu-scrim" @onclick="CloseSettingsPanel"></div>
         }
+
+        <aside class="emulator-menu @(IsSettingsOpen ? "open" : null)">
+            <div class="emulator-menu-content">
+                <div class="emulator-menu-header">
+                    <div class="emulator-menu-title">ZXBox settings</div>
+                    <button class="emulator-menu-close" @onclick="CloseSettingsPanel">Close</button>
+                </div>
+
+                <div class="emulator-section">
+                    <div class="emulator-section-title">Media</div>
+                    <p>Load a game or tape image. Supported formats: TAP, TZX, Z80, and SNA.</p>
+                    <InputFile OnChange="HandleFileSelected" />
+                    @if (!string.IsNullOrEmpty(TapeName))
+                    {
+                        <div class="emulator-status">Loaded tape: @TapeName</div>
+                    }
+                    @if (tapePlayer.EarValues.Count > 0)
+                    {
+                        @if (!tapePlayer.IsPlaying)
+                        {
+                            <button @onclick="tapePlayer.Play">Start tape</button>
+                        }
+                        else
+                        {
+                            <div style="height:300px;">
+                                <TapePlayerComponent Percent="@PercentLoaded" TapeName="@TapeName"></TapePlayerComponent>
+                            </div>
+                        }
+                    }
+                </div>
+
+                <div class="emulator-section">
+                    <div class="emulator-section-title">Quick start</div>
+                    <div class="emulator-button-row">
+                        <button @onclick="@(()=>LoadGame("ManicMiner.z80","left - q<br/>right - w<br/>jump - space"))">Load Manic Miner</button>
+                    </div>
+                    @if (!string.IsNullOrEmpty(Instructions))
+                    {
+                        <div class="emulator-status">@((MarkupString)Instructions)</div>
+                    }
+                </div>
+
+                <div class="emulator-section">
+                    <div class="emulator-section-title">Peripherals</div>
+                    <div class="emulator-button-row">
+                        @if (!speccy.CurrahMicroSpeech.Connected)
+                        {
+                            <button @onclick="ConnectCurrahMicroSpeech">Connect Currah uSpeech</button>
+                        }
+                        else
+                        {
+                            <button @onclick="DisconnectCurrahMicroSpeech">Disconnect Currah uSpeech</button>
+                        }
+                        @if (!speccy.ZxPrinter.Connected)
+                        {
+                            <button @onclick="ConnectZxPrinter">Connect ZX Printer</button>
+                        }
+                        else
+                        {
+                            <button @onclick="DisconnectZxPrinter">Disconnect ZX Printer</button>
+                        }
+                    </div>
+                </div>
+
+                <div class="emulator-section">
+                    <div class="emulator-section-title">Display</div>
+                    <label class="emulator-checkbox">
+                        <input type="checkbox" @bind="ConsumerTvShaderEnabled" />
+                        <span>80s TV shader</span>
+                    </label>
+                    @if (!string.IsNullOrEmpty(ConsumerTvShaderError))
+                    {
+                        <div style="margin-top:8px; color:#ffb3b3;">
+                            CRT shader unavailable: @ConsumerTvShaderError
+                        </div>
+                    }
+                </div>
+
+                <div class="emulator-section">
+                    <div class="emulator-section-title">Input</div>
+                    <div class="emulator-status">Use the keyboard for Spectrum input and a gamepad for Kempston joystick.</div>
+                </div>
+
+                <div class="emulator-section">
+                    <div class="emulator-section-title">Links</div>
+                    <div class="emulator-status">
+                        Twitter: <a href="https://twitter.com/EngstromJimmy" target="_blank" rel="noopener noreferrer">@@EngstromJimmy</a><br />
+                        Blog: <a href="https://www.engstromjimmy.com" target="_blank" rel="noopener noreferrer">EngstromJimmy.se</a><br />
+                        Twitch: <a href="https://www.twitch.tv/Codingafterwork" target="_blank" rel="noopener noreferrer">CodingAfterWork</a>
+                    </div>
+                </div>
+
+                @if (speccy.ZxPrinter.Connected)
+                {
+                    <div class="emulator-section">
+                        <div class="emulator-section-title">ZX Printer</div>
+                        <div class="emulator-printer">
+                            <div class="emulator-printer-paper">
+                                <SKCanvasView @ref="_printerCanvasView"
+                                              class="emulator-screen"
+                                              style="@PrinterCanvasStyle"
+                                              OnPaintSurface="OnPaintPrinterSurface"
+                                              Width="@PrinterCanvasDisplayWidth"
+                                              Height="@PrinterCanvasDisplayHeight" />
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </aside>
+
+        <div class="emulator-stage" @onclick="OpenSettingsPanel">
+            <div class="emulator-screen-frame" @onclick:stopPropagation="true">
+                <SKCanvasView id="emulatorCanvas"
+                              @ref="_canvasView"
+                              class="emulator-screen"
+                              OnPaintSurface="OnPaintSurface"
+                              Width="296"
+                              Height="232" />
+            </div>
+        </div>
     </div>
 }
 else
 {
-    <div style="height:100vh;text-align:center;padding-top:200px;">
-        Choose the computer you want to run<br/>
-        <a href="#" @onclick:preventDefault @onclick="@(()=>StartZXSpectrum(RomEnum.ZXSpectrum48k))"><img src="./images/ZXSpectrum48k.png"/></a>
-        <a href="#" @onclick:preventDefault @onclick="@(()=>StartZXSpectrum(RomEnum.ZXSpectrumPlus))"><img src="./images/ZXSpectrum128k.png"/></a>
+    <div class="launcher-shell">
+        <div class="launcher-panel">
+            <div>Choose the computer you want to run</div>
+            <div class="launcher-options">
+                <a class="launcher-option" href="#" @onclick:preventDefault @onclick="@(()=>StartZXSpectrum(RomEnum.ZXSpectrum48k))"><img src="./images/ZXSpectrum48k.png"/></a>
+                <a class="launcher-option" href="#" @onclick:preventDefault @onclick="@(()=>StartZXSpectrum(RomEnum.ZXSpectrumPlus))"><img src="./images/ZXSpectrum128k.png"/></a>
+            </div>
+        </div>
     </div>
 }
 

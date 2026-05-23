@@ -420,6 +420,11 @@ public abstract partial class Z80
 
     public abstract int ReadByteFromMemory(int address);
 
+    protected virtual int ReadOpcodeByteFromMemory(int address)
+    {
+        return ReadByteFromMemory(address);
+    }
+
     public int ReadWordFromMemory(int address)
     {
         return (ReadByteFromMemory(address + 1 & 0xffff) << 8 | ReadByteFromMemory(address & 0xffff)) & 0xffff;
@@ -450,9 +455,11 @@ public abstract partial class Z80
     }
     //Interupts and memory
     public bool BlockINT = true;
+    public bool AutoInterruptAtEndOfTimeslice { get; set; } = true;
     public bool IFF = false;
     public bool IFF2 = false;
     public int IM = 2;
+    protected int _interruptInhibitInstructionCount = 0;
     public int _R7 = 0;
     public int _R = 0;
     public int R7
@@ -473,9 +480,9 @@ public abstract partial class Z80
 
     public void Refresh(int t)
     {
-        //            _R += t;
-        _R = (byte)(((_R + 1) & 0x7F) | (_R & 0x80));
-        //SubtractNumberOfTStatesLeft( 1;
+        int lowBits = (_R & 0x7F);
+        lowBits = (lowBits + t) & 0x7F;
+        _R = (byte)(lowBits | (_R & 0x80));
     }
 
     public void Reset()
@@ -507,6 +514,9 @@ public abstract partial class Z80
         IFF = false;
         IFF2 = false;
         IM = 0;
+        AutoInterruptAtEndOfTimeslice = true;
+        BlockINT = false;
+        _interruptInhibitInstructionCount = 0;
         _numberOfTStatesLeft = 0;
         this.Out(254, 5, 0); //Border Color
 
@@ -520,7 +530,14 @@ public abstract partial class Z80
     //System.Text.StringBuilder sb = new StringBuilder();
     public void NextOpcode()
     {
-        opcode = (ReadByteFromMemory(PC) & 0xff);
+        Refresh(1);
+        opcode = (ReadOpcodeByteFromMemory(PC) & 0xff);
+        PC = (PC + 1) & 0xffff;
+    }
+
+    public void NextOpcodeWithoutRefresh()
+    {
+        opcode = (ReadOpcodeByteFromMemory(PC) & 0xff);
         PC = (PC + 1) & 0xffff;
     }
 
@@ -553,6 +570,29 @@ public abstract partial class Z80
         return 0;
     }
 
+    protected void BeginInterruptInhibit()
+    {
+        BlockINT = true;
+        _interruptInhibitInstructionCount = 2;
+    }
+
+    protected void ClearInterruptInhibit()
+    {
+        BlockINT = false;
+        _interruptInhibitInstructionCount = 0;
+    }
+
+    private void AdvanceInterruptInhibit()
+    {
+        if (_interruptInhibitInstructionCount <= 0)
+        {
+            return;
+        }
+
+        _interruptInhibitInstructionCount--;
+        BlockINT = _interruptInhibitInstructionCount > 0;
+    }
+
     public int NumberOfTstates = 0;
 
     public StringBuilder sb = new StringBuilder();
@@ -569,9 +609,21 @@ public abstract partial class Z80
         _EndTstates2 = numberOfTStates;
         while (true)
         {
+            if (_numberOfTStatesLeft <= 0)
+            {
+                if (!AutoInterruptAtEndOfTimeslice || BlockINT)
+                {
+                    break;
+                }
+            }
 
             if (interruptTriggered(_numberOfTStatesLeft))
             {
+                if (BlockINT)
+                {
+                    break;
+                }
+
                 //NumberOfTStatesLeft += (NumberOfTStates - interrupt());
                 SubtractNumberOfTStatesLeft(interrupt());
                 break;
@@ -592,25 +644,23 @@ public abstract partial class Z80
                     DoCBPrefixInstruction();
                     break;
                 case 0xDD:
-                    Refresh(1);
                     NextOpcode();
                     DoDDorFDPrefixInstruction(IndexRegistryEnum.IX);
                     break;
                 case 0xED:
-                    Refresh(1);
                     NextOpcode();
                     DoEDPrefixInstruction();
                     break;
                 case 0xFD:
-                    Refresh(1);
                     NextOpcode();
                     DoDDorFDPrefixInstruction(IndexRegistryEnum.IY);
                     break;
                 default:
-                    Refresh(1);
                     DoNoPrefixInstruction();
                     break;
             }
+
+            AdvanceInterruptInhibit();
         }
     }
 }

@@ -6,6 +6,12 @@ In this repo, you will find:
 
 * ZX Spectrum emulator written in C#.
 * Blazor implementation of the emulator
+* 48K and 128K Spectrum support
+* Blazor audio output for the beeper, 128K AY sound, and Currah uSpeech
+* Snapshot support for SNA and Z80
+* Tape loading and playback for TAP and TZX files
+* Kempston joystick support through a gamepad
+* Connectable Currah uSpeech and ZX Printer peripherals
 
 ## Sponsors
 Thanks you to much to my sponsors!  
@@ -37,9 +43,24 @@ I did a talk about Blazor at Microsoft Ignite 2019 where I demoed my ZX Spectrum
 You can find the Blazor implementation here http://zxbox.com .  
 I got a lot of amazing feedback and many wanted to see the code so I decided to share that as well.
 
-There are still things left to do for example implementing sound (for Blazor) and support for more file formats.
+Current emulator support includes:
 
-It supports SNA and Z80-formats and you can connect an XBox gamepad to emulate Kempston Joystick.
+* ZX Spectrum 48K and 128K models
+* Beeper audio in Blazor
+* 128K AY-3-8912 sound
+* Currah uSpeech with bundled Currah and SP0256 ROM assets
+* TAP and TZX loading with tape playback
+* SNA and Z80 snapshot loading
+* Kempston joystick through an Xbox-compatible gamepad
+* ZX Printer emulation with a live paper preview in the Blazor UI
+
+There are still things left to do, especially around adding more file formats and improving hardware accuracy even further.
+
+## Currah uSpeech / SP0256 ROM ownership
+
+Currah uSpeech support uses the bundled Currah ROM plus the SP0256-AL2 speech ROM image.
+
+The SP0256-AL2 ROM image (`al2.bin`) is owned by **Microchip Technology Inc.** Microchip retains the intellectual property rights to the algorithms and data contained in that ROM image. Distribution of that ROM image is based on the permission described by Microchip's legal department in the material provided with the ROM.
 
 ## Thanks to
 

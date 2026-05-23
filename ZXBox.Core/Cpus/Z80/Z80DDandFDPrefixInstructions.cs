@@ -21,7 +21,6 @@ public partial class Z80
         ixd = 0;
         index = (int)IRindex;
 
-        Refresh(1);
         switch (opcode)
         {
             case 0x84:		//ADD A,IXH*
@@ -402,7 +401,7 @@ public partial class Z80
             case 0xCB:
                 dvalue = d;
                 tmpValue = 0;
-                NextOpcode();
+                NextOpcodeWithoutRefresh();
                 switch (opcode)
                 {
                     case 0x00:	//LD B,RLC (IX+d)*
