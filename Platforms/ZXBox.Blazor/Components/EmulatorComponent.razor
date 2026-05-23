@@ -42,22 +42,6 @@
         background: #000;
     }
 
-    .emulator-menu-button {
-        position: fixed;
-        top: 16px;
-        left: 16px;
-        z-index: 30;
-        background: rgba(14, 14, 14, 0.92);
-        border: 1px solid #333;
-        color: #f4f4f4;
-        padding: 10px 14px;
-        cursor: pointer;
-    }
-
-    .emulator-menu-button:hover {
-        background: rgba(28, 28, 28, 0.98);
-    }
-
     .emulator-menu-scrim {
         position: fixed;
         inset: 0;
@@ -78,10 +62,11 @@
         overflow-y: auto;
         transform: translateX(-100%);
         transition: transform 0.18s ease-out;
+        font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
     }
 
     .emulator-menu.open {
-        transform: translateX(0);
+        transform: none;
     }
 
     .emulator-menu-content {
@@ -97,8 +82,10 @@
     }
 
     .emulator-menu-title {
-        font-size: 1.1rem;
-        font-weight: 700;
+        font-family: 'zx', "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+        font-size: 20px;
+        font-weight: 400;
+        line-height: 1.2;
     }
 
     .emulator-menu-close {
@@ -122,17 +109,21 @@
     }
 
     .emulator-section-title {
-        font-size: 0.9rem;
-        font-weight: 700;
-        letter-spacing: 0.04em;
+        font-family: 'zx', "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+        font-size: 16px;
+        font-weight: 400;
+        letter-spacing: 0;
         text-transform: uppercase;
         color: #d8d8d8;
         margin-bottom: 10px;
+        line-height: 1.2;
     }
 
     .emulator-section p {
         margin: 0 0 10px;
         color: #cfcfcf;
+        font-size: 14px;
+        line-height: 1.4;
     }
 
     .emulator-section button,
@@ -153,7 +144,8 @@
     }
 
     .emulator-status {
-        font-size: 0.95rem;
+        font-size: 14px;
+        line-height: 1.4;
         color: #cfcfcf;
     }
 
@@ -211,8 +203,6 @@
 @if (gameLoop.Enabled)
 {
     <div class="emulator-shell">
-        <button class="emulator-menu-button" @onclick="ToggleSettingsPanel">@(IsSettingsOpen ? "Hide menu" : "Menu")</button>
-
         @if (IsSettingsOpen)
         {
             <div class="emulator-menu-scrim" @onclick="CloseSettingsPanel"></div>
@@ -328,8 +318,8 @@
             </div>
         </aside>
 
-        <div class="emulator-stage">
-            <div class="emulator-screen-frame">
+        <div class="emulator-stage" @onclick="OpenSettingsPanel">
+            <div class="emulator-screen-frame" @onclick:stopPropagation="true">
                 <SKCanvasView id="emulatorCanvas"
                               @ref="_canvasView"
                               class="emulator-screen"
