@@ -18,7 +18,8 @@ public sealed class Ay38912Chip
     private static readonly float[] VolumeTable = BuildVolumeTable();
 
     private readonly byte[] _registers = new byte[RegisterCount];
-    private readonly List<float> _frameSamples = new();
+    private float[] _frameSamples = new float[4096];
+    private int _frameSampleCount;
     private readonly double[] _tonePhase = new double[3];
 
     private long _sampleAccumulator;
@@ -42,7 +43,7 @@ public sealed class Ay38912Chip
     {
         Array.Clear(_registers);
         Array.Clear(_tonePhase);
-        _frameSamples.Clear();
+        _frameSampleCount = 0;
         _sampleAccumulator = 0;
         _frameTStateCursor = 0;
         _selectedRegister = 0;
@@ -105,13 +106,17 @@ public sealed class Ay38912Chip
 
     public float[] RenderAudioFrame(int outputSampleCount, int frameTStates)
     {
+        var output = new float[outputSampleCount];
+        RenderAudioFrame(output, frameTStates);
+        return output;
+    }
+
+    public void RenderAudioFrame(Span<float> destination, int frameTStates)
+    {
         AdvanceToFrameTState(frameTStates);
-
-        var rendered = ResampleFrame(outputSampleCount);
-        _frameSamples.Clear();
+        ResampleFrame(destination);
+        _frameSampleCount = 0;
         _frameTStateCursor = 0;
-
-        return rendered;
     }
 
     private void AdvanceToFrameTState(int frameTState)
@@ -127,7 +132,8 @@ public sealed class Ay38912Chip
         while (_sampleAccumulator >= Zx128TStatesPerSecond)
         {
             _sampleAccumulator -= Zx128TStatesPerSecond;
-            _frameSamples.Add(GenerateInternalSample());
+            EnsureFrameSampleCapacity(_frameSampleCount + 1);
+            _frameSamples[_frameSampleCount++] = GenerateInternalSample();
         }
 
         _frameTStateCursor = frameTState;
@@ -236,27 +242,27 @@ public sealed class Ay38912Chip
         _envelopeLevel = _envelopeDirection > 0 ? 0 : 15;
     }
 
-    private float[] ResampleFrame(int outputSampleCount)
+    private void ResampleFrame(Span<float> output)
     {
-        if (outputSampleCount <= 0)
+        if (output.Length == 0)
         {
-            return Array.Empty<float>();
+            return;
         }
 
-        var output = new float[outputSampleCount];
-
-        if (_frameSamples.Count == 0)
+        if (_frameSampleCount == 0)
         {
-            return output;
+            output.Clear();
+            return;
         }
 
-        if (_frameSamples.Count == 1)
+        if (_frameSampleCount == 1)
         {
-            Array.Fill(output, _frameSamples[0]);
-            return NormalizeFrame(output);
+            output.Fill(_frameSamples[0]);
+            NormalizeFrame(output);
+            return;
         }
 
-        var lastSourceIndex = _frameSamples.Count - 1;
+        var lastSourceIndex = _frameSampleCount - 1;
         for (var i = 0; i < output.Length; i++)
         {
             var sourcePosition = output.Length == 1
@@ -270,16 +276,11 @@ public sealed class Ay38912Chip
                         ((_frameSamples[nextIndex] - _frameSamples[sourceIndex]) * (float)fraction);
         }
 
-        return NormalizeFrame(output);
+        NormalizeFrame(output);
     }
 
-    private float[] NormalizeFrame(float[] buffer)
+    private void NormalizeFrame(Span<float> buffer)
     {
-        if (buffer.Length == 0)
-        {
-            return buffer;
-        }
-
         for (var i = 0; i < buffer.Length; i++)
         {
             var sample = buffer[i] / 1.5f;
@@ -288,8 +289,16 @@ public sealed class Ay38912Chip
             _highPassOutput = filtered;
             buffer[i] = Math.Clamp(filtered, -1f, 1f);
         }
+    }
 
-        return buffer;
+    private void EnsureFrameSampleCapacity(int requiredCapacity)
+    {
+        if (_frameSamples.Length >= requiredCapacity)
+        {
+            return;
+        }
+
+        Array.Resize(ref _frameSamples, Math.Max(requiredCapacity, _frameSamples.Length * 2));
     }
 
     private void WriteSelectedRegister(byte value)

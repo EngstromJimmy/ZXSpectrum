@@ -4,7 +4,6 @@
 #nullable enable
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 
@@ -286,7 +285,8 @@ public sealed class Sp0256Chip
     };
 
     private readonly byte[] _rom = new byte[0x10000];
-    private readonly List<short> _frameSamples = new();
+    private short[] _frameSamples = new short[4096];
+    private int _frameSampleCount;
     private readonly FilterState _filter = new();
 
     private bool _silent = true;
@@ -331,7 +331,7 @@ public sealed class Sp0256Chip
 
     public void ResetRuntime()
     {
-        _frameSamples.Clear();
+        _frameSampleCount = 0;
         _sampleAccumulator = 0;
         _frameTStateCursor = 0;
         _silent = true;
@@ -387,13 +387,17 @@ public sealed class Sp0256Chip
 
     public float[] RenderFrame(int outputSampleCount, int tStatesPerFrame)
     {
+        var output = new float[outputSampleCount];
+        RenderFrame(output, tStatesPerFrame);
+        return output;
+    }
+
+    public void RenderFrame(Span<float> destination, int tStatesPerFrame)
+    {
         AdvanceToFrameTState(tStatesPerFrame);
-
-        var rendered = ResampleFrame(outputSampleCount);
-        _frameSamples.Clear();
+        ResampleFrame(destination);
+        _frameSampleCount = 0;
         _frameTStateCursor = 0;
-
-        return rendered;
     }
 
     private void AdvanceToFrameTState(int frameTState)
@@ -416,7 +420,8 @@ public sealed class Sp0256Chip
         while (_sampleAccumulator >= threshold)
         {
             _sampleAccumulator -= threshold;
-            _frameSamples.Add(GenerateNativeSample());
+            EnsureFrameSampleCapacity(_frameSampleCount + 1);
+            _frameSamples[_frameSampleCount++] = GenerateNativeSample();
         }
 
         _frameTStateCursor = frameTState;
@@ -437,28 +442,27 @@ public sealed class Sp0256Chip
         return _filter.UpdateOneSample();
     }
 
-    private float[] ResampleFrame(int outputSampleCount)
+    private void ResampleFrame(Span<float> output)
     {
-        if (outputSampleCount <= 0)
+        if (output.Length == 0)
         {
-            return Array.Empty<float>();
+            return;
         }
 
-        var output = new float[outputSampleCount];
-
-        if (_frameSamples.Count == 0)
+        if (_frameSampleCount == 0)
         {
-            return output;
+            output.Clear();
+            return;
         }
 
-        if (_frameSamples.Count == 1)
+        if (_frameSampleCount == 1)
         {
             var single = NormalizeSample(_frameSamples[0]);
-            Array.Fill(output, single);
-            return output;
+            output.Fill(single);
+            return;
         }
 
-        var lastSourceIndex = _frameSamples.Count - 1;
+        var lastSourceIndex = _frameSampleCount - 1;
         for (var i = 0; i < output.Length; i++)
         {
             var sourcePosition = output.Length == 1
@@ -472,8 +476,16 @@ public sealed class Sp0256Chip
                          ((_frameSamples[nextIndex] - _frameSamples[sourceIndex]) * fraction);
             output[i] = NormalizeSample(sample);
         }
+    }
 
-        return output;
+    private void EnsureFrameSampleCapacity(int requiredCapacity)
+    {
+        if (_frameSamples.Length >= requiredCapacity)
+        {
+            return;
+        }
+
+        Array.Resize(ref _frameSamples, Math.Max(requiredCapacity, _frameSamples.Length * 2));
     }
 
     private void Micro()

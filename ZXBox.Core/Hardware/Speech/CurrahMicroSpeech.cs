@@ -218,12 +218,20 @@ public sealed class CurrahMicroSpeech
 
     public float[] RenderAudioFrame(int samplesPerFrame, int tStatesPerFrame)
     {
+        var output = samplesPerFrame <= 0 ? Array.Empty<float>() : new float[samplesPerFrame];
+        RenderAudioFrame(output, tStatesPerFrame);
+        return output;
+    }
+
+    public void RenderAudioFrame(Span<float> destination, int tStatesPerFrame)
+    {
         if (!Connected)
         {
-            return samplesPerFrame <= 0 ? Array.Empty<float>() : new float[samplesPerFrame];
+            destination.Clear();
+            return;
         }
 
-        return _speechChip.RenderFrame(samplesPerFrame, tStatesPerFrame);
+        _speechChip.RenderFrame(destination, tStatesPerFrame);
     }
 
     private void Toggle()

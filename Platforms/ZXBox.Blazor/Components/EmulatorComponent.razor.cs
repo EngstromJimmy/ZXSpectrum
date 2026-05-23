@@ -35,6 +35,7 @@ namespace ZXBox.Blazor.Pages
         private const float ConsumerTvVignetteStrength = 0.16f;
         private const float ConsumerTvSaturation = 0.92f;
         private const float ConsumerTvBrightness = 1.04f;
+        private const int AudioSamplesPerFrame = 48000 / 50;
         private const int PrinterDisplayScale = 3;
         private const uint PrinterPaperColor = 0xFFB8BCC0;
         private const uint PrinterInkColor = 0xFF1F1F1F;
@@ -97,6 +98,9 @@ half4 main(float2 fragCoord)
         private string _consumerTvShaderError = string.Empty;
         private int _lastPrinterVersion = -1;
         private int _lastPrinterHeight;
+        private readonly float[] _speechAudioBuffer = new float[AudioSamplesPerFrame];
+        private readonly float[] _ayAudioBuffer = new float[AudioSamplesPerFrame];
+        private readonly float[] _mixedAudioBuffer = new float[AudioSamplesPerFrame];
 
         [Inject]
         Toolbelt.Blazor.Gamepad.GamepadList GamePadList { get; set; }
@@ -127,7 +131,7 @@ half4 main(float2 fragCoord)
             kempston = new Kempston();
             speccy.InputHardware.Add(kempston);
             //48000 samples per second, 50 frames per second (20ms per frame) Mono
-            beeper = new Beeper<byte>(0, 127, 48000 / 50, 1, speccy.FrameTStates);
+            beeper = new Beeper<byte>(0, 127, AudioSamplesPerFrame, 1, speccy.FrameTStates);
             speccy.OutputHardware.Add(beeper);
             tapePlayer = new(beeper);
             speccy.InputHardware.Add(tapePlayer);
@@ -267,23 +271,19 @@ half4 main(float2 fragCoord)
                 return;
             }
 
-            Stopwatch sw = new Stopwatch();
-
             try
             {
                 //Get gamepads
                 kempston.Gamepads = await GamePadList.GetGamepadsAsync();
                 //Run JavaScriptInterop to find the currently pressed buttons
-                Keyboard.SetKeyBuffer(await JSRuntime.InvokeAsync<List<string>>("getKeyStatus"));
-                sw.Start();
+                Keyboard.SetKeyMask((ulong)JSRuntime.Invoke<double>("getKeyMask"));
                 var frameTStates = speccy.FrameTStates;
                 speccy.DoInstructions(frameTStates);
 
                 beeper.GenerateSound(frameTStates);
-                await BufferSound();
+                BufferSound();
 
                 Paint();
-                sw.Stop();
                 if (tapePlayer != null && tapePlayer.IsPlaying)
                 {
                     TapeStopped = false;
@@ -303,31 +303,25 @@ half4 main(float2 fragCoord)
         }
         bool TapeStopped = false;
         private int _frameInProgress;
-        GCHandle gchsound;
-        IntPtr pinnedsound;
         WebAssemblyJSRuntime mono;
-        float[] soundbytes;
 
-        protected async Task BufferSound()
+        protected void BufferSound()
         {
-            soundbytes = MixAudioBuffers(
-                ConvertBeeperBuffer(beeper.GetSoundBuffer()),
-                speccy.CurrahMicroSpeech.RenderAudioFrame(48000 / 50, speccy.FrameTStates),
-                speccy.AyChip.RenderAudioFrame(48000 / 50, speccy.FrameTStates),
-                BeeperMixGain,
-                SpeechMixGain,
-                AyMixGain);
-            mono.InvokeVoid("addAudioBuffer", soundbytes);
+            ConvertBeeperBuffer(beeper.GetSoundBuffer(), _mixedAudioBuffer, BeeperMixGain);
+            speccy.CurrahMicroSpeech.RenderAudioFrame(_speechAudioBuffer, speccy.FrameTStates);
+            speccy.AyChip.RenderAudioFrame(_ayAudioBuffer, speccy.FrameTStates);
+            MixAudioBuffers(_mixedAudioBuffer, _speechAudioBuffer, _ayAudioBuffer, SpeechMixGain, AyMixGain);
+            mono.InvokeVoid("addAudioBuffer", _mixedAudioBuffer);
         }
 
-        private static float[] ConvertBeeperBuffer(byte[] beeperBuffer)
+        private static void ConvertBeeperBuffer(byte[] beeperBuffer, float[] destination, float gain)
         {
             if (beeperBuffer.Length == 0)
             {
-                return Array.Empty<float>();
+                Array.Clear(destination, 0, destination.Length);
+                return;
             }
 
-            var converted = new float[beeperBuffer.Length];
             var sum = 0f;
 
             for (var i = 0; i < beeperBuffer.Length; i++)
@@ -339,33 +333,27 @@ half4 main(float2 fragCoord)
 
             for (var i = 0; i < beeperBuffer.Length; i++)
             {
-                converted[i] = Math.Clamp((beeperBuffer[i] - average) / 63.5f, -1f, 1f);
+                destination[i] = Math.Clamp(((beeperBuffer[i] - average) / 63.5f) * gain, -1f, 1f);
             }
 
-            return converted;
+            if (destination.Length > beeperBuffer.Length)
+            {
+                Array.Clear(destination, beeperBuffer.Length, destination.Length - beeperBuffer.Length);
+            }
         }
 
-        private static float[] MixAudioBuffers(float[] primary, float[] secondary, float[] tertiary, float primaryGain, float secondaryGain, float tertiaryGain)
+        private static void MixAudioBuffers(float[] destination, float[] secondary, float[] tertiary, float secondaryGain, float tertiaryGain)
         {
-            if (primary.Length == 0 && secondary.Length == 0 && tertiary.Length == 0)
+            for (var sample = 0; sample < destination.Length; sample++)
             {
-                return Array.Empty<float>();
+                destination[sample] = Math.Clamp(
+                    destination[sample] + (secondary[sample] * secondaryGain) + (tertiary[sample] * tertiaryGain),
+                    -1f,
+                    1f);
             }
-
-            var mixed = new float[Math.Max(primary.Length, Math.Max(secondary.Length, tertiary.Length))];
-
-            for (var sample = 0; sample < mixed.Length; sample++)
-            {
-                var primarySample = sample < primary.Length ? primary[sample] * primaryGain : 0f;
-                var secondarySample = sample < secondary.Length ? secondary[sample] * secondaryGain : 0f;
-                var tertiarySample = sample < tertiary.Length ? tertiary[sample] * tertiaryGain : 0f;
-                mixed[sample] = Math.Clamp(primarySample + secondarySample + tertiarySample, -1f, 1f);
-            }
-
-            return mixed;
         }
         public double PercentLoaded = 0;
-        protected async override void OnAfterRender(bool firstRender)
+        protected override void OnAfterRender(bool firstRender)
         {
             //if (firstRender)
             //{
@@ -378,7 +366,7 @@ half4 main(float2 fragCoord)
         IntPtr pinnedscreen;
       
         uint[] screen = new uint[68672]; //Height * width (256+20+20)*(192+20+20)
-        public async void Paint()
+        public void Paint()
         {
             if (flashcounter == 0)
             {

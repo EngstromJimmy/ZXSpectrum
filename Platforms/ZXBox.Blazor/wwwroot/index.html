@@ -57,70 +57,89 @@
             nextStartTime += audioBuffer.length / audioBuffer.sampleRate;
         }
 
-        var pressedKeys = [];
+        var pressedKeyMask = 0;
+        var pressedKeyValues = Object.create(null);
 
-        function GetKey(keyCode) {
-            var key = String.fromCharCode(keyCode);
-            //console.log(keyCode);
+        function getKeyMaskValue(keyCode) {
             switch (keyCode) {
-                case 32:
-                    key = "space";
-                    break;
-                case 8:
-                    key = "backspace";
-                    break;
-                case 16:
-                    key = "shift";
-                    break;
-                case 17:
-                    key = "control";
-                    break;
-                case 9:
-                    key = "tab";
-                    break;
-                case 18:
-                    key = "alt";
-                    break;
-                case 38:
-                    key = "arrowup";
-                    break;
-                case 40:
-                    key = "arrowdown";
-                    break;
-                case 37:
-                    key = "arrowleft";
-                    break;
-                case 39:
-                    key = "arrowright";
-                    break;
-                case 13:
-                    key = "enter";
-                    break;
-
+                case 16: return 2 ** 0;  // shift
+                case 8: return 2 ** 1;   // backspace
+                case 18: return 2 ** 2;  // alt
+                case 13: return 2 ** 3;  // enter
+                case 32: return 2 ** 4;  // space
+                case 38: return 2 ** 5;  // arrowup
+                case 40: return 2 ** 6;  // arrowdown
+                case 37: return 2 ** 7;  // arrowleft
+                case 39: return 2 ** 8;  // arrowright
+                case 90: return 2 ** 9;  // z
+                case 88: return 2 ** 10; // x
+                case 67: return 2 ** 11; // c
+                case 86: return 2 ** 12; // v
+                case 65: return 2 ** 13; // a
+                case 83: return 2 ** 14; // s
+                case 68: return 2 ** 15; // d
+                case 70: return 2 ** 16; // f
+                case 71: return 2 ** 17; // g
+                case 81: return 2 ** 18; // q
+                case 87: return 2 ** 19; // w
+                case 69: return 2 ** 20; // e
+                case 82: return 2 ** 21; // r
+                case 84: return 2 ** 22; // t
+                case 49: return 2 ** 23; // 1
+                case 50: return 2 ** 24; // 2
+                case 51: return 2 ** 25; // 3
+                case 52: return 2 ** 26; // 4
+                case 53: return 2 ** 27; // 5
+                case 48: return 2 ** 28; // 0
+                case 57: return 2 ** 29; // 9
+                case 56: return 2 ** 30; // 8
+                case 55: return 2 ** 31; // 7
+                case 54: return 2 ** 32; // 6
+                case 80: return 2 ** 33; // p
+                case 79: return 2 ** 34; // o
+                case 73: return 2 ** 35; // i
+                case 85: return 2 ** 36; // u
+                case 89: return 2 ** 37; // y
+                case 76: return 2 ** 38; // l
+                case 75: return 2 ** 39; // k
+                case 74: return 2 ** 40; // j
+                case 72: return 2 ** 41; // h
+                case 77: return 2 ** 42; // m
+                case 78: return 2 ** 43; // n
+                case 66: return 2 ** 44; // b
+                default: return 0;
             }
-            return key;
         }
 
         window.onkeyup = function (e) {
-            var key = GetKey(e.keyCode);
-            const index = pressedKeys.indexOf(key);
-            if (index > -1) {
-                pressedKeys.splice(index, 1);
+            var keyMaskValue = getKeyMaskValue(e.keyCode);
+            if (keyMaskValue === 0) {
+                return;
             }
-            event.preventDefault();
-            //console.log(pressedKeys);
+
+            if (pressedKeyValues[keyMaskValue]) {
+                delete pressedKeyValues[keyMaskValue];
+                pressedKeyMask -= keyMaskValue;
+            }
+
+            e.preventDefault();
         }
         window.onkeydown = function (e) {
-            var key = GetKey(e.keyCode);
-            const index = pressedKeys.indexOf(key);
-            if (index == -1) {
-                pressedKeys.push(key);
+            var keyMaskValue = getKeyMaskValue(e.keyCode);
+            if (keyMaskValue === 0) {
+                return;
             }
-            event.preventDefault();
+
+            if (!pressedKeyValues[keyMaskValue]) {
+                pressedKeyValues[keyMaskValue] = true;
+                pressedKeyMask += keyMaskValue;
+            }
+
+            e.preventDefault();
         }
 
-        window.getKeyStatus = function () {
-            return pressedKeys;
+        window.getKeyMask = function () {
+            return pressedKeyMask;
         }
 
         // var canvas;
