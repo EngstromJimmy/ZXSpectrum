@@ -46,7 +46,10 @@ jobs:
         # Allow files and folders starting with an underscore.
       - name: Add .nojekyll file
         run: touch ${{ env.PUBLISH_DIR }}/.nojekyll
-        
+
+      - name: Add CNAME file
+        run: Copy-Item 'Platforms\ZXBox.Blazor\wwwroot\CNAME' (Join-Path '${{ env.PUBLISH_DIR }}' 'CNAME')
+         
         # copy index.html to 404.html to serve the same file when a file is not found this makes deep linking possible
       - name: copy index.html to 404.html
         run: cp ${{ env.PUBLISH_DIR }}/index.html ${{ env.PUBLISH_DIR }}/404.html
