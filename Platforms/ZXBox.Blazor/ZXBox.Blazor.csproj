@@ -4,10 +4,6 @@
     <TargetFramework>net10.0</TargetFramework>
 	  <RunAOTCompilation>true</RunAOTCompilation>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <LocalCurrahRomPath>$(USERPROFILE)\Downloads\CURRAH.ROM</LocalCurrahRomPath>
-    <GeneratedCurrahRomPath>$(MSBuildProjectDirectory)\wwwroot\Roms\CURRAH.ROM</GeneratedCurrahRomPath>
-    <LocalSp0256RomPath>$(USERPROFILE)\Downloads\al2.bin</LocalSp0256RomPath>
-    <GeneratedSp0256RomPath>$(MSBuildProjectDirectory)\wwwroot\Roms\SP0256-AL2.BIN</GeneratedSp0256RomPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -26,40 +22,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\ZXBox.Core\ZXBox.Core.csproj" />
   </ItemGroup>
-
-  <Target Name="SyncLocalSpeechRoms" BeforeTargets="ResolveProjectStaticWebAssets">
-    <MakeDir Directories="$(MSBuildProjectDirectory)\wwwroot\Roms" />
-    <Copy SourceFiles="$(LocalCurrahRomPath)"
-          DestinationFiles="$(GeneratedCurrahRomPath)"
-          SkipUnchangedFiles="true"
-          Condition="Exists('$(LocalCurrahRomPath)')" />
-    <Copy SourceFiles="$(LocalSp0256RomPath)"
-          DestinationFiles="$(GeneratedSp0256RomPath)"
-          SkipUnchangedFiles="true"
-          Condition="Exists('$(LocalSp0256RomPath)')" />
-    <Delete Files="$(GeneratedCurrahRomPath)"
-            Condition="!Exists('$(LocalCurrahRomPath)') and Exists('$(GeneratedCurrahRomPath)')" />
-    <Delete Files="$(GeneratedSp0256RomPath)"
-            Condition="!Exists('$(LocalSp0256RomPath)') and Exists('$(GeneratedSp0256RomPath)')" />
-  </Target>
-
-  <Target Name="CopyLocalSpeechRomsToOutput"
-          AfterTargets="Build"
-          DependsOnTargets="SyncLocalSpeechRoms">
-    <MakeDir Directories="$(TargetDir)wwwroot\Roms" Condition="'$(TargetDir)' != ''" />
-    <Copy SourceFiles="$(GeneratedCurrahRomPath)"
-          DestinationFiles="$(TargetDir)wwwroot\Roms\CURRAH.ROM"
-          SkipUnchangedFiles="true"
-          Condition="'$(TargetDir)' != '' and Exists('$(GeneratedCurrahRomPath)')" />
-    <Copy SourceFiles="$(GeneratedSp0256RomPath)"
-          DestinationFiles="$(TargetDir)wwwroot\Roms\SP0256-AL2.BIN"
-          SkipUnchangedFiles="true"
-          Condition="'$(TargetDir)' != '' and Exists('$(GeneratedSp0256RomPath)')" />
-    <Delete Files="$(TargetDir)wwwroot\Roms\CURRAH.ROM"
-            Condition="'$(TargetDir)' != '' and !Exists('$(GeneratedCurrahRomPath)') and Exists('$(TargetDir)wwwroot\Roms\CURRAH.ROM')" />
-    <Delete Files="$(TargetDir)wwwroot\Roms\SP0256-AL2.BIN"
-            Condition="'$(TargetDir)' != '' and !Exists('$(GeneratedSp0256RomPath)') and Exists('$(TargetDir)wwwroot\Roms\SP0256-AL2.BIN')" />
-  </Target>
 
   <ItemGroup>
     <Content Update="wwwroot\css\zx.ttf">
@@ -84,6 +46,12 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Update="wwwroot\Roms\ManicMiner.z80.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\Roms\CURRAH.ROM">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\Roms\SP0256-AL2.BIN">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

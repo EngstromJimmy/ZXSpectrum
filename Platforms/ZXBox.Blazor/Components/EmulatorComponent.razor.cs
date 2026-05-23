@@ -147,9 +147,9 @@ half4 main(float2 fragCoord)
 
         public string TapeName { get; set; }
 
-        public void ToggleSettingsPanel()
+        public void OpenSettingsPanel()
         {
-            IsSettingsOpen = !IsSettingsOpen;
+            IsSettingsOpen = true;
         }
 
         public void CloseSettingsPanel()
