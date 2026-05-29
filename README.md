@@ -68,6 +68,23 @@ There are still things left to do, especially around adding more file formats an
 1. Install the .NET 10 SDK.
 2. Run `dotnet run --project Platforms\ZXBox.Monogame\ZXBox.Monogame.csproj`.
 
+### Benchmarks
+
+1. Run `dotnet run -c Release --project ZXBox.Benchmarks\ZXBox.Benchmarks.csproj -- --filter * --exporters github,csv,json,html`.
+2. Open the generated reports in `BenchmarkDotNet.Artifacts\results`.
+
+The benchmark suite covers snapshot load, Manic Miner frame execution, screen rendering, AY audio render, and Currah speech render. For comparing .NET versions, local runs on the same machine are the most reliable; GitHub-hosted workflow runs are best treated as coarse trend checks.
+
+### Blazor perf tests
+
+1. Build the app and perf test project with `dotnet build Platforms\ZXBox.Blazor\ZXBox.Blazor.csproj -c Release` and `dotnet build ZXBox.Blazor.Perf.Tests\ZXBox.Blazor.Perf.Tests.csproj -c Release`.
+2. Install Chromium for Playwright with `pwsh ZXBox.Blazor.Perf.Tests\bin\Release\net10.0\playwright.ps1 install chromium`.
+3. Run `dotnet test ZXBox.Blazor.Perf.Tests\ZXBox.Blazor.Perf.Tests.csproj -c Release --no-build --logger "trx;LogFileName=blazor-perf.trx" --results-directory TestResults`.
+4. Optional: set `ZXBOX_PERF_DISPLAY_FRAME_DIVISOR` and `ZXBOX_PERF_AUDIO_FRAMES_PER_BATCH` before the test run to compare reduced presentation cadence or a different maximum refill burst for the browser-owned audio loop without editing code.
+5. Inspect `TestResults\blazor-perf-result.json` for the measured frame loop, paint, browser `requestAnimationFrame`, and audio queue metrics.
+
+The Blazor perf harness opens a dedicated `/perf` route, warms up the emulator, auto-loads `ManicMiner.z80`, then records scheduler callbacks, timer fallback ticks, executed and skipped frames, paint requests, browser audio queue metrics, and browser `requestAnimationFrame` cadence. The browser audio path now uses a persistent JS-owned controller and an AudioWorklet-backed queue, while .NET keeps a long-lived reference to that controller and refills audio when the browser requests more data. The route also supports `displayFrameDivisor` and `audioFramesPerBatch` query parameters so alternate pacing modes can be tested directly from the route. The automated test validates that the harness produced sane metrics and stores the measured numbers; it deliberately does not hard-code a paint-FPS pass/fail threshold because headless browser rendering can differ sharply from a real interactive browser on local hardware. The manual `blazor-perf.yml` workflow is useful for coarse comparisons, but local runs remain the best way to compare rendering performance across SDK versions on the same machine.
+
 ## Currah uSpeech / SP0256 ROM ownership
 
 Currah uSpeech support uses the bundled Currah ROM plus the SP0256-AL2 speech ROM image.

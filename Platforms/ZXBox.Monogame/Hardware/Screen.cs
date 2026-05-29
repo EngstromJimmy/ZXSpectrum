@@ -90,8 +90,8 @@ public class Screen : DrawableGameComponent
         this.GraphicsDevice.Clear(Color.Black);
 
         this.spriteBatch.Begin(samplerState: SamplerState.PointClamp);
-        this.spriteBatch.Draw(this.target, new Rectangle(0, 0, this.GraphicsDevice.Viewport.Width, this.GraphicsDevice.Viewport.Height), Color.White);
-        this.spriteBatch.End();
+spriteBatch.Draw(this.target, new Rectangle(0, 0, this.GraphicsDevice.Viewport.Width, this.GraphicsDevice.Viewport.Height), Color.White);
+        this.spriteBatch        this..End();
 
         base.Draw(gameTime);
     }

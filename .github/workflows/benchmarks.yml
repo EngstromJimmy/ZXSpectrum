@@ -1,0 +1,48 @@
+name: Run ZXBox benchmarks
+
+on:
+  workflow_dispatch:
+    inputs:
+      dotnet-version:
+        description: ".NET SDK version to use"
+        required: false
+        default: "10.0.x"
+
+jobs:
+  benchmarks:
+    runs-on: windows-2022
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ inputs.dotnet-version }}
+          include-prerelease: true
+
+      - name: Restore
+        run: dotnet restore ZXBox.Benchmarks\ZXBox.Benchmarks.csproj
+
+      - name: Run benchmarks
+        run: dotnet run -c Release --project ZXBox.Benchmarks\ZXBox.Benchmarks.csproj -- --filter * --exporters github,csv,json,html
+
+      - name: Publish benchmark summary
+        shell: pwsh
+        run: |
+          $reports = Get-ChildItem -Path BenchmarkDotNet.Artifacts\results -Filter *.md -ErrorAction SilentlyContinue
+          if ($reports.Count -eq 0) {
+            "No markdown benchmark reports were generated." | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+            exit 0
+          }
+
+          foreach ($report in $reports) {
+            "## $($report.BaseName)" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+            Get-Content $report.FullName | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+            "" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          }
+
+      - name: Upload benchmark artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results-${{ inputs.dotnet-version }}
+          path: BenchmarkDotNet.Artifacts

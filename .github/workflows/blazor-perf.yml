@@ -1,0 +1,65 @@
+name: Run ZXBox Blazor perf tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      dotnet-version:
+        description: ".NET SDK version to use"
+        required: false
+        default: "10.0.x"
+
+jobs:
+  blazor-perf:
+    runs-on: windows-2022
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ inputs.dotnet-version }}
+          include-prerelease: true
+
+      - name: Restore
+        run: dotnet restore ZXBox.sln
+
+      - name: Build Blazor app
+        run: dotnet build Platforms\ZXBox.Blazor\ZXBox.Blazor.csproj -c Release --no-restore
+
+      - name: Build perf tests
+        run: dotnet build ZXBox.Blazor.Perf.Tests\ZXBox.Blazor.Perf.Tests.csproj -c Release --no-restore
+
+      - name: Install Playwright Chromium
+        shell: pwsh
+        run: |
+          $playwright = "ZXBox.Blazor.Perf.Tests\bin\Release\net10.0\playwright.ps1"
+          & $playwright install chromium
+
+      - name: Run Blazor perf tests
+        run: dotnet test ZXBox.Blazor.Perf.Tests\ZXBox.Blazor.Perf.Tests.csproj -c Release --no-build --logger "trx;LogFileName=blazor-perf.trx" --results-directory TestResults
+
+      - name: Publish perf summary
+        shell: pwsh
+        run: |
+          $resultPath = "TestResults\blazor-perf-result.json"
+          if (-not (Test-Path $resultPath)) {
+            "No Blazor perf JSON artifact was generated." | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+            exit 0
+          }
+
+          $result = Get-Content $resultPath | ConvertFrom-Json
+          "## Blazor perf summary" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          "| Metric | Value |" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          "| --- | --- |" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          "| Loop FPS | $([math]::Round($result.LoopFps, 2)) |" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          "| Requested paint FPS | $([math]::Round($result.RequestedPaintFps, 2)) |" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          "| Presented paint FPS | $([math]::Round($result.PresentedPaintFps, 2)) |" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          "| requestAnimationFrame FPS | $([math]::Round($result.Raf.Fps, 2)) |" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          "| Audio enqueue avg (ms) | $([math]::Round($result.Audio.AverageEnqueueMs, 4)) |" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          "| Audio underruns | $result.Audio.UnderrunCount |" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+
+      - name: Upload perf artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: blazor-perf-results-${{ inputs.dotnet-version }}
+          path: TestResults

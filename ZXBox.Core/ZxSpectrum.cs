@@ -76,6 +76,7 @@ public class ZXSpectrum : Zilog.Z80
     int retvalue = 0xFF;
     int i = 0;
     private int CurrentFrameTState => NumberOfTstates - Math.Abs(_numberOfTStatesLeft);
+    private bool _currahErrNrInitializationPending;
     private RomEnum _machineModel = RomEnum.ZXSpectrum48k;
 
     public bool Is128KModel => _machineModel == RomEnum.ZXSpectrumPlus;
@@ -85,11 +86,13 @@ public class ZXSpectrum : Zilog.Z80
     public void ConnectCurrahMicroSpeech()
     {
         CurrahMicroSpeech.Connect();
+        _currahErrNrInitializationPending = true;
     }
 
     public void DisconnectCurrahMicroSpeech()
     {
         CurrahMicroSpeech.Disconnect();
+        _currahErrNrInitializationPending = false;
     }
 
     public void LoadCurrahMicroSpeechRom(byte[] romBytes)
@@ -114,6 +117,7 @@ public class ZXSpectrum : Zilog.Z80
         CurrahMicroSpeech.ResetRuntime();
         AyChip.Reset();
         ZxPrinter.ResetRuntime();
+        _currahErrNrInitializationPending = CurrahMicroSpeech.Connected;
     }
 
     public override byte In(ushort port)
@@ -256,6 +260,7 @@ public class ZXSpectrum : Zilog.Z80
     {
         if (opcodeFetch)
         {
+            InitializeCurrahErrNrIfPending(address);
             if (CurrahMicroSpeech.TryReadOpcodeFetch(address, CurrentFrameTState, out var currahOpcodeValue))
             {
                 return (byte)currahOpcodeValue;
@@ -282,7 +287,17 @@ public class ZXSpectrum : Zilog.Z80
         {
             return Banks[bank][address - 0xc000];
         }
-
         return 0;
+    }
+
+    private void InitializeCurrahErrNrIfPending(ushort address)
+    {
+        if (!_currahErrNrInitializationPending || address != 0x0038)
+        {
+            return;
+        }
+
+        _currahErrNrInitializationPending = false;
+        WriteByteToMemory(0x5C3A, 0xFF);
     }
 }

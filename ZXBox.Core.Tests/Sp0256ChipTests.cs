@@ -24,7 +24,7 @@ public class Sp0256ChipTests
     }
 
     [TestMethod]
-    public void Sp0256DropsBusyAfterInstructionLatchWhileAudioContinues()
+    public void Sp0256StaysBusyUntilQueuedAllophoneCompletes()
     {
         var chip = new Sp0256Chip();
         chip.LoadRom(CreateSyntheticSpeechRom());
@@ -32,10 +32,22 @@ public class Sp0256ChipTests
         chip.WriteAllophone(0x00, 0);
         Assert.IsTrue(chip.ReadBusy(0));
 
-        Assert.IsFalse(chip.ReadBusy(400));
-
         var frame = chip.RenderFrame(48000 / 50, 69888);
         Assert.IsTrue(frame.Any(sample => Math.Abs(sample) > 0.001f));
+
+        var busyCleared = false;
+        for (var frameIndex = 0; frameIndex < 8; frameIndex++)
+        {
+            if (!chip.ReadBusy(0))
+            {
+                busyCleared = true;
+                break;
+            }
+
+            chip.RenderFrame(48000 / 50, 69888);
+        }
+
+        Assert.IsTrue(busyCleared);
     }
 
     [TestMethod]

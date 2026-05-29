@@ -136,7 +136,8 @@ public sealed class CurrahMicroSpeech
 
         if (IsPlayAddress(address))
         {
-            _speechChip.WriteAllophone((byte)(value & 0x3f), frameTState);
+            var allophone = (byte)(value & 0x3f);
+            _speechChip.WriteAllophone(allophone, frameTState);
             return true;
         }
 
@@ -202,7 +203,8 @@ public sealed class CurrahMicroSpeech
 
         if (IsPlayAddress(port))
         {
-            _speechChip.WriteAllophone((byte)(value & 0x3f), frameTState);
+            var allophone = (byte)(value & 0x3f);
+            _speechChip.WriteAllophone(allophone, frameTState);
             return true;
         }
 

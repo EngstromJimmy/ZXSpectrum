@@ -111,6 +111,118 @@
             return pressedKeyMask;
         }
 
+        window.getKempstonState = function () {
+            if (!navigator.getGamepads) {
+                return 0;
+            }
+
+            var pads = navigator.getGamepads();
+            if (!pads) {
+                return 0;
+            }
+
+            var gamepad = null;
+            for (var i = 0; i < pads.length; i++) {
+                if (pads[i]) {
+                    gamepad = pads[i];
+                    break;
+                }
+            }
+
+            if (!gamepad) {
+                return 0;
+            }
+
+            var state = 0;
+            var buttons = gamepad.buttons || [];
+            var axes = gamepad.axes || [];
+
+            if (buttons.length > 0 && buttons[0] && buttons[0].pressed) {
+                state |= 16;
+            }
+
+            if ((buttons.length > 12 && buttons[12] && buttons[12].pressed) || (axes.length > 1 && axes[1] > 0.5)) {
+                state |= 8;
+            }
+
+            if ((buttons.length > 13 && buttons[13] && buttons[13].pressed) || (axes.length > 1 && axes[1] < -0.5)) {
+                state |= 4;
+            }
+
+            if ((buttons.length > 14 && buttons[14] && buttons[14].pressed) || (axes.length > 0 && axes[0] < -0.5)) {
+                state |= 2;
+            }
+
+            if ((buttons.length > 15 && buttons[15] && buttons[15].pressed) || (axes.length > 0 && axes[0] > 0.5)) {
+                state |= 1;
+            }
+
+            return state;
+        }
+
+        window.__zxboxPerfDone = false;
+        window.__zxboxPerfResult = null;
+        window.__zxboxPerfResultJson = null;
+
+        var zxboxPerfRaf = {
+            active: false,
+            frameCount: 0,
+            startTime: 0,
+            hiddenTransitions: 0,
+            visibilityState: document.visibilityState
+        };
+
+        document.addEventListener("visibilitychange", function () {
+            zxboxPerfRaf.visibilityState = document.visibilityState;
+            if (zxboxPerfRaf.active && document.visibilityState === "hidden") {
+                zxboxPerfRaf.hiddenTransitions++;
+            }
+        });
+
+        function onPerfAnimationFrame(timestamp) {
+            if (!zxboxPerfRaf.active) {
+                return;
+            }
+
+            zxboxPerfRaf.frameCount++;
+            window.requestAnimationFrame(onPerfAnimationFrame);
+        }
+
+        window.startPerfRafSampling = function () {
+            window.__zxboxPerfDone = false;
+            window.__zxboxPerfResult = null;
+            window.__zxboxPerfResultJson = null;
+            zxboxPerfRaf.active = true;
+            zxboxPerfRaf.frameCount = 0;
+            zxboxPerfRaf.startTime = performance.now();
+            zxboxPerfRaf.hiddenTransitions = 0;
+            zxboxPerfRaf.visibilityState = document.visibilityState;
+            window.requestAnimationFrame(onPerfAnimationFrame);
+        };
+
+        window.stopPerfRafSampling = function () {
+            zxboxPerfRaf.active = false;
+            var elapsedSeconds = Math.max((performance.now() - zxboxPerfRaf.startTime) / 1000, 0);
+            return {
+                frameCount: zxboxPerfRaf.frameCount,
+                elapsedSeconds: elapsedSeconds,
+                fps: elapsedSeconds === 0 ? 0 : zxboxPerfRaf.frameCount / elapsedSeconds,
+                hiddenTransitions: zxboxPerfRaf.hiddenTransitions,
+                visibilityState: zxboxPerfRaf.visibilityState
+            };
+        };
+
+        window.setPerfResult = function (resultJson) {
+            window.__zxboxPerfResultJson = resultJson;
+            try {
+                window.__zxboxPerfResult = JSON.parse(resultJson);
+            }
+            catch {
+                window.__zxboxPerfResult = null;
+            }
+            window.__zxboxPerfDone = true;
+        };
+
         // var canvas;
         // var context;
         // var imageData;

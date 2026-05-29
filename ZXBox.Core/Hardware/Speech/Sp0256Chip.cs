@@ -292,6 +292,7 @@ public sealed class Sp0256Chip
     private bool _silent = true;
     private bool _lrq = true;
     private int _ald;
+    private bool _commandPending;
     private int _pc;
     private int _stack;
     private bool _halted = true;
@@ -337,6 +338,7 @@ public sealed class Sp0256Chip
         _silent = true;
         _lrq = true;
         _ald = 0;
+        _commandPending = false;
         _pc = 0;
         _stack = 0;
         _halted = true;
@@ -372,6 +374,7 @@ public sealed class Sp0256Chip
 
         _lrq = false;
         _ald = allophone << 4;
+        _commandPending = true;
     }
 
     public bool ReadBusy(int frameTState)
@@ -492,12 +495,12 @@ public sealed class Sp0256Chip
     {
         while (_filter.Repeat <= 0)
         {
-            if (_halted && !_lrq)
+            if (_halted && _commandPending)
             {
                 _pc = _ald | (RomPageOffset << 3);
                 _halted = false;
-                _lrq = true;
                 _ald = 0;
+                _commandPending = false;
                 Array.Clear(_filter.Registers);
             }
 
@@ -506,6 +509,7 @@ public sealed class Sp0256Chip
                 _filter.Repeat = 1;
                 _lrq = true;
                 _ald = 0;
+                _commandPending = false;
                 Array.Clear(_filter.Registers);
                 return;
             }

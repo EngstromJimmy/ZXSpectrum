@@ -3,16 +3,15 @@ using System.Collections.Generic;
 using System.Linq;
 using ZXBox.Core.Tape;
 using ZXBox.Hardware.Interfaces;
-using ZXBox.Hardware.Output;
 
 namespace ZXBox.Core.Hardware.Input
 {
     public class TapePlayer : IInput
     {
         private const int TStatesPerMillisecond = 3500;
-        private readonly Beeper<byte> _beeper;
+        private readonly IOutput? _beeper;
 
-        public TapePlayer(Beeper<byte> beeper)
+        public TapePlayer(IOutput? beeper)
         {
             _beeper = beeper;
         }

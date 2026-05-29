@@ -40,6 +40,8 @@
         width: 100%;
         height: 100%;
         background: #000;
+        image-rendering: pixelated;
+        image-rendering: crisp-edges;
     }
 
     .emulator-menu-scrim {
@@ -200,7 +202,18 @@
     }
 </style>
 
-@if (gameLoop.Enabled)
+@if (PerfMode)
+{
+    <div id="perf-runner" style="position:fixed;left:8px;top:8px;z-index:30;background:rgba(0,0,0,0.75);color:#f4f4f4;padding:8px;max-width:min(420px,90vw);font-size:12px;">
+        <div id="perf-status">@PerfStatusText</div>
+        @if (!string.IsNullOrEmpty(PerfResultJson))
+        {
+            <pre id="perf-results" style="margin-top:8px;white-space:pre-wrap;max-height:40vh;overflow:auto;">@PerfResultJson</pre>
+        }
+    </div>
+}
+
+@if (speccy is not null)
 {
     <div class="emulator-shell">
         @if (IsSettingsOpen)
@@ -227,7 +240,7 @@
                     {
                         @if (!tapePlayer.IsPlaying)
                         {
-                            <button @onclick="tapePlayer.Play">Start tape</button>
+                            <button @onclick="StartTapePlaybackAsync">Start tape</button>
                         }
                         else
                         {
@@ -269,6 +282,10 @@
                             <button @onclick="DisconnectZxPrinter">Disconnect ZX Printer</button>
                         }
                     </div>
+                    @if (!string.IsNullOrEmpty(PeripheralStatusMessage))
+                    {
+                        <div class="emulator-status" style="margin-top:8px;">@PeripheralStatusMessage</div>
+                    }
                 </div>
 
                 <div class="emulator-section">
@@ -306,6 +323,7 @@
                         <div class="emulator-printer">
                             <div class="emulator-printer-paper">
                                 <SKCanvasView @ref="_printerCanvasView"
+                                              id="printerCanvas"
                                               class="emulator-screen"
                                               style="@PrinterCanvasStyle"
                                               OnPaintSurface="OnPaintPrinterSurface"
@@ -320,12 +338,14 @@
 
         <div class="emulator-stage" @onclick="OpenSettingsPanel">
             <div class="emulator-screen-frame" @onclick:stopPropagation="true">
-                <SKCanvasView id="emulatorCanvas"
-                              @ref="_canvasView"
-                              class="emulator-screen"
-                              OnPaintSurface="OnPaintSurface"
-                              Width="296"
-                              Height="232" />
+                <SKGLView id="emulatorCanvas"
+                          @ref="_canvasView"
+                          class="emulator-screen"
+                          OnPaintSurface="OnPaintGLSurface"
+                          Width="296"
+                          Height="232"
+                          IgnorePixelScaling="true"
+                          EnableRenderLoop="false" />
             </div>
         </div>
     </div>
@@ -336,8 +356,8 @@ else
         <div class="launcher-panel">
             <div>Choose the computer you want to run</div>
             <div class="launcher-options">
-                <a class="launcher-option" href="#" @onclick:preventDefault @onclick="@(()=>StartZXSpectrum(RomEnum.ZXSpectrum48k))"><img src="./images/ZXSpectrum48k.png"/></a>
-                <a class="launcher-option" href="#" @onclick:preventDefault @onclick="@(()=>StartZXSpectrum(RomEnum.ZXSpectrumPlus))"><img src="./images/ZXSpectrum128k.png"/></a>
+                <a class="launcher-option" href="#" @onclick:preventDefault @onclick="@(()=>StartZXSpectrumAsync(RomEnum.ZXSpectrum48k))"><img src="./images/ZXSpectrum48k.png"/></a>
+                <a class="launcher-option" href="#" @onclick:preventDefault @onclick="@(()=>StartZXSpectrumAsync(RomEnum.ZXSpectrumPlus))"><img src="./images/ZXSpectrum128k.png"/></a>
             </div>
         </div>
     </div>

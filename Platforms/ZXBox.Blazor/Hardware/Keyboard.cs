@@ -53,11 +53,15 @@ namespace ZXBox.Hardware.Input
         private const ulong BKey = 1UL << 44;
 
         private ulong _keyMask;
+        private readonly byte[] _rowValues = new byte[8];
+        private readonly byte[] _portResponses = new byte[256];
+        private bool _hasAnyKey;
         public JoystickTypeEnum JoystickType { get; set; }
 
         public void SetKeyMask(ulong keyMask)
         {
             _keyMask = keyMask;
+            RebuildRowValues();
         }
 
         public void AddTStates(int tstates) { }
@@ -66,151 +70,7 @@ namespace ZXBox.Hardware.Input
         {
             if ((Port & 0xFF) == 0xFE)
             {
-                var up = IsPressed(ArrowUpKey);
-                var down = IsPressed(ArrowDownKey);
-                var left = IsPressed(ArrowLeftKey);
-                var right = IsPressed(ArrowRightKey);
-
-                var returnvalue = 0xFF;
-
-                //Special cace for any key
-                if (((Port >> 8) & 0xFF) == 0x01 || ((Port >> 8) & 0xFF) == 0x00 || ((Port >> 8) & 0xFF) == 0x02)
-                {   //Check for any key including joy, we might need to add more joy buttons later on
-
-                    if (_keyMask != 0)
-                    {
-                        return (byte)(returnvalue &= ~1);
-                    }
-
-                }
-
-                switch ((Port >> 8) & 0x0F)
-                {
-                    case 0x0E: //SHIFT, Z, X, C, V
-                        //if (GetKeyStatus("shift") || ks.IsKeyDown(Keys.LeftShift) || ks.IsKeyDown(Keys.Back) || IsNextKey(Keys.Back) || IsNextKey(Keys.LeftShift) || (JoystickType == JoystickTypeEnum.Cursor && (State.DPad.Left == ButtonState.Pressed || State.DPad.Right == ButtonState.Pressed || State.DPad.Up == ButtonState.Pressed || State.DPad.Down == ButtonState.Pressed || State.Buttons.A == ButtonState.Pressed || ks.IsKeyDown(Keys.LeftControl) || ks.IsKeyDown(Keys.RightControl))))
-                        if (IsPressed(ShiftKey) || IsPressed(BackspaceKey) || up || down || left || right)
-                            returnvalue &= ~1;
-                        if (IsPressed(ZKey))
-                            returnvalue &= ~2;
-                        if (IsPressed(XKey))
-                            returnvalue &= ~4;
-                        if (IsPressed(CKey))
-                            returnvalue &= ~8;
-                        if (IsPressed(VKey))
-                            returnvalue &= ~16;
-                        break;
-                    case 0x0D: //A, S, D, F, G
-                        if (IsPressed(AKey))
-                            returnvalue &= ~1;
-                        if (IsPressed(SKey))
-                            returnvalue &= ~2;
-                        if (IsPressed(DKey))
-                            returnvalue &= ~4;
-                        if (IsPressed(FKey))
-                            returnvalue &= ~8;
-                        if (IsPressed(GKey))
-                            returnvalue &= ~16;
-                        break;
-                    case 0x0B: //Q, W, E, R, T
-                        if (IsPressed(QKey))
-                            returnvalue &= ~1;
-                        if (IsPressed(WKey))
-                            returnvalue &= ~2;
-                        if (IsPressed(EKey))
-                            returnvalue &= ~4;
-                        if (IsPressed(RKey))
-                            returnvalue &= ~8;
-                        if (IsPressed(TKey))
-                            returnvalue &= ~16;
-                        break;
-                    case 0x07: //1, 2, 3, 4, 5
-                        //if (ks.IsKeyDown(Keys.D1) || IsNextKey(Keys.D1) || (JoystickType == JoystickTypeEnum.Sinclair1 && (State.DPad.Left == ButtonState.Pressed || ks.IsKeyDown(Keys.Left))))
-                        if (IsPressed(Digit1Key))
-                            returnvalue &= ~1;
-                        //if (ks.IsKeyDown(Keys.D2) || IsNextKey(Keys.D2) || (JoystickType == JoystickTypeEnum.Sinclair1 && (State.DPad.Right == ButtonState.Pressed || ks.IsKeyDown(Keys.Right))))
-                        if (IsPressed(Digit2Key))
-                            returnvalue &= ~2;
-                        //if (ks.IsKeyDown(Keys.D3) || IsNextKey(Keys.D3) || (JoystickType == JoystickTypeEnum.Sinclair1 && (State.DPad.Down == ButtonState.Pressed || ks.IsKeyDown(Keys.Down))))
-                        if (IsPressed(Digit3Key))
-                            returnvalue &= ~4;
-                        //if (ks.IsKeyDown(Keys.D4) || IsNextKey(Keys.D4) || (JoystickType == JoystickTypeEnum.Sinclair1 && (State.DPad.Up == ButtonState.Pressed || ks.IsKeyDown(Keys.Up))))
-                        if (IsPressed(Digit4Key))
-                            returnvalue &= ~8;
-                        //if (ks.IsKeyDown(Keys.D5) || IsNextKey(Keys.D5) || (JoystickType == JoystickTypeEnum.Sinclair1 && (State.Buttons.A == ButtonState.Pressed || ks.IsKeyDown(Keys.LeftControl) || ks.IsKeyDown(Keys.RightControl))) || (JoystickType == JoystickTypeEnum.Cursor && (State.DPad.Left == ButtonState.Pressed || ks.IsKeyDown(Keys.Left))))
-                        if (IsPressed(Digit5Key) || left)
-                            returnvalue &= ~16;
-                        break;
-                }
-
-                switch ((Port >> 8) & 0xF0)
-                {
-                    case 0xE0: //0, 9, 8, 7, 6
-                        //if (ks.IsKeyDown(Keys.D0) || ks.IsKeyDown(Keys.Back) || IsNextKey(Keys.D0) || IsNextKey(Keys.Back) || (JoystickType == JoystickTypeEnum.Sinclair2 && (State.Buttons.A == ButtonState.Pressed || ks.IsKeyDown(Keys.LeftControl) || ks.IsKeyDown(Keys.RightControl))) || (JoystickType == JoystickTypeEnum.Cursor && (State.Buttons.A == ButtonState.Pressed || ks.IsKeyDown(Keys.LeftControl) || ks.IsKeyDown(Keys.RightControl))))
-                        if (IsPressed(Digit0Key) || IsPressed(BackspaceKey))
-                            returnvalue &= ~1;
-                        //if (ks.IsKeyDown(Keys.D9) || IsNextKey(Keys.D9) || (JoystickType == JoystickTypeEnum.Sinclair2 && (State.DPad.Up == ButtonState.Pressed || ks.IsKeyDown(Keys.Up))))
-                        if (IsPressed(Digit9Key))
-                            returnvalue &= ~2;
-                        //if (ks.IsKeyDown(Keys.D8) || IsNextKey(Keys.D8) || (JoystickType == JoystickTypeEnum.Sinclair2 && (State.DPad.Down == ButtonState.Pressed || ks.IsKeyDown(Keys.Down))) || (JoystickType == JoystickTypeEnum.Cursor && (State.DPad.Right == ButtonState.Pressed || ks.IsKeyDown(Keys.Right))))
-                        if (IsPressed(Digit8Key) || right)
-                            returnvalue &= ~4;
-                        //if (ks.IsKeyDown(Keys.D7) || IsNextKey(Keys.D7) || (JoystickType == JoystickTypeEnum.Sinclair2 && (State.DPad.Right == ButtonState.Pressed || ks.IsKeyDown(Keys.Right))) || (JoystickType == JoystickTypeEnum.Cursor && (State.DPad.Up == ButtonState.Pressed || ks.IsKeyDown(Keys.Up))))
-                        if (IsPressed(Digit7Key) || up)
-                            returnvalue &= ~8;
-                        //if (ks.IsKeyDown(Keys.D6) || IsNextKey(Keys.D6) || (JoystickType == JoystickTypeEnum.Sinclair2 && (State.DPad.Left == ButtonState.Pressed || ks.IsKeyDown(Keys.Left))) || (JoystickType == JoystickTypeEnum.Cursor && (State.DPad.Down == ButtonState.Pressed || ks.IsKeyDown(Keys.Down))))
-                        if (IsPressed(Digit6Key) || down)
-                            returnvalue &= ~16;
-                        break;
-                    case 0xD0: //P, O, I, U, Y
-                        if (IsPressed(PKey))
-                            returnvalue &= ~1;
-                        if (IsPressed(OKey))
-                            returnvalue &= ~2;
-                        if (IsPressed(IKey))
-                            returnvalue &= ~4;
-                        if (IsPressed(UKey))
-                            returnvalue &= ~8;
-                        if (IsPressed(YKey))
-                            returnvalue &= ~16;
-                        break;
-                    case 0xB0: //ENTER, L, K, J, H
-                        if (IsPressed(EnterKey))
-                            returnvalue &= ~1;
-                        if (IsPressed(LKey))
-                            returnvalue &= ~2;
-                        if (IsPressed(KKey))
-                            returnvalue &= ~4;
-                        if (IsPressed(JKey))
-                            returnvalue &= ~8;
-                        if (IsPressed(HKey))
-                            returnvalue &= ~16;
-                        break;
-                    case 0x70: //SPACE, SYM SHIFT, M, N, B
-                        if (IsPressed(SpaceKey))
-                            returnvalue &= ~1;
-                        if (IsPressed(AltKey))
-                        {
-                            returnvalue &= ~2;
-                        }
-                        //if (SymbolShift)
-                        //{
-                        //    returnvalue &= ~2;
-                        //}
-
-                        if (IsPressed(MKey))
-                            returnvalue &= ~4;
-                        if (IsPressed(NKey))
-                            returnvalue &= ~8;
-                        if (IsPressed(BKey))
-                            returnvalue &= ~16;
-                        break;
-                    default:
-                        //Knas!
-
-                        break;
-                }
-
-                return (byte)returnvalue;
+                return _portResponses[(byte)(Port >> 8)];
             }
             return 0xFF;
         }
@@ -218,6 +78,128 @@ namespace ZXBox.Hardware.Input
         private bool IsPressed(ulong keyMask)
         {
             return (_keyMask & keyMask) != 0;
+        }
+
+        private void RebuildRowValues()
+        {
+            var up = IsPressed(ArrowUpKey);
+            var down = IsPressed(ArrowDownKey);
+            var left = IsPressed(ArrowLeftKey);
+            var right = IsPressed(ArrowRightKey);
+
+            _rowValues[0] = BuildRow(
+                IsPressed(ShiftKey) || IsPressed(BackspaceKey) || up || down || left || right,
+                IsPressed(ZKey),
+                IsPressed(XKey),
+                IsPressed(CKey),
+                IsPressed(VKey));
+
+            _rowValues[1] = BuildRow(
+                IsPressed(AKey),
+                IsPressed(SKey),
+                IsPressed(DKey),
+                IsPressed(FKey),
+                IsPressed(GKey));
+
+            _rowValues[2] = BuildRow(
+                IsPressed(QKey),
+                IsPressed(WKey),
+                IsPressed(EKey),
+                IsPressed(RKey),
+                IsPressed(TKey));
+
+            _rowValues[3] = BuildRow(
+                IsPressed(Digit1Key),
+                IsPressed(Digit2Key),
+                IsPressed(Digit3Key),
+                IsPressed(Digit4Key),
+                IsPressed(Digit5Key) || left);
+
+            _rowValues[4] = BuildRow(
+                IsPressed(Digit0Key) || IsPressed(BackspaceKey),
+                IsPressed(Digit9Key),
+                IsPressed(Digit8Key) || right,
+                IsPressed(Digit7Key) || up,
+                IsPressed(Digit6Key) || down);
+
+            _rowValues[5] = BuildRow(
+                IsPressed(PKey),
+                IsPressed(OKey),
+                IsPressed(IKey),
+                IsPressed(UKey),
+                IsPressed(YKey));
+
+            _rowValues[6] = BuildRow(
+                IsPressed(EnterKey),
+                IsPressed(LKey),
+                IsPressed(KKey),
+                IsPressed(JKey),
+                IsPressed(HKey));
+
+            _rowValues[7] = BuildRow(
+                IsPressed(SpaceKey),
+                IsPressed(AltKey),
+                IsPressed(MKey),
+                IsPressed(NKey),
+                IsPressed(BKey));
+
+            _hasAnyKey = _keyMask != 0;
+            RebuildPortResponses();
+        }
+
+        private void RebuildPortResponses()
+        {
+            for (var highByte = 0; highByte < _portResponses.Length; highByte++)
+            {
+                var value = 0xFF;
+
+                if ((highByte == 0x01 || highByte == 0x00 || highByte == 0x02) && _hasAnyKey)
+                {
+                    value &= ~1;
+                }
+
+                for (var row = 0; row < _rowValues.Length; row++)
+                {
+                    if ((highByte & (1 << row)) == 0)
+                    {
+                        value &= _rowValues[row];
+                    }
+                }
+
+                _portResponses[highByte] = (byte)value;
+            }
+        }
+
+        private static byte BuildRow(bool bit0, bool bit1, bool bit2, bool bit3, bool bit4)
+        {
+            var value = 0xFF;
+
+            if (bit0)
+            {
+                value &= ~1;
+            }
+
+            if (bit1)
+            {
+                value &= ~2;
+            }
+
+            if (bit2)
+            {
+                value &= ~4;
+            }
+
+            if (bit3)
+            {
+                value &= ~8;
+            }
+
+            if (bit4)
+            {
+                value &= ~16;
+            }
+
+            return (byte)value;
         }
     }
 }

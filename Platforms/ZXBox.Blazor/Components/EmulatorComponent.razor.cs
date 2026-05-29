@@ -5,14 +5,18 @@ using SkiaSharp.Views.Blazor;
 using SkiaSharp;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.JavaScript;
 using System.Runtime.Versioning;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
+using ZXBox.Blazor.Interop;
 using ZXBox.Core.Hardware.Input;
 using ZXBox.Hardware.Input;
 using ZXBox.Hardware.Input.Joystick;
@@ -28,12 +32,16 @@ namespace ZXBox.Blazor.Pages
         private const float BeeperMixGain = 0.45f;
         private const float SpeechMixGain = 6.0f;
         private const float AyMixGain = 0.35f;
+        private const float AudioOutputGain = 0.35f;
         private const float ConsumerTvCurvature = 0.07f;
         private const float ConsumerTvScanlineStrength = 0.24f;
         private const float ConsumerTvVignetteStrength = 0.16f;
         private const float ConsumerTvSaturation = 0.92f;
         private const float ConsumerTvBrightness = 1.04f;
-        private const int AudioSamplesPerFrame = 48000 / 50;
+        private const int DefaultAudioSampleRate = 48000;
+        private const int DefaultAudioFramesPerBatch = 2;
+        private const double AudioTargetQueuedSeconds = 0.04d;
+        private const double AudioLowWatermarkSeconds = 0.02d;
         private const int PrinterDisplayScale = 3;
         private const uint PrinterPaperColor = 0xFFB8BCC0;
         private const uint PrinterInkColor = 0xFF1F1F1F;
@@ -79,15 +87,25 @@ half4 main(float2 fragCoord)
     return half4(color, 1.0);
 }";
         private static readonly SKSamplingOptions ConsumerTvSampling = new(SKFilterMode.Linear);
+        private enum ExecutionDriver
+        {
+            TimerFallback,
+            AudioPump
+        }
+
+        private static readonly Dictionary<int, EmulatorComponentModel> AudioPumpTargets = new();
+        private static EmulatorComponentModel? _activeDebugTarget;
+        private static int _nextAudioPumpInstanceId;
+
         public ZXSpectrum speccy;
         public System.Timers.Timer gameLoop;
         int flashcounter = 16;
         bool flash = false;
         JavaScriptKeyboard Keyboard = new();
         Kempston kempston;
-        Beeper<byte> beeper;
+        BrowserBeeper beeper;
         public TapePlayer tapePlayer;
-        public SKCanvasView _canvasView;
+        public SKGLView _canvasView;
         public SKCanvasView _printerCanvasView;
         private SKBitmap _printerBitmap = new(1, 1);
         private uint[] _printerPixels = new uint[1];
@@ -96,23 +114,80 @@ half4 main(float2 fragCoord)
         private string _consumerTvShaderError = string.Empty;
         private int _lastPrinterVersion = -1;
         private int _lastPrinterHeight;
-        private readonly float[] _speechAudioBuffer = new float[AudioSamplesPerFrame];
-        private readonly float[] _ayAudioBuffer = new float[AudioSamplesPerFrame];
-        private readonly float[] _mixedAudioBuffer = new float[AudioSamplesPerFrame];
-        private IJSInProcessObjectReference _audioModule;
+        private float[] _audioFrameBuffer = new float[DefaultAudioSampleRate / 50];
+        private byte[] _audioFrameBytes = new byte[(DefaultAudioSampleRate / 50) * sizeof(float)];
+        private float[] _speechAudioBuffer = new float[DefaultAudioSampleRate / 50];
+        private float[] _ayAudioBuffer = new float[DefaultAudioSampleRate / 50];
+        private JSObject _audioController;
         private bool _audioInteropReady;
-
-        [Inject]
-        Toolbelt.Blazor.Gamepad.GamepadList GamePadList { get; set; }
+        private bool _audioDrivenLoopActive;
+        private int _configuredAudioFramesPerBatch = DefaultAudioFramesPerBatch;
+        private int _configuredDisplayFrameDivisor = 1;
+        private int _audioSampleRate = DefaultAudioSampleRate;
+        private int _audioSamplesPerFrame = DefaultAudioSampleRate / 50;
+        private int _displayFrameCounter;
+        private bool _screenDirty;
+        private bool _screenFlashState;
+        private readonly object _perfSync = new();
+        private readonly BlazorPerfTimingStats _perfLoopStats = new();
+        private readonly BlazorPerfTimingStats _perfCpuStats = new();
+        private readonly BlazorPerfTimingStats _perfAudioStats = new();
+        private readonly BlazorPerfTimingStats _perfPaintRequestStats = new();
+        private readonly BlazorPerfTimingStats _perfOnPaintSurfaceStats = new();
+        private bool _perfScenarioStarted;
+        private bool _perfSamplingActive;
+        private string _perfStatusText = "Idle";
+        private string _perfResultJson = string.Empty;
+        private BlazorPerfResult _perfResult;
+        private long _perfMeasurementStartTimestamp;
+        private int _perfTimerTicksObserved;
+        private int _perfSchedulerCallbacksObserved;
+        private int _perfFramesExecuted;
+        private int _perfFramesSkipped;
+        private int _perfPaintInvalidations;
+        private int _perfPaintSurfaceCalls;
+        private bool _isDisposed;
+        private readonly int _audioPumpInstanceId = Interlocked.Increment(ref _nextAudioPumpInstanceId);
 
         [Inject]
         protected HttpClient Http { get; set; }
         [Inject]
         protected IJSInProcessRuntime JSRuntime { get; set; }
+
+        [Parameter]
+        public bool PerfMode { get; set; }
+
+        [Parameter]
+        public int PerfWarmupSeconds { get; set; } = 2;
+
+        [Parameter]
+        public int PerfMeasureSeconds { get; set; } = 8;
+
+        [Parameter]
+        public string PerfGame { get; set; } = "ManicMiner.z80";
+
+        [Parameter]
+        public string PerfModel { get; set; } = "48k";
+
+        [Parameter]
+        public int DisplayFrameDivisor { get; set; } = 1;
+
+        [Parameter]
+        public int AudioFramesPerBatch { get; set; } = DefaultAudioFramesPerBatch;
+
+        public string PerfStatusText => _perfStatusText;
+
+        public string PerfResultJson => _perfResultJson;
+
         public EmulatorComponentModel()
         {
             gameLoop = new System.Timers.Timer(20);
             gameLoop.Elapsed += GameLoop_Elapsed;
+            lock (AudioPumpTargets)
+            {
+                AudioPumpTargets[_audioPumpInstanceId] = this;
+            }
+            _activeDebugTarget = this;
         }
 
         public ZXSpectrum GetZXSpectrum(RomEnum rom)
@@ -120,9 +195,16 @@ half4 main(float2 fragCoord)
             return new ZXSpectrum(true, true, 20, 20, 20, rom);
         }
 
+        public async Task StartZXSpectrumAsync(RomEnum rom)
+        {
+            await EnsureAudioRunningAsync();
+            StartZXSpectrum(rom);
+        }
+
         public void StartZXSpectrum(RomEnum rom)
         {
             speccy = GetZXSpectrum(rom);
+            _activeDebugTarget = this;
             speccy.InputHardware.Add(Keyboard);
             IsSettingsOpen = false;
             _lastPrinterVersion = -1;
@@ -131,14 +213,19 @@ half4 main(float2 fragCoord)
             kempston = new Kempston();
             speccy.InputHardware.Add(kempston);
             //48000 samples per second, 50 frames per second (20ms per frame) Mono
-            beeper = new Beeper<byte>(0, 127, AudioSamplesPerFrame, 1, speccy.FrameTStates);
+            beeper = new BrowserBeeper(_audioSamplesPerFrame, speccy.FrameTStates, BeeperMixGain);
             speccy.OutputHardware.Add(beeper);
             tapePlayer = new(beeper);
             speccy.InputHardware.Add(tapePlayer);
+            _configuredDisplayFrameDivisor = Math.Max(1, DisplayFrameDivisor);
+            _configuredAudioFramesPerBatch = Math.Max(1, AudioFramesPerBatch);
+            _audioDrivenLoopActive = false;
+            _displayFrameCounter = 0;
+            _screenDirty = true;
             flashcounter = 16;
             flash = false;
             speccy.Reset();
-            gameLoop.Start();
+            StartExecutionLoop();
 
             if (ConsumerTvShaderEnabled)
             {
@@ -151,6 +238,7 @@ half4 main(float2 fragCoord)
         public string ConsumerTvShaderError => _consumerTvShaderError;
 
         public string TapeName { get; set; }
+        public string PeripheralStatusMessage { get; set; } = string.Empty;
 
         public void OpenSettingsPanel()
         {
@@ -164,6 +252,8 @@ half4 main(float2 fragCoord)
 
         public async Task HandleFileSelected(InputFileChangeEventArgs args)
         {
+            await EnsureAudioRunningAsync();
+
             var file = args.File;
             var ms = new MemoryStream();
             await file.OpenReadStream().CopyToAsync(ms);
@@ -187,13 +277,26 @@ half4 main(float2 fragCoord)
                 return;
             }
 
+            await EnsureAudioRunningAsync();
             speccy.ConnectCurrahMicroSpeech();
             await TryLoadCurrahAssetsAsync();
+            ResetMachineStateAfterPeripheralChange();
+            var currahReady = speccy.CurrahMicroSpeech.HasRom && speccy.CurrahMicroSpeech.HasSpeechRom;
+            PeripheralStatusMessage = currahReady
+                ? "Currah connected. The emulator was reset so Currah-aware software can detect the peripheral from startup."
+                : "Currah connected, but one or both Currah ROM assets could not be loaded.";
         }
 
         public void DisconnectCurrahMicroSpeech()
         {
-            speccy?.DisconnectCurrahMicroSpeech();
+            if (speccy is null)
+            {
+                return;
+            }
+            speccy.DisconnectCurrahMicroSpeech();
+            speccy.DisconnectCurrahMicroSpeech();
+            ResetMachineStateAfterPeripheralChange();
+            PeripheralStatusMessage = "Currah disconnected. The emulator was reset to apply the hardware change.";
         }
 
         public void ConnectZxPrinter()
@@ -206,6 +309,7 @@ half4 main(float2 fragCoord)
             speccy.ConnectZxPrinter();
             _lastPrinterVersion = -1;
             _lastPrinterHeight = speccy.ZxPrinter.PaperHeight;
+            PeripheralStatusMessage = string.Empty;
         }
 
         public void DisconnectZxPrinter()
@@ -218,12 +322,15 @@ half4 main(float2 fragCoord)
             speccy.DisconnectZxPrinter();
             _lastPrinterVersion = -1;
             _lastPrinterHeight = 0;
+            PeripheralStatusMessage = string.Empty;
         }
         [Inject]
         HttpClient httpClient { get; set; }
         public string Instructions = "";
         public async Task LoadGame(string filename, string instructions)
         {
+            await EnsureAudioRunningAsync();
+
             var ms = new MemoryStream();
             var handler = FileFormatFactory.GetSnapShotHandler(filename);
             var stream = await httpClient.GetStreamAsync("Roms/" + filename + ".json");
@@ -231,6 +338,12 @@ half4 main(float2 fragCoord)
             var bytes = ms.ToArray();
             handler.LoadSnapshot(bytes, speccy);
             Instructions = instructions;
+        }
+
+        public async Task StartTapePlaybackAsync()
+        {
+            await EnsureAudioRunningAsync();
+            tapePlayer.Play();
         }
 
         private async Task TryLoadCurrahAssetsAsync()
@@ -263,98 +376,252 @@ half4 main(float2 fragCoord)
             return await response.Content.ReadAsByteArrayAsync();
         }
 
-        private async void GameLoop_Elapsed(object sender, ElapsedEventArgs e)
+        private async Task EnsureAudioRunningAsync()
         {
-            if (Interlocked.Exchange(ref _frameInProgress, 1) != 0)
+            if (!OperatingSystem.IsBrowser())
             {
                 return;
             }
 
-            try
+            if (_audioController is null)
             {
-                //Get gamepads
-                kempston.Gamepads = await GamePadList.GetGamepadsAsync();
-                //Run JavaScriptInterop to find the currently pressed buttons
-                Keyboard.SetKeyMask((ulong)JSRuntime.Invoke<double>("getKeyMask"));
-                var frameTStates = speccy.FrameTStates;
-                speccy.DoInstructions(frameTStates);
+                await BrowserRuntimeInterop.EnsureAudioModuleAsync();
+                _audioController = await BrowserRuntimeInterop.CreateAudioControllerAsync(
+                    DefaultAudioSampleRate,
+                    AudioOutputGain,
+                    AudioTargetQueuedSeconds,
+                    AudioLowWatermarkSeconds);
+                _audioSampleRate = Math.Max(1, BrowserRuntimeInterop.GetAudioSampleRate(_audioController));
+                ConfigureAudioFormat(_audioSampleRate);
+                _audioInteropReady = true;
+            }
 
-                beeper.GenerateSound(frameTStates);
-                BufferSound();
+            await BrowserRuntimeInterop.ResumeAudioControllerAsync(_audioController);
+        }
 
-                Paint();
-                if (tapePlayer != null && tapePlayer.IsPlaying)
+        private void ResetMachineStateAfterPeripheralChange()
+        {
+            if (speccy is null)
+            {
+                return;
+            }
+
+            speccy.Reset();
+            _displayFrameCounter = 0;
+            _screenDirty = true;
+            _screenFlashState = false;
+            flashcounter = 16;
+            flash = false;
+            _lastPrinterVersion = speccy.ZxPrinter.Connected ? -1 : _lastPrinterVersion;
+            _lastPrinterHeight = speccy.ZxPrinter.Connected ? speccy.ZxPrinter.PaperHeight : 0;
+            _ = InvokeAsync(StateHasChanged);
+        }
+
+        private void GameLoop_Elapsed(object sender, ElapsedEventArgs e)
+        {
+            if (_perfSamplingActive)
+            {
+                lock (_perfSync)
                 {
-                    TapeStopped = false;
-                    PercentLoaded = ((Convert.ToDouble(tapePlayer.CurrentTstate) / Convert.ToDouble(tapePlayer.TotalTstates)) * 100);
-                    await InvokeAsync(() => StateHasChanged());
-                }
-                if (!TapeStopped && !tapePlayer.IsPlaying)
-                {
-                    TapeStopped = true;
-                    await InvokeAsync(() => StateHasChanged());
+                    _perfTimerTicksObserved++;
                 }
             }
-            finally
-            {
-                Interlocked.Exchange(ref _frameInProgress, 0);
-            }
+
+            TryRunFrame(ExecutionDriver.TimerFallback);
         }
         bool TapeStopped = false;
         private int _frameInProgress;
 
-        protected void BufferSound()
+        private void OnAudioDataRequested()
         {
-            if (!_audioInteropReady)
+            if (_isDisposed || speccy is null || _audioController is null)
             {
                 return;
             }
 
-            ConvertBeeperBuffer(beeper.GetSoundBuffer(), _mixedAudioBuffer, BeeperMixGain);
-            speccy.CurrahMicroSpeech.RenderAudioFrame(_speechAudioBuffer, speccy.FrameTStates);
-            speccy.AyChip.RenderAudioFrame(_ayAudioBuffer, speccy.FrameTStates);
-            MixAudioBuffers(_mixedAudioBuffer, _speechAudioBuffer, _ayAudioBuffer, SpeechMixGain, AyMixGain);
-            _audioModule.InvokeVoid("addAudioBuffer", _mixedAudioBuffer);
+            if (_perfSamplingActive)
+            {
+                lock (_perfSync)
+                {
+                    _perfSchedulerCallbacksObserved++;
+                }
+            }
+
+            if (!_audioDrivenLoopActive)
+            {
+                _audioDrivenLoopActive = true;
+                gameLoop.Stop();
+            }
+
+            for (var generatedFrames = 0; generatedFrames < _configuredAudioFramesPerBatch; generatedFrames++)
+            {
+                if (BrowserRuntimeInterop.GetQueuedSeconds(_audioController) >= AudioTargetQueuedSeconds)
+                {
+                    break;
+                }
+
+                if (!TryRunFrame(ExecutionDriver.AudioPump))
+                {
+                    break;
+                }
+            }
         }
 
-        private static void ConvertBeeperBuffer(byte[] beeperBuffer, float[] destination, float gain)
+        [JSInvokable]
+        public static void RequestAudioPump(int instanceId)
         {
-            if (beeperBuffer.Length == 0)
+            lock (AudioPumpTargets)
             {
-                Array.Clear(destination, 0, destination.Length);
-                return;
-            }
+                if (!AudioPumpTargets.TryGetValue(instanceId, out var target))
+                {
+                    return;
+                }
 
-            var sum = 0f;
-
-            for (var i = 0; i < beeperBuffer.Length; i++)
-            {
-                sum += beeperBuffer[i];
-            }
-
-            var average = sum / beeperBuffer.Length;
-
-            for (var i = 0; i < beeperBuffer.Length; i++)
-            {
-                destination[i] = Math.Clamp(((beeperBuffer[i] - average) / 63.5f) * gain, -1f, 1f);
-            }
-
-            if (destination.Length > beeperBuffer.Length)
-            {
-                Array.Clear(destination, beeperBuffer.Length, destination.Length - beeperBuffer.Length);
+                target.OnAudioDataRequested();
             }
         }
 
-        private static void MixAudioBuffers(float[] destination, float[] secondary, float[] tertiary, float secondaryGain, float tertiaryGain)
+        [JSInvokable]
+        public static async Task<bool> DebugRunImmediateLprint(string text)
+        {
+            var target = _activeDebugTarget;
+            if (target is null || target.speccy is null)
+            {
+                return false;
+            }
+
+            await target.InvokeAsync(() => target.RunImmediateLprint(text));
+            return true;
+        }
+
+        private bool TryRunFrame(ExecutionDriver driver)
+        {
+            if (speccy is null || kempston is null || beeper is null)
+            {
+                return false;
+            }
+
+            if (Interlocked.Exchange(ref _frameInProgress, 1) != 0)
+            {
+                if (_perfSamplingActive)
+                {
+                    lock (_perfSync)
+                    {
+                        _perfFramesSkipped++;
+                    }
+                }
+
+                return false;
+            }
+
+            var perfLoopStart = _perfSamplingActive ? Stopwatch.GetTimestamp() : 0L;
+
+            try
+            {
+                kempston.DirectState = (byte)BrowserRuntimeInterop.GetKempstonState();
+                Keyboard.SetKeyMask((ulong)BrowserRuntimeInterop.GetKeyMask());
+                var frameTStates = speccy.FrameTStates;
+
+                var perfCpuStart = _perfSamplingActive ? Stopwatch.GetTimestamp() : 0L;
+                speccy.DoInstructions(frameTStates);
+                if (_perfSamplingActive)
+                {
+                    RecordPerfTiming(_perfCpuStats, perfCpuStart);
+                }
+
+                var perfAudioStart = _perfSamplingActive ? Stopwatch.GetTimestamp() : 0L;
+                BufferSound(frameTStates);
+                if (_perfSamplingActive)
+                {
+                    RecordPerfTiming(_perfAudioStats, perfAudioStart);
+                }
+
+                var perfPaintRequestStart = _perfSamplingActive ? Stopwatch.GetTimestamp() : 0L;
+                Paint();
+                if (_perfSamplingActive)
+                {
+                    lock (_perfSync)
+                    {
+                        _perfFramesExecuted++;
+                    }
+
+                    RecordPerfTiming(_perfPaintRequestStats, perfPaintRequestStart);
+                }
+
+                if (tapePlayer != null && tapePlayer.IsPlaying)
+                {
+                    TapeStopped = false;
+                    PercentLoaded = ((Convert.ToDouble(tapePlayer.CurrentTstate) / Convert.ToDouble(tapePlayer.TotalTstates)) * 100);
+                    _ = InvokeAsync(StateHasChanged);
+                }
+                if (!TapeStopped && !tapePlayer.IsPlaying)
+                {
+                    TapeStopped = true;
+                    _ = InvokeAsync(StateHasChanged);
+                }
+
+                return true;
+            }
+            finally
+            {
+                if (_perfSamplingActive)
+                {
+                    RecordPerfTiming(_perfLoopStats, perfLoopStart);
+                }
+
+                Interlocked.Exchange(ref _frameInProgress, 0);
+            }
+        }
+
+        protected void BufferSound(int frameTStates)
+        {
+            var frameBuffer = _audioFrameBuffer.AsSpan();
+            beeper.CompleteFrame(frameBuffer);
+
+            var hasCurrahAudio = speccy.CurrahMicroSpeech.Connected;
+            var hasAyAudio = speccy.Is128KModel;
+
+            if (hasCurrahAudio)
+            {
+                speccy.CurrahMicroSpeech.RenderAudioFrame(_speechAudioBuffer.AsSpan(), frameTStates);
+            }
+
+            if (hasAyAudio)
+            {
+                speccy.AyChip.RenderAudioFrame(_ayAudioBuffer.AsSpan(), frameTStates);
+            }
+
+            if (hasCurrahAudio || hasAyAudio)
+            {
+                MixAudioBuffers(
+                    frameBuffer,
+                    hasCurrahAudio ? _speechAudioBuffer : null,
+                    hasAyAudio ? _ayAudioBuffer : null,
+                    SpeechMixGain,
+                    AyMixGain);
+            }
+
+            if (_audioController is not null)
+            {
+                Buffer.BlockCopy(_audioFrameBuffer, 0, _audioFrameBytes, 0, _audioFrameBytes.Length);
+                _audioController.SetProperty("pendingFrameBytes", _audioFrameBytes);
+                BrowserRuntimeInterop.PushPendingAudioFrame(_audioController, _audioSamplesPerFrame);
+            }
+        }
+
+        private static void MixAudioBuffers(Span<float> destination, float[]? secondary, float[]? tertiary, float secondaryGain, float tertiaryGain)
         {
             for (var sample = 0; sample < destination.Length; sample++)
             {
+                var secondarySample = secondary is null ? 0f : secondary[sample] * secondaryGain;
+                var tertiarySample = tertiary is null ? 0f : tertiary[sample] * tertiaryGain;
                 destination[sample] = Math.Clamp(
-                    destination[sample] + (secondary[sample] * secondaryGain) + (tertiary[sample] * tertiaryGain),
+                    destination[sample] + secondarySample + tertiarySample,
                     -1f,
                     1f);
             }
         }
+
         public double PercentLoaded = 0;
         protected override async Task OnAfterRenderAsync(bool firstRender)
         {
@@ -369,10 +636,16 @@ half4 main(float2 fragCoord)
                 return;
             }
 
-            var audioModule = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./audioInterop.js");
-            _audioModule = (IJSInProcessObjectReference)audioModule;
-            _audioModule.InvokeVoid("initializeAudio", AudioSamplesPerFrame, 0.35f);
-            _audioInteropReady = true;
+            if (PerfMode)
+            {
+                await EnsureAudioRunningAsync();
+            }
+
+            if (PerfMode && !_perfScenarioStarted)
+            {
+                _perfScenarioStarted = true;
+                _ = RunPerfScenarioAsync();
+            }
         }
 
         GCHandle gchscreen;
@@ -391,15 +664,26 @@ half4 main(float2 fragCoord)
                 flashcounter--;
             }
 
-             screen = speccy.GetScreenInUint(flash);
- 
-            ////Allocate memory
-            //gchscreen = GCHandle.Alloc(screen, GCHandleType.Pinned);
-            //pinnedscreen = gchscreen.AddrOfPinnedObject();
-            //mono.InvokeUnmarshalled<IntPtr, string>("PaintCanvas", pinnedscreen);
-            //gchscreen.Free();
+            if (_displayFrameCounter == 0)
+            {
+                _screenFlashState = flash;
+                _screenDirty = true;
 
-            _canvasView?.Invalidate();
+                _canvasView?.Invalidate();
+                if (_perfSamplingActive)
+                {
+                    lock (_perfSync)
+                    {
+                        _perfPaintInvalidations++;
+                    }
+                }
+            }
+
+            _displayFrameCounter++;
+            if (_displayFrameCounter >= _configuredDisplayFrameDivisor)
+            {
+                _displayFrameCounter = 0;
+            }
 
             if (speccy?.ZxPrinter.Connected == true)
             {
@@ -428,9 +712,24 @@ half4 main(float2 fragCoord)
         //};
         public void OnPaintSurface(SKPaintSurfaceEventArgs e)
         {
-          
-            var canvas = e.Surface.Canvas;
-            canvas.Clear(SKColors.Black);
+            DrawDisplaySurface(e.Surface.Canvas, e.Info);
+        }
+
+        public void OnPaintGLSurface(SKPaintGLSurfaceEventArgs e)
+        {
+            DrawDisplaySurface(e.Surface.Canvas, e.Info);
+        }
+
+        private void DrawDisplaySurface(SKCanvas canvas, SKImageInfo info)
+        {
+            var perfPaintStart = _perfSamplingActive ? Stopwatch.GetTimestamp() : 0L;
+
+            if (_screenDirty)
+            {
+                screen = speccy.GetScreenInUint(_screenFlashState);
+                _screenDirty = false;
+            }
+
             unsafe
             {
                 var ptr = (uint*)bitmap.GetPixels().ToPointer();
@@ -441,14 +740,25 @@ half4 main(float2 fragCoord)
                     Buffer.MemoryCopy(srcPtr, ptr, screen.Length * sizeof(uint), screen.Length * sizeof(uint));
                 }
             }
-           
+            
             if (ConsumerTvShaderEnabled && EnsureConsumerTvShader())
             {
-                DrawConsumerTvShader(canvas, e.Info);
-                return;
+                DrawConsumerTvShader(canvas, info);
+            }
+            else
+            {
+                canvas.DrawBitmap(bitmap, new SKRect(0, 0, info.Width, info.Height));
             }
 
-            canvas.DrawBitmap(bitmap, new SKRect(0, 0, e.Info.Width, e.Info.Height));
+            if (_perfSamplingActive)
+            {
+                lock (_perfSync)
+                {
+                    _perfPaintSurfaceCalls++;
+                }
+
+                RecordPerfTiming(_perfOnPaintSurfaceStats, perfPaintStart);
+            }
         }
 
         private bool EnsureConsumerTvShader()
@@ -511,15 +821,6 @@ half4 main(float2 fragCoord)
 
         public string PrinterCanvasStyle => $"display:block; width:min(100%, {PrinterCanvasDisplayWidth}px); height:auto;";
 
-        private int PrinterRenderedPaperHeight
-        {
-            get
-            {
-                var printerHeight = speccy?.ZxPrinter.PaperHeight ?? 0;
-                return printerHeight * PrinterDisplayScale;
-            }
-        }
-
         public void OnPaintPrinterSurface(SKPaintSurfaceEventArgs e)
         {
             var canvas = e.Surface.Canvas;
@@ -562,7 +863,7 @@ half4 main(float2 fragCoord)
                 IsAntialias = false
             };
 
-            var renderedHeight = Math.Min(PrinterRenderedPaperHeight, e.Info.Height);
+            var renderedHeight = e.Info.Height;
             if (renderedHeight <= 0)
             {
                 return;
@@ -583,18 +884,273 @@ half4 main(float2 fragCoord)
             _printerPixels = new uint[width * height];
         }
 
+        private void RunImmediateLprint(string text)
+        {
+            if (speccy is null)
+            {
+                return;
+            }
+
+            StopExecutionLoop();
+
+            if (!speccy.ZxPrinter.Connected)
+            {
+                ConnectZxPrinter();
+            }
+
+            RunSpectrumFrames(300);
+
+            var eLine = ReadWordFromSpectrumMemory(0x5C59);
+            var commandBytes = BuildImmediateLprintLine(text);
+            WriteBytesToSpectrumMemory(eLine, commandBytes);
+            WriteWordToSpectrumMemory(0x5C61, eLine + commandBytes.Length);
+            speccy.WriteByteToMemory(0x5C44, 0x01);
+            speccy.WriteByteToMemory(0x5C3B, (byte)(speccy.ReadByteFromMemory(0x5C3B) | 0x80));
+            speccy.PC = 0x1B8A;
+
+            RunSpectrumFrames(300);
+            Paint();
+            _printerCanvasView?.Invalidate();
+            StartExecutionLoop();
+        }
+
+        private byte[] BuildImmediateLprintLine(string text)
+        {
+            var safeText = text ?? string.Empty;
+            var bytes = new byte[safeText.Length + 4];
+            bytes[0] = 0xE0;
+            bytes[1] = 0x22;
+
+            for (var index = 0; index < safeText.Length; index++)
+            {
+                bytes[index + 2] = (byte)safeText[index];
+            }
+
+            bytes[^2] = 0x22;
+            bytes[^1] = 0x0D;
+            return bytes;
+        }
+
+        private int ReadWordFromSpectrumMemory(int address)
+        {
+            return speccy.ReadByteFromMemory((ushort)address) | (speccy.ReadByteFromMemory((ushort)(address + 1)) << 8);
+        }
+
+        private void WriteWordToSpectrumMemory(int address, int value)
+        {
+            speccy.WriteByteToMemory((ushort)address, (byte)(value & 0xFF));
+            speccy.WriteByteToMemory((ushort)(address + 1), (byte)((value >> 8) & 0xFF));
+        }
+
+        private void WriteBytesToSpectrumMemory(int address, byte[] bytes)
+        {
+            for (var index = 0; index < bytes.Length; index++)
+            {
+                speccy.WriteByteToMemory((ushort)(address + index), bytes[index]);
+            }
+        }
+
+        private void RunSpectrumFrames(int frameCount)
+        {
+            for (var frameIndex = 0; frameIndex < frameCount; frameIndex++)
+            {
+                speccy.DoInstructions(speccy.FrameTStates);
+            }
+        }
+
         public async ValueTask DisposeAsync()
         {
-            gameLoop.Stop();
+            _isDisposed = true;
+            StopExecutionLoop();
             gameLoop.Dispose();
             _consumerTvShaderBuilder?.Dispose();
             _consumerTvEffect?.Dispose();
-            if (_audioModule is not null)
+            if (_audioController is not null)
             {
-                await _audioModule.DisposeAsync();
+                await BrowserRuntimeInterop.DisposeAudioControllerAsync(_audioController);
+                _audioController.Dispose();
+            }
+            lock (AudioPumpTargets)
+            {
+                AudioPumpTargets.Remove(_audioPumpInstanceId);
+            }
+            if (ReferenceEquals(_activeDebugTarget, this))
+            {
+                _activeDebugTarget = null;
             }
             _printerBitmap.Dispose();
             bitmap.Dispose();
         }
+
+        private async Task RunPerfScenarioAsync()
+        {
+            _perfStatusText = "Starting perf scenario...";
+            await InvokeAsync(StateHasChanged);
+
+            StartZXSpectrum(ParsePerfModel());
+            await LoadGame(PerfGame, string.Empty);
+
+            _perfStatusText = $"Warming up for {PerfWarmupSeconds} seconds...";
+            await InvokeAsync(StateHasChanged);
+            await Task.Delay(TimeSpan.FromSeconds(Math.Max(0, PerfWarmupSeconds)));
+
+            ResetPerfCounters();
+            JSRuntime.InvokeVoid("startPerfRafSampling");
+            _perfMeasurementStartTimestamp = Stopwatch.GetTimestamp();
+            _perfSamplingActive = true;
+            if (_audioController is not null)
+            {
+                BrowserRuntimeInterop.ResetControllerForMeasurement(_audioController);
+                if (BrowserRuntimeInterop.IsAudioDriven(_audioController))
+                {
+                    OnAudioDataRequested();
+                }
+
+            }
+
+            _perfStatusText = $"Measuring for {PerfMeasureSeconds} seconds...";
+            await InvokeAsync(StateHasChanged);
+            await Task.Delay(TimeSpan.FromSeconds(Math.Max(1, PerfMeasureSeconds)));
+
+            _perfSamplingActive = false;
+            StopExecutionLoop();
+
+            while (Interlocked.CompareExchange(ref _frameInProgress, 0, 0) != 0)
+            {
+                await Task.Delay(20);
+            }
+
+            await Task.Delay(100);
+
+            var measureSeconds = Stopwatch.GetElapsedTime(_perfMeasurementStartTimestamp).TotalSeconds;
+            var audioMetrics = _audioController is null
+                ? new BlazorPerfAudioMetrics()
+                : JsonSerializer.Deserialize<BlazorPerfAudioMetrics>(
+                    BrowserRuntimeInterop.GetPerformanceMetricsJson(_audioController),
+                    new JsonSerializerOptions(JsonSerializerDefaults.Web)) ?? new BlazorPerfAudioMetrics();
+            var rafMetrics = JSRuntime.Invoke<BlazorPerfRafMetrics>("stopPerfRafSampling");
+
+            lock (_perfSync)
+            {
+                _perfResult = new BlazorPerfResult
+                {
+                    Game = PerfGame,
+                    Model = PerfModel,
+                    WarmupSeconds = PerfWarmupSeconds,
+                    MeasureSeconds = measureSeconds,
+                    DisplayFrameDivisor = _configuredDisplayFrameDivisor,
+                    AudioFramesPerBatch = _configuredAudioFramesPerBatch,
+                    SchedulerCallbacksObserved = _perfSchedulerCallbacksObserved,
+                    TimerTicksObserved = _perfTimerTicksObserved,
+                    FramesExecuted = _perfFramesExecuted,
+                    FramesSkipped = _perfFramesSkipped,
+                    PaintInvalidations = _perfPaintInvalidations,
+                    PaintSurfaceCalls = _perfPaintSurfaceCalls,
+                    LoopFps = measureSeconds == 0 ? 0d : _perfFramesExecuted / measureSeconds,
+                    RequestedPaintFps = measureSeconds == 0 ? 0d : _perfPaintInvalidations / measureSeconds,
+                    PresentedPaintFps = measureSeconds == 0 ? 0d : _perfPaintSurfaceCalls / measureSeconds,
+                    AverageGameLoopMs = _perfLoopStats.AverageMilliseconds,
+                    MaxGameLoopMs = _perfLoopStats.MaxMilliseconds,
+                    AverageCpuMs = _perfCpuStats.AverageMilliseconds,
+                    MaxCpuMs = _perfCpuStats.MaxMilliseconds,
+                    AverageAudioMs = _perfAudioStats.AverageMilliseconds,
+                    MaxAudioMs = _perfAudioStats.MaxMilliseconds,
+                    AveragePaintRequestMs = _perfPaintRequestStats.AverageMilliseconds,
+                    MaxPaintRequestMs = _perfPaintRequestStats.MaxMilliseconds,
+                    AverageOnPaintSurfaceMs = _perfOnPaintSurfaceStats.AverageMilliseconds,
+                    MaxOnPaintSurfaceMs = _perfOnPaintSurfaceStats.MaxMilliseconds,
+                    Audio = audioMetrics,
+                    Raf = rafMetrics
+                };
+            }
+
+            _perfResultJson = JsonSerializer.Serialize(_perfResult, new JsonSerializerOptions { WriteIndented = true });
+            JSRuntime.InvokeVoid("setPerfResult", _perfResultJson);
+            _perfStatusText = "Perf scenario complete";
+            await InvokeAsync(StateHasChanged);
+        }
+
+        private RomEnum ParsePerfModel()
+        {
+            return PerfModel.Equals("128k", StringComparison.OrdinalIgnoreCase)
+                || PerfModel.Equals("plus", StringComparison.OrdinalIgnoreCase)
+                ? RomEnum.ZXSpectrumPlus
+                : RomEnum.ZXSpectrum48k;
+        }
+
+        private void ResetPerfCounters()
+        {
+            lock (_perfSync)
+            {
+                _perfTimerTicksObserved = 0;
+                _perfSchedulerCallbacksObserved = 0;
+                _perfFramesExecuted = 0;
+                _perfFramesSkipped = 0;
+                _perfPaintInvalidations = 0;
+                _perfPaintSurfaceCalls = 0;
+                _perfLoopStats.Reset();
+                _perfCpuStats.Reset();
+                _perfAudioStats.Reset();
+                _perfPaintRequestStats.Reset();
+                _perfOnPaintSurfaceStats.Reset();
+            }
+        }
+
+        private void RecordPerfTiming(BlazorPerfTimingStats stats, long startTimestamp)
+        {
+            if (!_perfSamplingActive)
+            {
+                return;
+            }
+
+            var elapsedMilliseconds = Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds;
+            lock (_perfSync)
+            {
+                stats.Add(elapsedMilliseconds);
+            }
+        }
+
+        private void ConfigureAudioFormat(int sampleRate)
+        {
+            _audioSampleRate = Math.Max(1, sampleRate);
+            _audioSamplesPerFrame = Math.Max(1, (int)Math.Round(_audioSampleRate / 50d));
+            _audioFrameBuffer = new float[_audioSamplesPerFrame];
+            _audioFrameBytes = new byte[_audioSamplesPerFrame * sizeof(float)];
+            _speechAudioBuffer = new float[_audioSamplesPerFrame];
+            _ayAudioBuffer = new float[_audioSamplesPerFrame];
+        }
+
+        private void StartExecutionLoop()
+        {
+            if (_isDisposed || speccy is null)
+            {
+                return;
+            }
+
+            _audioDrivenLoopActive = false;
+            gameLoop.Stop();
+            if (_audioController is not null)
+            {
+                BrowserRuntimeInterop.StartAudioPump(_audioController, _audioPumpInstanceId);
+                if (_audioDrivenLoopActive)
+                {
+                    return;
+                }
+            }
+
+            gameLoop.Start();
+        }
+
+        private void StopExecutionLoop()
+        {
+            gameLoop.Stop();
+            if (_audioController is not null)
+            {
+                BrowserRuntimeInterop.StopAudioPump(_audioController);
+            }
+
+            _audioDrivenLoopActive = false;
+        }
+
     }
 }

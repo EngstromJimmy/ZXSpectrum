@@ -1,0 +1,31 @@
+@page "/perf"
+@using Microsoft.AspNetCore.Components
+@using ZXBox.Blazor.Components
+
+<EmulatorComponent PerfMode="true"
+                   PerfWarmupSeconds="@WarmupSeconds"
+                   PerfMeasureSeconds="@MeasureSeconds"
+                   PerfGame="@Game"
+                   PerfModel="@Model"
+                   DisplayFrameDivisor="@DisplayFrameDivisor"
+                   AudioFramesPerBatch="@AudioFramesPerBatch" />
+
+@code {
+    [SupplyParameterFromQuery(Name = "warmupSeconds")]
+    public int WarmupSeconds { get; set; } = 2;
+
+    [SupplyParameterFromQuery(Name = "measureSeconds")]
+    public int MeasureSeconds { get; set; } = 8;
+
+    [SupplyParameterFromQuery(Name = "game")]
+    public string Game { get; set; } = "ManicMiner.z80";
+
+    [SupplyParameterFromQuery(Name = "model")]
+    public string Model { get; set; } = "48k";
+
+    [SupplyParameterFromQuery(Name = "displayFrameDivisor")]
+    public int DisplayFrameDivisor { get; set; } = 1;
+
+    [SupplyParameterFromQuery(Name = "audioFramesPerBatch")]
+    public int AudioFramesPerBatch { get; set; } = 2;
+}

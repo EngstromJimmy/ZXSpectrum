@@ -15,7 +15,8 @@ namespace ZXBox.Hardware.Input.Joystick
 
     public class Kempston:IInput
     {
-        
+        public byte DirectState { get; set; }
+
         public IReadOnlyList<Gamepad> Gamepads { get; set; }
         Gamepad Gamepad;
         
@@ -44,9 +45,9 @@ namespace ZXBox.Hardware.Input.Joystick
             byte returnvalue = 0xFF;
             if ((Port &0xff) == 0x1f)
             {
-                returnvalue = 0x0;
+                returnvalue = DirectState;
 
-                if (Gamepads == null || Gamepads.Count == 0)
+                if (returnvalue != 0 || Gamepads == null || Gamepads.Count == 0)
                 {
                     return returnvalue;
                 }
