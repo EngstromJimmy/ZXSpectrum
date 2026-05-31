@@ -10,6 +10,7 @@ namespace ZXBox.Core.Hardware.Input
     {
         private const int TStatesPerMillisecond = 3500;
         private readonly IOutput? _beeper;
+        private readonly List<TapePlaybackPosition> _blockPlaybackPositions = new();
 
         public TapePlayer(IOutput? beeper)
         {
@@ -33,6 +34,7 @@ namespace ZXBox.Core.Hardware.Input
 
             foreach (var block in tape.Blocks)
             {
+                _blockPlaybackPositions.Add(new TapePlaybackPosition(EarValues.Count, tstate));
                 switch (block)
                 {
                     case TapeDataBlock dataBlock:
@@ -63,6 +65,8 @@ namespace ZXBox.Core.Hardware.Input
                 EarValues.Add(new EarValue { Ear = ear, TState = tstate, Pulse = PulseTypeEnum.Termination });
                 EarValues.Add(new EarValue { Ear = false, TState = tstate, Pulse = PulseTypeEnum.Stop });
             }
+
+            TotalTstates = EarValues.Count > 0 ? EarValues[^1].TState : 0;
         }
 
         public void AddTStates(int tstates)
@@ -77,13 +81,32 @@ namespace ZXBox.Core.Hardware.Input
 
         public void Play()
         {
-            if (EarValues.Count == 0)
+            if (EarValues.Count == 0 || _currentBlockIndex >= Tape.Blocks.Count)
             {
                 return;
             }
 
-            TotalTstates = EarValues.Last().TState;
+            MoveToBlock(_currentBlockIndex);
             IsPlaying = true;
+        }
+
+        public bool TryConsumeNextQuickLoadBlock(out TapeDataBlock block)
+        {
+            block = null;
+            if (!IsPlaying || _currentBlockIndex >= Tape.Blocks.Count)
+            {
+                return false;
+            }
+
+            if (Tape.Blocks[_currentBlockIndex] is not TapeDataBlock dataBlock || !dataBlock.IsQuickLoadCandidate)
+            {
+                return false;
+            }
+
+            block = dataBlock;
+            MoveToBlock(_currentBlockIndex + 1);
+            IsPlaying = _currentBlockIndex < Tape.Blocks.Count;
+            return true;
         }
 
         public bool IsPlaying { get; set; }
@@ -94,6 +117,7 @@ namespace ZXBox.Core.Hardware.Input
         private byte _returnValue = 0xFF;
         private EarValue _ear;
         private bool _firstRead = true;
+        private int _currentBlockIndex;
         private int _tapePosition;
 
         public byte Input(ushort Port, int tact)
@@ -106,6 +130,10 @@ namespace ZXBox.Core.Hardware.Input
                     if (_firstRead)
                     {
                         CurrentTstate = 0;
+                        if (_currentBlockIndex < _blockPlaybackPositions.Count)
+                        {
+                            CurrentTstate = _blockPlaybackPositions[_currentBlockIndex].TState;
+                        }
                         _firstRead = false;
                     }
 
@@ -240,14 +268,35 @@ namespace ZXBox.Core.Hardware.Input
         {
             Tape = new TapeImage();
             EarValues.Clear();
+            _blockPlaybackPositions.Clear();
             IsPlaying = false;
             CurrentTstate = 0;
             TotalTstates = 0;
             _returnValue = 0xFF;
             _ear = null;
             _firstRead = true;
+            _currentBlockIndex = 0;
             _tapePosition = 0;
         }
+
+        private void MoveToBlock(int blockIndex)
+        {
+            _currentBlockIndex = Math.Clamp(blockIndex, 0, Tape.Blocks.Count);
+            _firstRead = true;
+
+            if (_currentBlockIndex >= Tape.Blocks.Count)
+            {
+                CurrentTstate = TotalTstates;
+                _tapePosition = EarValues.Count > 0 ? EarValues.Count - 1 : 0;
+                return;
+            }
+
+            var playbackPosition = _blockPlaybackPositions[_currentBlockIndex];
+            CurrentTstate = playbackPosition.TState;
+            _tapePosition = playbackPosition.EarValueIndex;
+        }
+
+        private sealed record TapePlaybackPosition(int EarValueIndex, long TState);
     }
 
     public class EarValue

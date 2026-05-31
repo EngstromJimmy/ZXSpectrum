@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using ZXBox.Core.Hardware.Input;
+using ZXBox.Core.Tape;
 using ZXBox.Hardware.Interfaces;
 using ZXBox.Hardware.Output;
 using ZXBox.Hardware.Speech;
@@ -73,6 +75,9 @@ public class ZXSpectrum : Zilog.Z80
     public ZxPrinter ZxPrinter { get; } = new();
 
     public int bordercolor = 1;
+    private const ushort QuickLoadTrapAddress = 0x056C;
+    private const ushort QuickLoadReturnAddress = 0x053F;
+    private const byte CarryFlagMask = 0x01;
     int retvalue = 0xFF;
     int i = 0;
     private int CurrentFrameTState => NumberOfTstates - Math.Abs(_numberOfTStatesLeft);
@@ -118,6 +123,21 @@ public class ZXSpectrum : Zilog.Z80
         AyChip.Reset();
         ZxPrinter.ResetRuntime();
         _currahErrNrInitializationPending = CurrahMicroSpeech.Connected;
+    }
+
+    public override void DoInstructions(int numberOfTStates, Func<Zilog.Z80, int> gameSpecificFunc)
+    {
+        base.DoInstructions(numberOfTStates, z80 =>
+        {
+            var extraTStates = 0;
+            if (gameSpecificFunc != null)
+            {
+                extraTStates += gameSpecificFunc(z80);
+            }
+
+            extraTStates += TryHandleTapeQuickLoad();
+            return extraTStates;
+        });
     }
 
     public override byte In(ushort port)
@@ -299,5 +319,107 @@ public class ZXSpectrum : Zilog.Z80
 
         _currahErrNrInitializationPending = false;
         WriteByteToMemory(0x5C3A, 0xFF);
+    }
+
+    private int TryHandleTapeQuickLoad()
+    {
+        if (PC != QuickLoadTrapAddress + 1 || opcode != 0xCD || !IsQuickLoadTrapState())
+        {
+            return 0;
+        }
+
+        var tapePlayer = GetTapePlayer();
+        if (tapePlayer == null || !tapePlayer.TryConsumeNextQuickLoadBlock(out var block) || block == null)
+        {
+            return 0;
+        }
+
+        var success = TryQuickLoadBlock(block, (FPrim & CarryFlagMask) != 0, out var bytesProcessed);
+        ApplyQuickLoadResult(success, bytesProcessed);
+        return 0;
+    }
+
+    private TapePlayer GetTapePlayer()
+    {
+        for (var index = 0; index < InputHardware.Count; index++)
+        {
+            if (InputHardware[index] is TapePlayer tapePlayer)
+            {
+                return tapePlayer;
+            }
+        }
+
+        return null;
+    }
+
+    private bool IsQuickLoadTrapState()
+    {
+        return ReadByteFromMemory(0x0556) == 0x14 &&
+               ReadByteFromMemory(0x0557) == 0x08 &&
+               ReadByteFromMemory(0x0558) == 0x15 &&
+               ReadByteFromMemory(0x0559) == 0xF3 &&
+               ReadByteFromMemory(0x055A) == 0x3E &&
+               ReadByteFromMemory(0x055B) == 0x0F &&
+               ReadByteFromMemory(0x055C) == 0xD3 &&
+               ReadByteFromMemory(0x055D) == 0xFE &&
+               ReadByteFromMemory(0x055E) == 0x21 &&
+               ReadWordFromMemory(0x055F) == QuickLoadReturnAddress &&
+               ReadByteFromMemory(0x0561) == 0xE5 &&
+               ReadByteFromMemory(QuickLoadTrapAddress) == 0xCD &&
+               ReadWordFromMemory((ushort)(QuickLoadTrapAddress + 1)) == 0x05E7 &&
+               ReadWordFromMemory(SP) == QuickLoadReturnAddress;
+    }
+
+    private bool TryQuickLoadBlock(TapeDataBlock block, bool loadBytes, out int bytesProcessed)
+    {
+        bytesProcessed = 0;
+        if (block.Data.Length < 2 || block.Data[0] != APrim)
+        {
+            return false;
+        }
+
+        var requestedLength = DE;
+        var availableLength = Math.Max(block.Data.Length - 2, 0);
+        var bytesToProcess = Math.Min(requestedLength, availableLength);
+
+        for (var index = 0; index < bytesToProcess; index++)
+        {
+            var address = (ushort)(IX + index);
+            var value = block.Data[index + 1];
+            if (!loadBytes && ReadByteFromMemory(address) != value)
+            {
+                return false;
+            }
+
+            if (loadBytes)
+            {
+                WriteByteToMemory(address, value);
+            }
+
+            bytesProcessed++;
+        }
+
+        if (requestedLength != availableLength)
+        {
+            return false;
+        }
+
+        byte parity = 0;
+        for (var index = 0; index < block.Data.Length; index++)
+        {
+            parity ^= block.Data[index];
+        }
+
+        return parity == 0;
+    }
+
+    private void ApplyQuickLoadResult(bool success, int bytesProcessed)
+    {
+        DE = (ushort)(DE - bytesProcessed);
+        IX = (ushort)(IX + bytesProcessed);
+        F = (byte)((F & ~CarryFlagMask) | (success ? CarryFlagMask : 0));
+        SP = (ushort)(SP + 2);
+        PC = QuickLoadReturnAddress;
+        opcode = 0x00;
     }
 }
