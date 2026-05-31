@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Text;
 
 namespace ZXBox.Core.Tape;
@@ -80,12 +81,17 @@ public class TzxFormat
             0x13 => ReadPulseSequenceBlock(reader),
             0x14 => ReadPureDataBlock(reader),
             0x15 => ReadDirectRecordingBlock(reader),
+            0x18 => ReadCswRecordingBlock(reader),
+            0x19 => ReadGeneralizedDataBlock(reader),
             0x20 => ReadPauseOrStopBlock(reader),
             0x21 => SkipGroupStart(reader),
             0x22 => NoOpBlock.Instance,
             0x23 => new JumpBlock(reader.ReadInt16()),
             0x24 => new LoopStartBlock(reader.ReadUInt16()),
             0x25 => LoopEndBlock.Instance,
+            0x26 => ReadCallSequenceBlock(reader),
+            0x27 => ReturnFromSequenceBlock.Instance,
+            0x28 => ReadSelectBlock(reader),
             0x2A => SkipLengthPrefixedDwordBlock(reader),
             0x2B => ReadSignalLevelBlock(reader),
             0x30 => SkipByteLengthTextBlock(reader),
@@ -179,6 +185,150 @@ public class TzxFormat
             UsedBitsInLastByte = reader.ReadByte(),
             Data = reader.ReadBytes(ReadUInt24(reader))
         };
+    }
+
+    private static TapeCswRecordingBlock ReadCswRecordingBlock(BinaryReader reader)
+    {
+        var blockLength = reader.ReadUInt32();
+        var pauseAfterMilliseconds = reader.ReadUInt16();
+        var samplingRate = ReadUInt24(reader);
+        var compressionType = reader.ReadByte();
+        reader.ReadUInt32();
+
+        var encodedData = reader.ReadBytes((int)blockLength - 10);
+        var pulseData = compressionType switch
+        {
+            1 => encodedData,
+            2 => InflateCswPulseData(encodedData),
+            var type => throw new NotSupportedException($"Unsupported CSW compression type {type}.")
+        };
+
+        return new TapeCswRecordingBlock
+        {
+            PauseAfterMilliseconds = pauseAfterMilliseconds,
+            PulseLengths = DecodeCswPulseLengths(pulseData, samplingRate)
+        };
+    }
+
+    private static TapeGeneralizedDataBlock ReadGeneralizedDataBlock(BinaryReader reader)
+    {
+        var blockLength = reader.ReadUInt32();
+        var blockStart = reader.BaseStream.Position;
+        var pauseAfterMilliseconds = reader.ReadUInt16();
+        var totalPilotSymbols = reader.ReadUInt32();
+        var maxPilotPulses = reader.ReadByte();
+        var pilotSymbolCount = ReadAlphabetSize(reader.ReadByte());
+        var totalDataSymbols = reader.ReadUInt32();
+        var maxDataPulses = reader.ReadByte();
+        var dataSymbolCount = ReadAlphabetSize(reader.ReadByte());
+
+        var pilotSymbols = totalPilotSymbols > 0 ? ReadGeneralizedSymbols(reader, maxPilotPulses, pilotSymbolCount) : Array.Empty<TapeGeneralizedSymbol>();
+        var pilotRuns = totalPilotSymbols > 0 ? ReadPilotRuns(reader, totalPilotSymbols) : Array.Empty<TapeGeneralizedSymbolRun>();
+        var dataSymbols = totalDataSymbols > 0 ? ReadGeneralizedSymbols(reader, maxDataPulses, dataSymbolCount) : Array.Empty<TapeGeneralizedSymbol>();
+        var bitsPerDataSymbol = GetPackedSymbolBitCount(dataSymbolCount);
+        var encodedDataSymbols = totalDataSymbols > 0
+            ? reader.ReadBytes((int)((bitsPerDataSymbol * totalDataSymbols + 7) / 8))
+            : Array.Empty<byte>();
+
+        if (reader.BaseStream.Position - blockStart != blockLength)
+        {
+            throw new InvalidDataException("TZX generalized data block length mismatch.");
+        }
+
+        return new TapeGeneralizedDataBlock
+        {
+            PilotSymbols = pilotSymbols,
+            PilotRuns = pilotRuns,
+            DataSymbols = dataSymbols,
+            DataSymbolCount = (int)totalDataSymbols,
+            EncodedDataSymbols = encodedDataSymbols,
+            PauseAfterMilliseconds = pauseAfterMilliseconds
+        };
+    }
+
+    private static CallSequenceBlock ReadCallSequenceBlock(BinaryReader reader)
+    {
+        var callCount = reader.ReadUInt16();
+        var offsets = new short[callCount];
+        for (var callIndex = 0; callIndex < callCount; callIndex++)
+        {
+            offsets[callIndex] = reader.ReadInt16();
+        }
+
+        return new CallSequenceBlock(offsets);
+    }
+
+    private static SelectBlock ReadSelectBlock(BinaryReader reader)
+    {
+        var blockLength = reader.ReadUInt16();
+        var count = reader.ReadByte();
+        var offsets = new short[count];
+        var consumed = 1;
+
+        for (var optionIndex = 0; optionIndex < count; optionIndex++)
+        {
+            offsets[optionIndex] = reader.ReadInt16();
+            var descriptionLength = reader.ReadByte();
+            reader.ReadBytes(descriptionLength);
+            consumed += 3 + descriptionLength;
+        }
+
+        if (consumed != blockLength)
+        {
+            throw new InvalidDataException("TZX select block length mismatch.");
+        }
+
+        return new SelectBlock(offsets);
+    }
+
+    private static IReadOnlyList<TapeGeneralizedSymbol> ReadGeneralizedSymbols(BinaryReader reader, int maxPulseCount, int symbolCount)
+    {
+        var symbols = new List<TapeGeneralizedSymbol>(symbolCount);
+        for (var symbolIndex = 0; symbolIndex < symbolCount; symbolIndex++)
+        {
+            var flags = reader.ReadByte();
+            var pulseLengths = new List<int>(maxPulseCount);
+            for (var pulseIndex = 0; pulseIndex < maxPulseCount; pulseIndex++)
+            {
+                var pulseLength = reader.ReadUInt16();
+                if (pulseLength != 0)
+                {
+                    pulseLengths.Add(pulseLength);
+                }
+            }
+
+            symbols.Add(new TapeGeneralizedSymbol
+            {
+                Flags = flags,
+                PulseLengths = pulseLengths
+            });
+        }
+
+        return symbols;
+    }
+
+    private static IReadOnlyList<TapeGeneralizedSymbolRun> ReadPilotRuns(BinaryReader reader, uint totalPilotSymbols)
+    {
+        var runs = new List<TapeGeneralizedSymbolRun>();
+        uint decodedSymbols = 0;
+        while (decodedSymbols < totalPilotSymbols)
+        {
+            var symbolIndex = reader.ReadByte();
+            var repeatCount = reader.ReadUInt16();
+            decodedSymbols += repeatCount;
+            if (decodedSymbols > totalPilotSymbols)
+            {
+                throw new InvalidDataException("TZX generalized pilot run exceeds the declared symbol count.");
+            }
+
+            runs.Add(new TapeGeneralizedSymbolRun
+            {
+                SymbolIndex = symbolIndex,
+                RepeatCount = repeatCount
+            });
+        }
+
+        return runs;
     }
 
     private static TapeBlock ReadPauseOrStopBlock(BinaryReader reader)
@@ -279,6 +429,7 @@ public class TzxFormat
     {
         var tapeImage = new TapeImage();
         var loopStack = new Stack<LoopState>();
+        var callStack = new Stack<CallState>();
         var blockIndex = 0;
         var guard = 0;
 
@@ -332,6 +483,60 @@ public class TzxFormat
                     }
 
                     break;
+                case CallSequenceBlock callSequenceBlock:
+                    if (callSequenceBlock.RelativeOffsets.Count == 0)
+                    {
+                        blockIndex++;
+                        break;
+                    }
+
+                    callStack.Push(new CallState(blockIndex + 1, callSequenceBlock.RelativeOffsets));
+                    blockIndex += callSequenceBlock.RelativeOffsets[0];
+                    if (blockIndex < 0 || blockIndex > blocks.Count)
+                    {
+                        throw new InvalidDataException("TZX call sequence moved outside the tape.");
+                    }
+
+                    break;
+                case ReturnFromSequenceBlock:
+                    if (callStack.Count == 0)
+                    {
+                        throw new InvalidDataException("TZX return encountered without a matching call sequence.");
+                    }
+
+                    var callState = callStack.Pop();
+                    if (callState.NextCallIndex < callState.RelativeOffsets.Count)
+                    {
+                        var nextCallIndex = callState.NextCallIndex;
+                        callState.NextCallIndex++;
+                        callStack.Push(callState);
+                        blockIndex = callState.CallBlockIndex + callState.RelativeOffsets[nextCallIndex];
+                    }
+                    else
+                    {
+                        blockIndex = callState.ReturnBlockIndex;
+                    }
+
+                    if (blockIndex < 0 || blockIndex > blocks.Count)
+                    {
+                        throw new InvalidDataException("TZX return moved outside the tape.");
+                    }
+
+                    break;
+                case SelectBlock selectBlock:
+                    if (selectBlock.RelativeOffsets.Count == 0)
+                    {
+                        blockIndex++;
+                        break;
+                    }
+
+                    blockIndex += selectBlock.RelativeOffsets[0];
+                    if (blockIndex < 0 || blockIndex > blocks.Count)
+                    {
+                        throw new InvalidDataException("TZX select block moved outside the tape.");
+                    }
+
+                    break;
                 case NoOpBlock:
                     blockIndex++;
                     break;
@@ -358,6 +563,21 @@ public class TzxFormat
         public static LoopEndBlock Instance { get; } = new();
     }
 
+    private sealed class CallSequenceBlock(IReadOnlyList<short> relativeOffsets)
+    {
+        public IReadOnlyList<short> RelativeOffsets { get; } = relativeOffsets;
+    }
+
+    private sealed class ReturnFromSequenceBlock
+    {
+        public static ReturnFromSequenceBlock Instance { get; } = new();
+    }
+
+    private sealed class SelectBlock(IReadOnlyList<short> relativeOffsets)
+    {
+        public IReadOnlyList<short> RelativeOffsets { get; } = relativeOffsets;
+    }
+
     private sealed class NoOpBlock
     {
         public static NoOpBlock Instance { get; } = new();
@@ -368,5 +588,72 @@ public class TzxFormat
         public int BlockIndex { get; } = blockIndex;
 
         public int RemainingRepetitions { get; set; } = remainingRepetitions;
+    }
+
+    private sealed class CallState(int returnBlockIndex, IReadOnlyList<short> relativeOffsets)
+    {
+        public int ReturnBlockIndex { get; } = returnBlockIndex;
+
+        public int CallBlockIndex { get; } = returnBlockIndex - 1;
+
+        public IReadOnlyList<short> RelativeOffsets { get; } = relativeOffsets;
+
+        public int NextCallIndex { get; set; } = 1;
+    }
+
+    private static byte[] InflateCswPulseData(byte[] encodedData)
+    {
+        using MemoryStream input = new(encodedData);
+        using ZLibStream zlibStream = new(input, CompressionMode.Decompress);
+        using MemoryStream output = new();
+        zlibStream.CopyTo(output);
+        return output.ToArray();
+    }
+
+    private static IReadOnlyList<int> DecodeCswPulseLengths(byte[] encodedData, int samplingRate)
+    {
+        var pulseLengths = new List<int>();
+        var position = 0;
+        while (position < encodedData.Length)
+        {
+            uint sampleCount = encodedData[position++];
+            if (sampleCount == 0)
+            {
+                if (position + 4 > encodedData.Length)
+                {
+                    throw new InvalidDataException("Invalid CSW pulse data.");
+                }
+
+                sampleCount = BitConverter.ToUInt32(encodedData, position);
+                position += 4;
+            }
+
+            pulseLengths.Add(SamplesToTStates(sampleCount, samplingRate));
+        }
+
+        return pulseLengths;
+    }
+
+    private static int SamplesToTStates(uint sampleCount, int samplingRate)
+    {
+        if (samplingRate <= 0)
+        {
+            throw new InvalidDataException("CSW sampling rate must be positive.");
+        }
+
+        return (int)Math.Max(1, Math.Round(sampleCount * 3500000d / samplingRate));
+    }
+
+    private static int ReadAlphabetSize(byte encodedAlphabetSize) => encodedAlphabetSize == 0 ? 256 : encodedAlphabetSize;
+
+    private static int GetPackedSymbolBitCount(int alphabetSize)
+    {
+        var bitsPerSymbol = 0;
+        while ((1 << bitsPerSymbol) < alphabetSize)
+        {
+            bitsPerSymbol++;
+        }
+
+        return bitsPerSymbol;
     }
 }

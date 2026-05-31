@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
 using ZXBox.Core.Tape;
 using ZXBox.Hardware.Interfaces;
 
@@ -51,6 +52,12 @@ namespace ZXBox.Core.Hardware.Input
                         break;
                     case TapeDirectRecordingBlock directRecordingBlock:
                         AppendDirectRecordingBlock(directRecordingBlock, ref ear, ref tstate);
+                        break;
+                    case TapeCswRecordingBlock cswRecordingBlock:
+                        AppendCswRecordingBlock(cswRecordingBlock, ref ear, ref tstate);
+                        break;
+                    case TapeGeneralizedDataBlock generalizedDataBlock:
+                        AppendGeneralizedDataBlock(generalizedDataBlock, ref ear, ref tstate);
                         break;
                     case TapeSetSignalLevelBlock signalLevelBlock:
                         ear = signalLevelBlock.High;
@@ -273,6 +280,70 @@ namespace ZXBox.Core.Hardware.Input
             AppendPauseOrStop(block.PauseAfterMilliseconds, ref ear, ref tstate);
         }
 
+        private void AppendCswRecordingBlock(TapeCswRecordingBlock block, ref bool ear, ref long tstate)
+        {
+            AppendPulseSequence(block.PulseLengths, PulseTypeEnum.Data, ref ear, ref tstate);
+            AppendPauseOrStop(block.PauseAfterMilliseconds, ref ear, ref tstate);
+        }
+
+        private void AppendGeneralizedDataBlock(TapeGeneralizedDataBlock block, ref bool ear, ref long tstate)
+        {
+            foreach (var pilotRun in block.PilotRuns)
+            {
+                if (pilotRun.SymbolIndex < 0 || pilotRun.SymbolIndex >= block.PilotSymbols.Count)
+                {
+                    throw new InvalidDataException("Generalized data block references an invalid pilot symbol.");
+                }
+
+                for (var repetition = 0; repetition < pilotRun.RepeatCount; repetition++)
+                {
+                    AppendGeneralizedSymbol(block.PilotSymbols[pilotRun.SymbolIndex], ref ear, ref tstate);
+                }
+            }
+
+            var bitsPerSymbol = GetPackedSymbolBitCount(block.DataSymbols.Count);
+            for (var symbolIndex = 0; symbolIndex < block.DataSymbolCount; symbolIndex++)
+            {
+                var dataSymbolIndex = ReadPackedSymbolIndex(block.EncodedDataSymbols, bitsPerSymbol, symbolIndex);
+                if (dataSymbolIndex < 0 || dataSymbolIndex >= block.DataSymbols.Count)
+                {
+                    throw new InvalidDataException("Generalized data block references an invalid data symbol.");
+                }
+
+                AppendGeneralizedSymbol(block.DataSymbols[dataSymbolIndex], ref ear, ref tstate);
+            }
+
+            AppendPauseOrStop(block.PauseAfterMilliseconds, ref ear, ref tstate);
+        }
+
+        private void AppendGeneralizedSymbol(TapeGeneralizedSymbol symbol, ref bool ear, ref long tstate)
+        {
+            if (symbol.PulseLengths.Count == 0)
+            {
+                return;
+            }
+
+            ear = (symbol.Flags & 0x03) switch
+            {
+                0 => !ear,
+                1 => ear,
+                2 => false,
+                3 => true,
+                _ => ear
+            };
+
+            for (var pulseIndex = 0; pulseIndex < symbol.PulseLengths.Count; pulseIndex++)
+            {
+                if (pulseIndex > 0)
+                {
+                    ear = !ear;
+                }
+
+                tstate += symbol.PulseLengths[pulseIndex];
+                EarValues.Add(new EarValue { Ear = ear, TState = tstate, Pulse = PulseTypeEnum.Data });
+            }
+        }
+
         private void AppendPauseOrStop(int durationMilliseconds, ref bool ear, ref long tstate)
         {
             if (durationMilliseconds <= 0)
@@ -320,6 +391,37 @@ namespace ZXBox.Core.Hardware.Input
             var playbackPosition = _blockPlaybackPositions[_currentBlockIndex];
             CurrentTstate = playbackPosition.TState;
             _tapePosition = playbackPosition.EarValueIndex;
+        }
+
+        private static int GetPackedSymbolBitCount(int alphabetSize)
+        {
+            var bitsPerSymbol = 0;
+            while ((1 << bitsPerSymbol) < alphabetSize)
+            {
+                bitsPerSymbol++;
+            }
+
+            return bitsPerSymbol;
+        }
+
+        private static int ReadPackedSymbolIndex(byte[] data, int bitsPerSymbol, int symbolIndex)
+        {
+            if (bitsPerSymbol == 0)
+            {
+                return 0;
+            }
+
+            var bitOffset = symbolIndex * bitsPerSymbol;
+            var value = 0;
+            for (var bitIndex = 0; bitIndex < bitsPerSymbol; bitIndex++)
+            {
+                var absoluteBitIndex = bitOffset + bitIndex;
+                var sourceByte = data[absoluteBitIndex / 8];
+                var bit = (sourceByte >> (7 - (absoluteBitIndex % 8))) & 0x01;
+                value = (value << 1) | bit;
+            }
+
+            return value;
         }
 
         private sealed record TapePlaybackPosition(int EarValueIndex, long TState);

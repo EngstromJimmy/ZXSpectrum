@@ -85,6 +85,40 @@ public class TapeQuickLoadTests
         Assert.IsFalse(tapePlayer.IsPlaying);
     }
 
+    [TestMethod]
+    public void DoInstructionsQuickLoadsTurboBlockWhenCurrentBlockIsByteAlignedData()
+    {
+        var spectrum = CreateSpectrum(out var tapePlayer);
+        var tapeImage = new TapeImage();
+        tapeImage.Blocks.Add(new TapeDataBlock
+        {
+            Data = CreateStandardDataBlock(0xFF, 0x12, 0x34, 0x56).Data,
+            PilotPulseLength = 1000,
+            PilotPulseCount = 256,
+            SyncFirstPulseLength = 500,
+            SyncSecondPulseLength = 600,
+            ZeroBitPulseLength = 300,
+            OneBitPulseLength = 700,
+            UsedBitsInLastByte = 8,
+            PauseAfterMilliseconds = 1000
+        });
+
+        tapePlayer.LoadTape(tapeImage);
+        tapePlayer.Play();
+        PrepareQuickLoadState(spectrum, 0xFF, true, 0x8000, 3);
+
+        spectrum.DoInstructions(4);
+
+        CollectionAssert.AreEqual(new byte[] { 0x12, 0x34, 0x56 }, new byte[]
+        {
+            spectrum.ReadByteFromMemory(0x8000),
+            spectrum.ReadByteFromMemory(0x8001),
+            spectrum.ReadByteFromMemory(0x8002)
+        });
+        Assert.AreEqual((ushort)0x053F, spectrum.PC);
+        Assert.IsFalse(tapePlayer.IsPlaying);
+    }
+
     private static ZXSpectrum CreateSpectrum(out TapePlayer tapePlayer)
     {
         var spectrum = new ZXSpectrum();

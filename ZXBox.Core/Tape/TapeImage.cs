@@ -32,15 +32,7 @@ public sealed class TapeDataBlock : TapeBlock
 
     public required int PauseAfterMilliseconds { get; init; }
 
-    public bool IsQuickLoadCandidate =>
-        PilotPulseLength == 2168 &&
-        SyncFirstPulseLength == 667 &&
-        SyncSecondPulseLength == 735 &&
-        ZeroBitPulseLength == 855 &&
-        OneBitPulseLength == 1710 &&
-        UsedBitsInLastByte == 8 &&
-        Data.Length > 0 &&
-        PilotPulseCount == (Data[0] < 0x80 ? 8063 : 3223);
+    public bool IsQuickLoadCandidate => UsedBitsInLastByte == 8 && Data.Length >= 2;
 }
 
 public sealed class TapePureToneBlock : TapeBlock
@@ -69,6 +61,42 @@ public sealed class TapeDirectRecordingBlock : TapeBlock
     public required int UsedBitsInLastByte { get; init; }
 
     public required byte[] Data { get; init; }
+}
+
+public sealed class TapeCswRecordingBlock : TapeBlock
+{
+    public required IReadOnlyList<int> PulseLengths { get; init; }
+
+    public required int PauseAfterMilliseconds { get; init; }
+}
+
+public sealed class TapeGeneralizedDataBlock : TapeBlock
+{
+    public required IReadOnlyList<TapeGeneralizedSymbol> PilotSymbols { get; init; }
+
+    public required IReadOnlyList<TapeGeneralizedSymbolRun> PilotRuns { get; init; }
+
+    public required IReadOnlyList<TapeGeneralizedSymbol> DataSymbols { get; init; }
+
+    public required int DataSymbolCount { get; init; }
+
+    public required byte[] EncodedDataSymbols { get; init; }
+
+    public required int PauseAfterMilliseconds { get; init; }
+}
+
+public sealed class TapeGeneralizedSymbol
+{
+    public required byte Flags { get; init; }
+
+    public required IReadOnlyList<int> PulseLengths { get; init; }
+}
+
+public sealed class TapeGeneralizedSymbolRun
+{
+    public required int SymbolIndex { get; init; }
+
+    public required int RepeatCount { get; init; }
 }
 
 public sealed class TapeStopBlock : TapeBlock
