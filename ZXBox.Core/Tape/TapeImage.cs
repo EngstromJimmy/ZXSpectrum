@@ -60,6 +60,17 @@ public sealed class TapePauseBlock : TapeBlock
     public required int DurationMilliseconds { get; init; }
 }
 
+public sealed class TapeDirectRecordingBlock : TapeBlock
+{
+    public required int TStatesPerSample { get; init; }
+
+    public required int PauseAfterMilliseconds { get; init; }
+
+    public required int UsedBitsInLastByte { get; init; }
+
+    public required byte[] Data { get; init; }
+}
+
 public sealed class TapeStopBlock : TapeBlock
 {
 }

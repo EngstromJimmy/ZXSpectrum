@@ -79,6 +79,7 @@ public class TzxFormat
             },
             0x13 => ReadPulseSequenceBlock(reader),
             0x14 => ReadPureDataBlock(reader),
+            0x15 => ReadDirectRecordingBlock(reader),
             0x20 => ReadPauseOrStopBlock(reader),
             0x21 => SkipGroupStart(reader),
             0x22 => NoOpBlock.Instance,
@@ -167,6 +168,17 @@ public class TzxFormat
         };
 
         return block;
+    }
+
+    private static TapeDirectRecordingBlock ReadDirectRecordingBlock(BinaryReader reader)
+    {
+        return new TapeDirectRecordingBlock
+        {
+            TStatesPerSample = reader.ReadUInt16(),
+            PauseAfterMilliseconds = reader.ReadUInt16(),
+            UsedBitsInLastByte = reader.ReadByte(),
+            Data = reader.ReadBytes(ReadUInt24(reader))
+        };
     }
 
     private static TapeBlock ReadPauseOrStopBlock(BinaryReader reader)

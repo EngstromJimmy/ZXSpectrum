@@ -49,6 +49,9 @@ namespace ZXBox.Core.Hardware.Input
                     case TapePauseBlock pauseBlock:
                         AppendPause(pauseBlock.DurationMilliseconds, ref ear, ref tstate);
                         break;
+                    case TapeDirectRecordingBlock directRecordingBlock:
+                        AppendDirectRecordingBlock(directRecordingBlock, ref ear, ref tstate);
+                        break;
                     case TapeSetSignalLevelBlock signalLevelBlock:
                         ear = signalLevelBlock.High;
                         break;
@@ -245,6 +248,29 @@ namespace ZXBox.Core.Hardware.Input
         private void AppendPause(int durationMilliseconds, ref bool ear, ref long tstate)
         {
             AppendPauseOrStop(durationMilliseconds, ref ear, ref tstate);
+        }
+
+        private void AppendDirectRecordingBlock(TapeDirectRecordingBlock block, ref bool ear, ref long tstate)
+        {
+            var lastByteBits = block.UsedBitsInLastByte is >= 1 and <= 8 ? block.UsedBitsInLastByte : 8;
+            for (var byteIndex = 0; byteIndex < block.Data.Length; byteIndex++)
+            {
+                var bitsInByte = byteIndex == block.Data.Length - 1 ? lastByteBits : 8;
+                for (var bitIndex = 0; bitIndex < bitsInByte; bitIndex++)
+                {
+                    var bitMask = 0x80 >> bitIndex;
+                    var signal = (block.Data[byteIndex] & bitMask) == bitMask;
+                    if (signal != ear)
+                    {
+                        ear = signal;
+                        EarValues.Add(new EarValue { Ear = ear, TState = tstate, Pulse = PulseTypeEnum.Data });
+                    }
+
+                    tstate += block.TStatesPerSample;
+                }
+            }
+
+            AppendPauseOrStop(block.PauseAfterMilliseconds, ref ear, ref tstate);
         }
 
         private void AppendPauseOrStop(int durationMilliseconds, ref bool ear, ref long tstate)

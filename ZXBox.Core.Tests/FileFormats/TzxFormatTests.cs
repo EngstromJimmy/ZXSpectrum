@@ -103,6 +103,37 @@ public class TzxFormatTests
         Assert.IsInstanceOfType<TapeStopBlock>(tapeImage.Blocks[0]);
     }
 
+    [TestMethod]
+    public void DirectRecordingBlockPreservesSampleLevelsAndUsedBits()
+    {
+        var tzxBytes = CreateTzx(
+            0x15,
+            0x0A, 0x00,
+            0x64, 0x00,
+            0x03,
+            0x01, 0x00, 0x00,
+            0xA0);
+
+        var tapeImage = new TzxFormat().ReadFile(tzxBytes);
+        var block = (TapeDirectRecordingBlock)tapeImage.Blocks[0];
+        var tapePlayer = new TapePlayer(null);
+        tapePlayer.LoadTape(tapeImage);
+
+        Assert.AreEqual(10, block.TStatesPerSample);
+        Assert.AreEqual(100, block.PauseAfterMilliseconds);
+        Assert.AreEqual(3, block.UsedBitsInLastByte);
+        CollectionAssert.AreEqual(new byte[] { 0xA0 }, block.Data);
+
+        Assert.AreEqual(7, tapePlayer.EarValues.Count);
+        Assert.AreEqual((PulseTypeEnum.Data, true, 0L), (tapePlayer.EarValues[0].Pulse, tapePlayer.EarValues[0].Ear, tapePlayer.EarValues[0].TState));
+        Assert.AreEqual((PulseTypeEnum.Data, false, 10L), (tapePlayer.EarValues[1].Pulse, tapePlayer.EarValues[1].Ear, tapePlayer.EarValues[1].TState));
+        Assert.AreEqual((PulseTypeEnum.Data, true, 20L), (tapePlayer.EarValues[2].Pulse, tapePlayer.EarValues[2].Ear, tapePlayer.EarValues[2].TState));
+        Assert.AreEqual((PulseTypeEnum.Pause, false, 3530L), (tapePlayer.EarValues[3].Pulse, tapePlayer.EarValues[3].Ear, tapePlayer.EarValues[3].TState));
+        Assert.AreEqual((PulseTypeEnum.Pause, false, 350030L), (tapePlayer.EarValues[4].Pulse, tapePlayer.EarValues[4].Ear, tapePlayer.EarValues[4].TState));
+        Assert.AreEqual(PulseTypeEnum.Termination, tapePlayer.EarValues[5].Pulse);
+        Assert.AreEqual(PulseTypeEnum.Stop, tapePlayer.EarValues[6].Pulse);
+    }
+
     private static byte[] CreateTzx(params byte[] body)
     {
         return
