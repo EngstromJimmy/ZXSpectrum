@@ -139,6 +139,30 @@ public class ZxPrinterTests
     }
 
     [TestMethod]
+    public void PrinterDoesNotFloodPaperWhileStylusCrossesTheLineGap()
+    {
+        var printer = new ZxPrinter();
+        printer.Connect();
+        printer.HandlePortWrite(0x00FB, 0x00);
+        printer.AdvanceTStates(ZxPrinter.FastPixelStepTStates * 64);
+        printer.HandlePortWrite(0x00FB, 0x80);
+
+        // Advance through the rest of the line, the off-paper gap, and into the next
+        // line using small per-instruction steps, the way the CPU core drives the
+        // printer at runtime. The gap must not commit the same line more than once.
+        var totalTStates = ZxPrinter.FastPixelStepTStates * (384 + 32);
+        for (var elapsed = 0; elapsed < totalTStates; elapsed += 4)
+        {
+            printer.AdvanceTStates(4);
+        }
+
+        var snapshot = printer.GetPaperSnapshot();
+
+        Assert.AreEqual(2, snapshot.Height, "Crossing the line gap should yield one committed line plus the started next line.");
+        Assert.AreEqual(1, snapshot.Pixels[0]);
+    }
+
+    [TestMethod]
     public void PrinterProgressAdvancesOnTstatesRatherThanObservation()
     {
         var printer = new ZxPrinter();
@@ -180,6 +204,7 @@ public class ZxPrinterTests
 
         var snapshot = speccy.ZxPrinter.GetPaperSnapshot();
         Assert.IsTrue(snapshot.Height > 0, "Immediate LPRINT should produce printer paper.");
+        Assert.IsTrue(snapshot.Height <= 32, $"Immediate LPRINT should print a few character rows, not flood the paper (height was {snapshot.Height}).");
 
         var foundInk = false;
         for (var index = 0; index < snapshot.Pixels.Length; index++)

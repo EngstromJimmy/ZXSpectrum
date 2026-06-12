@@ -309,6 +309,10 @@ public sealed class ZxPrinter
         _completedLines.Add((byte[])_currentLine.Clone());
         Array.Clear(_currentLine);
         _currentLineStarted = false;
+        // The stylus keeps moving through the off-paper gap (pixels 256..320) after a line is
+        // committed. Without this marker every subsequent time advance would re-commit the same
+        // line once per call, flooding the paper with blank lines.
+        _lastWritePixel = PaperWidth;
         _paperVersion++;
     }
 
