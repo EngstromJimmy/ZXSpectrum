@@ -207,8 +207,7 @@ public partial class Z80
                 Halt();
                 break;
             case 0xDB:      //IN A,(n)
-                byte tmpport = (byte)((A << 8) | GetNextPCByte());
-                A = In(tmpport);
+                A = In((ushort)((A << 8) | GetNextPCByte()));
                 SubtractNumberOfTStatesLeft(11);
                 break;
             case 0x34:      //INC (HL)
@@ -438,7 +437,8 @@ public partial class Z80
                 OR(GetNextPCByte(), 7); break;
             case 0xD3:      //OUT (n),A
                 SubtractNumberOfTStatesLeft(7);
-                Out(GetNextPCByte(), A, NumberOfTstates - Math.Abs(_numberOfTStatesLeft));
+                //A supplies the high byte of the port address (A8-A15)
+                Out((ushort)((A << 8) | GetNextPCByte()), A, NumberOfTstates - Math.Abs(_numberOfTStatesLeft));
                 SubtractNumberOfTStatesLeft(4);
                 break;
             case 0xF1:      //POP AF
