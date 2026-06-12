@@ -168,6 +168,59 @@
         overflow: auto;
     }
 
+    .emulator-printer-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .printer-preview-scrim {
+        position: fixed;
+        inset: 0;
+        z-index: 40;
+        background: rgba(0, 0, 0, 0.68);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        box-sizing: border-box;
+    }
+
+    .printer-preview-dialog {
+        width: min(920px, 96vw);
+        max-height: 92vh;
+        display: flex;
+        flex-direction: column;
+        background: #202020;
+        border: 1px solid #474747;
+        color: #f4f4f4;
+        box-shadow: 0 24px 70px rgba(0, 0, 0, 0.65);
+    }
+
+    .printer-preview-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 12px 14px;
+        border-bottom: 1px solid #353535;
+    }
+
+    .printer-preview-title {
+        font-family: 'zx', "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+        font-size: 16px;
+        line-height: 1.2;
+        text-transform: uppercase;
+    }
+
+    .printer-preview-paper {
+        margin: 14px;
+        padding: 12px;
+        overflow: auto;
+        background: #8f9296;
+        border: 1px solid #676b6f;
+    }
+
     .launcher-shell {
         min-height: calc(100vh - var(--app-nav-height, 59px));
         display: flex;
@@ -321,6 +374,9 @@
                     <div class="emulator-section">
                         <div class="emulator-section-title">ZX Printer</div>
                         <div class="emulator-printer">
+                            <div class="emulator-printer-actions">
+                                <button @onclick="OpenPrinterPreview">Open larger printout</button>
+                            </div>
                             <div class="emulator-printer-paper">
                                 <SKCanvasView @ref="_printerCanvasView"
                                               id="printerCanvas"
@@ -335,6 +391,27 @@
                 }
             </div>
         </aside>
+
+        @if (IsPrinterPreviewOpen && speccy.ZxPrinter.Connected)
+        {
+            <div class="printer-preview-scrim" @onclick="ClosePrinterPreview">
+                <div class="printer-preview-dialog" @onclick:stopPropagation="true">
+                    <div class="printer-preview-header">
+                        <div class="printer-preview-title">ZX Printer printout</div>
+                        <button @onclick="ClosePrinterPreview">Close</button>
+                    </div>
+                    <div class="printer-preview-paper">
+                        <SKCanvasView @ref="_printerPreviewCanvasView"
+                                      id="printerPreviewCanvas"
+                                      class="emulator-screen"
+                                      style="@PrinterPreviewCanvasStyle"
+                                      OnPaintSurface="OnPaintPrinterPreviewSurface"
+                                      Width="@PrinterPreviewCanvasDisplayWidth"
+                                      Height="@PrinterPreviewCanvasDisplayHeight" />
+                    </div>
+                </div>
+            </div>
+        }
 
         <div class="emulator-stage" @onclick="OpenSettingsPanel">
             <div class="emulator-screen-frame" @onclick:stopPropagation="true">

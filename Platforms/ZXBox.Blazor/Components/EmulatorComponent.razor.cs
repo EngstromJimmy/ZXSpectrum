@@ -42,8 +42,9 @@ namespace ZXBox.Blazor.Pages
         private const int DefaultAudioFramesPerBatch = 2;
         private const double AudioTargetQueuedSeconds = 0.04d;
         private const double AudioLowWatermarkSeconds = 0.02d;
-        private const int PrinterDisplayScale = 3;
-        private const uint PrinterPaperColor = 0xFFB8BCC0;
+        private const int PrinterDisplayScale = 1;
+        private const int PrinterPreviewScale = 3;
+        private const uint PrinterPaperColor = 0xFFC0BCB8;
         private const uint PrinterInkColor = 0xFF1F1F1F;
         private const string CurrahRomAssetPath = "Roms/CURRAH.ROM";
         private const string Sp0256RomAssetPath = "Roms/SP0256-AL2.BIN";
@@ -107,6 +108,7 @@ half4 main(float2 fragCoord)
         public TapePlayer tapePlayer;
         public SKGLView _canvasView;
         public SKCanvasView _printerCanvasView;
+        public SKCanvasView _printerPreviewCanvasView;
         private SKBitmap _printerBitmap = new(1, 1);
         private uint[] _printerPixels = new uint[1];
         private SKRuntimeEffect _consumerTvEffect;
@@ -239,6 +241,7 @@ half4 main(float2 fragCoord)
 
         public string TapeName { get; set; }
         public string PeripheralStatusMessage { get; set; } = string.Empty;
+        public bool IsPrinterPreviewOpen { get; set; }
 
         public void OpenSettingsPanel()
         {
@@ -322,6 +325,7 @@ half4 main(float2 fragCoord)
             speccy.DisconnectZxPrinter();
             _lastPrinterVersion = -1;
             _lastPrinterHeight = 0;
+            IsPrinterPreviewOpen = false;
             PeripheralStatusMessage = string.Empty;
         }
         [Inject]
@@ -692,6 +696,7 @@ half4 main(float2 fragCoord)
                 {
                     _lastPrinterVersion = printerVersion;
                     _printerCanvasView?.Invalidate();
+                    _printerPreviewCanvasView?.Invalidate();
 
                     var printerHeight = speccy.ZxPrinter.PaperHeight;
                     if (printerHeight != _lastPrinterHeight)
@@ -819,9 +824,32 @@ half4 main(float2 fragCoord)
 
         public int PrinterCanvasDisplayWidth => ZxPrinter.PaperWidth * PrinterDisplayScale;
 
-        public string PrinterCanvasStyle => $"display:block; width:min(100%, {PrinterCanvasDisplayWidth}px); height:auto;";
+        public string PrinterCanvasStyle => $"display:block; width:{PrinterCanvasDisplayWidth}px; height:{PrinterCanvasDisplayHeight}px; max-width:none;";
+
+        public int PrinterPreviewCanvasDisplayHeight
+        {
+            get
+            {
+                var printerHeight = speccy?.ZxPrinter.PaperHeight ?? 0;
+                return Math.Max(printerHeight * PrinterPreviewScale, 288);
+            }
+        }
+
+        public int PrinterPreviewCanvasDisplayWidth => ZxPrinter.PaperWidth * PrinterPreviewScale;
+
+        public string PrinterPreviewCanvasStyle => $"display:block; width:{PrinterPreviewCanvasDisplayWidth}px; height:{PrinterPreviewCanvasDisplayHeight}px; max-width:none;";
 
         public void OnPaintPrinterSurface(SKPaintSurfaceEventArgs e)
+        {
+            DrawPrinterSurface(e, PrinterDisplayScale);
+        }
+
+        public void OnPaintPrinterPreviewSurface(SKPaintSurfaceEventArgs e)
+        {
+            DrawPrinterSurface(e, PrinterPreviewScale);
+        }
+
+        private void DrawPrinterSurface(SKPaintSurfaceEventArgs e, int displayScale)
         {
             var canvas = e.Surface.Canvas;
             canvas.Clear(new SKColor(184, 188, 192));
@@ -863,13 +891,34 @@ half4 main(float2 fragCoord)
                 IsAntialias = false
             };
 
-            var renderedHeight = e.Info.Height;
-            if (renderedHeight <= 0)
+            var renderedWidth = Math.Min(e.Info.Width, snapshot.Width * displayScale);
+            var renderedHeight = Math.Min(e.Info.Height, bitmapHeight * displayScale);
+            if (renderedWidth <= 0 || renderedHeight <= 0)
             {
                 return;
             }
 
-            canvas.DrawBitmap(_printerBitmap, new SKRect(0, 0, e.Info.Width, renderedHeight), paint);
+            canvas.DrawBitmap(_printerBitmap, new SKRect(0, 0, renderedWidth, renderedHeight), paint);
+        }
+
+        public void OpenPrinterPreview()
+        {
+            if (speccy?.ZxPrinter.Connected != true)
+            {
+                return;
+            }
+
+            IsPrinterPreviewOpen = true;
+            _ = InvokeAsync(() =>
+            {
+                StateHasChanged();
+                _printerPreviewCanvasView?.Invalidate();
+            });
+        }
+
+        public void ClosePrinterPreview()
+        {
+            IsPrinterPreviewOpen = false;
         }
 
         private void EnsurePrinterBitmap(int width, int height)
@@ -911,6 +960,7 @@ half4 main(float2 fragCoord)
             RunSpectrumFrames(300);
             Paint();
             _printerCanvasView?.Invalidate();
+            _printerPreviewCanvasView?.Invalidate();
             StartExecutionLoop();
         }
 

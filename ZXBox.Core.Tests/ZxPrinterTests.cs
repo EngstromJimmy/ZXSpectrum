@@ -203,7 +203,7 @@ public class ZxPrinterTests
         RunFrames(speccy, 300);
 
         var snapshot = speccy.ZxPrinter.GetPaperSnapshot();
-        Assert.IsTrue(snapshot.Height > 0, "Immediate LPRINT should produce printer paper.");
+        Assert.IsTrue(snapshot.Height >= 8, "Immediate LPRINT should print at least one 8-pixel character row.");
         Assert.IsTrue(snapshot.Height <= 32, $"Immediate LPRINT should print a few character rows, not flood the paper (height was {snapshot.Height}).");
 
         var foundInk = false;
@@ -217,6 +217,52 @@ public class ZxPrinterTests
         }
 
         Assert.IsTrue(foundInk, "Immediate LPRINT should leave visible printed pixels on the paper.");
+        AssertPrintedTextAppears(snapshot, new byte[,]
+        {
+            { 0xFE, 0x7E, 0x3C, 0xFE },
+            { 0x10, 0x40, 0x40, 0x10 },
+            { 0x10, 0x7C, 0x3C, 0x10 },
+            { 0x10, 0x40, 0x02, 0x10 },
+            { 0x10, 0x40, 0x42, 0x10 },
+            { 0x10, 0x7E, 0x3C, 0x10 },
+            { 0x00, 0x00, 0x00, 0x00 },
+            { 0x00, 0x00, 0x00, 0x00 },
+        });
+    }
+
+    private static void AssertPrintedTextAppears(ZxPrinterPaperSnapshot snapshot, byte[,] expectedRows)
+    {
+        for (var yOffset = 0; yOffset <= snapshot.Height - expectedRows.GetLength(0); yOffset++)
+        {
+            if (PrintedTextMatchesAt(snapshot, expectedRows, yOffset))
+            {
+                return;
+            }
+        }
+
+        Assert.Fail("The printer paper did not contain the expected TEST pixel pattern.");
+    }
+
+    private static bool PrintedTextMatchesAt(ZxPrinterPaperSnapshot snapshot, byte[,] expectedRows, int yOffset)
+    {
+        for (var y = 0; y < expectedRows.GetLength(0); y++)
+        {
+            for (var charIndex = 0; charIndex < expectedRows.GetLength(1); charIndex++)
+            {
+                var expectedByte = expectedRows[y, charIndex];
+                for (var bit = 0; bit < 8; bit++)
+                {
+                    var expectedPixel = ((expectedByte << bit) & 0x80) != 0 ? (byte)1 : (byte)0;
+                    var x = (charIndex * 8) + bit;
+                    if (snapshot.Pixels[((yOffset + y) * snapshot.Width) + x] != expectedPixel)
+                    {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        return true;
     }
 
     private static byte[] ExpandBits(byte[] lineBytes)

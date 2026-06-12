@@ -7,6 +7,130 @@ namespace ZXBox.Blazor.Perf.Tests;
 public sealed class BlazorPerfTests
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+    private const string PrinterCanvasShowsTestPattern =
+        @"() => {
+            const canvas = document.getElementById('printerCanvas');
+            if (!(canvas instanceof HTMLCanvasElement) || canvas.width < 256 || canvas.height < 96) {
+                return false;
+            }
+
+            const context = canvas.getContext('2d');
+            if (!context) {
+                return false;
+            }
+
+            const image = context.getImageData(0, 0, canvas.width, canvas.height).data;
+            const isPaper = (x, y) => {
+                const index = (y * canvas.width + x) * 4;
+                return image[index] === 184 && image[index + 1] === 188 && image[index + 2] === 192 && image[index + 3] === 255;
+            };
+            const hasInk = (x, y) => !isPaper(x, y);
+            const expectedRows = [
+                [0xfe, 0x7e, 0x3c, 0xfe],
+                [0x10, 0x40, 0x40, 0x10],
+                [0x10, 0x7c, 0x3c, 0x10],
+                [0x10, 0x40, 0x02, 0x10],
+                [0x10, 0x40, 0x42, 0x10],
+                [0x10, 0x7e, 0x3c, 0x10],
+                [0x00, 0x00, 0x00, 0x00],
+                [0x00, 0x00, 0x00, 0x00],
+            ];
+
+            const matchesAt = (rowOffset) => {
+                for (let y = 0; y < expectedRows.length; y++) {
+                    for (let charIndex = 0; charIndex < expectedRows[y].length; charIndex++) {
+                        const expectedByte = expectedRows[y][charIndex];
+                        for (let bit = 0; bit < 8; bit++) {
+                            const expectedInk = ((expectedByte << bit) & 0x80) !== 0;
+                            const sampleX = (charIndex * 8) + bit;
+                            const sampleY = rowOffset + y;
+                            if (hasInk(sampleX, sampleY) !== expectedInk) {
+                                return false;
+                            }
+                        }
+                    }
+                }
+
+                return true;
+            };
+
+            let matchedRowOffset = -1;
+            for (let rowOffset = 0; rowOffset <= 24; rowOffset++) {
+                if (matchesAt(rowOffset)) {
+                    matchedRowOffset = rowOffset;
+                    break;
+                }
+            }
+
+            if (matchedRowOffset < 0) {
+                return false;
+            }
+
+            for (let y = 72; y < canvas.height; y++) {
+                for (let x = 0; x < 96; x++) {
+                    if (hasInk(x, y)) {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }";
+    private const string PrinterPreviewCanvasShowsTestPattern =
+        @"() => {
+            const canvas = document.getElementById('printerPreviewCanvas');
+            if (!(canvas instanceof HTMLCanvasElement) || canvas.width < 768 || canvas.height < 288) {
+                return false;
+            }
+
+            const context = canvas.getContext('2d');
+            if (!context) {
+                return false;
+            }
+
+            const image = context.getImageData(0, 0, canvas.width, canvas.height).data;
+            const isPaper = (x, y) => {
+                const index = (y * canvas.width + x) * 4;
+                return image[index] === 184 && image[index + 1] === 188 && image[index + 2] === 192 && image[index + 3] === 255;
+            };
+            const hasInk = (x, y) => !isPaper(x, y);
+            const expectedRows = [
+                [0xfe, 0x7e, 0x3c, 0xfe],
+                [0x10, 0x40, 0x40, 0x10],
+                [0x10, 0x7c, 0x3c, 0x10],
+                [0x10, 0x40, 0x02, 0x10],
+                [0x10, 0x40, 0x42, 0x10],
+                [0x10, 0x7e, 0x3c, 0x10],
+                [0x00, 0x00, 0x00, 0x00],
+                [0x00, 0x00, 0x00, 0x00],
+            ];
+
+            const matchesAt = (rowOffset) => {
+                for (let y = 0; y < expectedRows.length; y++) {
+                    for (let charIndex = 0; charIndex < expectedRows[y].length; charIndex++) {
+                        const expectedByte = expectedRows[y][charIndex];
+                        for (let bit = 0; bit < 8; bit++) {
+                            const expectedInk = ((expectedByte << bit) & 0x80) !== 0;
+                            const sampleX = ((charIndex * 8) + bit) * 3 + 1;
+                            const sampleY = (rowOffset + y) * 3 + 1;
+                            if (hasInk(sampleX, sampleY) !== expectedInk) {
+                                return false;
+                            }
+                        }
+                    }
+                }
+
+                return true;
+            };
+
+            for (let rowOffset = 0; rowOffset <= 24; rowOffset++) {
+                if (matchesAt(rowOffset)) {
+                    return true;
+                }
+            }
+
+            return false;
+        }";
 
     public TestContext TestContext { get; set; } = null!;
 
@@ -233,38 +357,7 @@ public sealed class BlazorPerfTests
             });
             await page.EvaluateAsync("() => DotNet.invokeMethodAsync('ZXBox.Blazor', 'DebugRunImmediateLprint', 'TEST')");
             await page.WaitForFunctionAsync(
-                @"() => {
-                    const canvas = document.getElementById('printerCanvas');
-                    if (!(canvas instanceof HTMLCanvasElement)) {
-                        return false;
-                    }
-
-                    const context = canvas.getContext('2d');
-                    if (!context) {
-                        return false;
-                    }
-
-                    const image = context.getImageData(0, 0, canvas.width, canvas.height).data;
-                    let visibleRows = 0;
-
-                    for (let y = 0; y < canvas.height; y++) {
-                        let rowHasInk = false;
-
-                        for (let x = 0; x < canvas.width; x++) {
-                            const index = (y * canvas.width + x) * 4;
-                            if (image[index] !== 184 || image[index + 1] !== 188 || image[index + 2] !== 192 || image[index + 3] !== 255) {
-                                rowHasInk = true;
-                                break;
-                            }
-                        }
-
-                        if (rowHasInk) {
-                            visibleRows++;
-                        }
-                    }
-
-                    return visibleRows >= 24;
-                }",
+                PrinterCanvasShowsTestPattern,
                 null,
                 new PageWaitForFunctionOptions
                 {
@@ -273,79 +366,77 @@ public sealed class BlazorPerfTests
         }
         catch
         {
-            var visibleRows = await page.EvaluateAsync<int>(
+            var canvasSummary = await page.EvaluateAsync<string>(
+                @"() => {
+                    const canvas = document.getElementById('printerCanvas');
+                    return canvas instanceof HTMLCanvasElement
+                        ? `${canvas.width}x${canvas.height}`
+                        : 'missing';
+                }");
+            var printerDump = await page.EvaluateAsync<string>(
                 @"() => {
                     const canvas = document.getElementById('printerCanvas');
                     if (!(canvas instanceof HTMLCanvasElement)) {
-                        return -1;
+                        return 'missing';
                     }
 
                     const context = canvas.getContext('2d');
                     if (!context) {
-                        return -1;
+                        return 'no context';
                     }
 
                     const image = context.getImageData(0, 0, canvas.width, canvas.height).data;
-                    let visibleRows = 0;
-
+                    const isPaper = (x, y) => {
+                        const index = (y * canvas.width + x) * 4;
+                        return image[index] === 184 && image[index + 1] === 188 && image[index + 2] === 192 && image[index + 3] === 255;
+                    };
+                    let minX = canvas.width;
+                    let minY = canvas.height;
+                    let maxX = -1;
+                    let maxY = -1;
                     for (let y = 0; y < canvas.height; y++) {
-                        let rowHasInk = false;
-
                         for (let x = 0; x < canvas.width; x++) {
-                            const index = (y * canvas.width + x) * 4;
-                            if (image[index] !== 184 || image[index + 1] !== 188 || image[index + 2] !== 192 || image[index + 3] !== 255) {
-                                rowHasInk = true;
-                                break;
+                            if (!isPaper(x, y)) {
+                                minX = Math.min(minX, x);
+                                minY = Math.min(minY, y);
+                                maxX = Math.max(maxX, x);
+                                maxY = Math.max(maxY, y);
                             }
-                        }
-
-                        if (rowHasInk) {
-                            visibleRows++;
                         }
                     }
 
-                    return visibleRows;
+                    const rows = [];
+                    for (let y = 0; y < Math.min(canvas.height, 72); y += 3) {
+                        let row = '';
+                        for (let x = 0; x < 96; x += 3) {
+                            row += isPaper(x + 1, y + 1) ? '.' : '#';
+                        }
+                        if (row.includes('#')) {
+                            rows.push(`${Math.floor(y / 3)}|${row}`);
+                        }
+                    }
+
+                    return `bbox=${minX},${minY}-${maxX},${maxY}\n${rows.join('\n')}`;
                 }");
             var bodyText = await page.EvaluateAsync<string>("() => document.body?.innerText ?? ''");
-            TestContext.WriteLine($"Visible printer rows: {visibleRows}");
+            TestContext.WriteLine($"Printer canvas: {canvasSummary}");
+            TestContext.WriteLine($"Printer dump:{Environment.NewLine}{printerDump}");
             TestContext.WriteLine($"Body text: {bodyText}");
             TestContext.WriteLine(host.GetOutput());
             throw;
         }
 
         Assert.IsTrue(await page.EvaluateAsync<bool>(
-            @"() => {
-                const canvas = document.getElementById('printerCanvas');
-                if (!(canvas instanceof HTMLCanvasElement)) {
-                    return false;
-                }
+            PrinterCanvasShowsTestPattern), $"The printer preview did not render the expected TEST printout.{Environment.NewLine}{host.GetOutput()}");
 
-                const context = canvas.getContext('2d');
-                if (!context) {
-                    return false;
-                }
+        await page.Locator("button").Filter(new() { HasTextString = "Open larger printout" }).EvaluateAsync("button => button.click()");
+        await page.WaitForSelectorAsync("#printerPreviewCanvas", new PageWaitForSelectorOptions
+        {
+            Timeout = 120000
+        });
 
-                const image = context.getImageData(0, 0, canvas.width, canvas.height).data;
-                let visibleRows = 0;
-
-                for (let y = 0; y < canvas.height; y++) {
-                    let rowHasInk = false;
-
-                    for (let x = 0; x < canvas.width; x++) {
-                        const index = (y * canvas.width + x) * 4;
-                        if (image[index] !== 184 || image[index + 1] !== 188 || image[index + 2] !== 192 || image[index + 3] !== 255) {
-                            rowHasInk = true;
-                            break;
-                        }
-                    }
-
-                    if (rowHasInk) {
-                        visibleRows++;
-                    }
-                }
-
-                return visibleRows >= 24;
-            }"), $"The printer preview stayed too small to see after an immediate LPRINT.{Environment.NewLine}{host.GetOutput()}");
+        Assert.IsTrue(await page.EvaluateAsync<bool>(
+            PrinterPreviewCanvasShowsTestPattern), $"The larger printer preview did not render the expected TEST printout.{Environment.NewLine}{host.GetOutput()}");
     }
 
     [TestMethod]
