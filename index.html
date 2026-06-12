@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>ZX Spectrum emulator running on Blazor</title>
+    <base href="/" />
+    <link href="_framework/dotnet.ebvidu89jr.js" rel="preload" as="script" fetchpriority="high" crossorigin="anonymous" integrity="sha256-9mvuh3dfwxTXyGIwFe4aM539K34fO2e6XqRGu7hr5YA=" />
+    <link href="css/bootstrap/bootstrap.min.css" rel="stylesheet" />
+    <link href="css/app.css" rel="stylesheet" />
+    <link href="ZXBox.Blazor.styles.css" rel="stylesheet" />
+    <script type="importmap">{
+  "imports": {
+    "./JavaScript.js": "./J.f3s0q1j80gavaScript.js",
+    "./_framework/blazor.webassembly.js": "./_framework/blazor.webassembly.958z1vx7fr.js",
+    "./_framework/dotnet.js": "./_framework/dotnet.ebvidu89jr.js",
+    "./_framework/dotnet.native.js": "./_framework/dotnet.native.qp9hh4ks5v.js",
+    "./_framework/dotnet.runtime.js": "./_framework/dotnet.runtime.a6jcqbs390.js"
+  },
+  "scopes": {},
+  "integrity": {
+    "./J.f3s0q1j80gavaScript.js": "sha256-xUNao9GcaPKcYvbMqipeXuxoRvWqFnOwQS2WiVu3pMU=",
+    "./JavaScript.js": "sha256-xUNao9GcaPKcYvbMqipeXuxoRvWqFnOwQS2WiVu3pMU=",
+    "./_framework/blazor.webassembly.958z1vx7fr.js": "sha256-A59Tr9HqEhHMu8kU7kruLI9ayw5MRS6Lvc6z7jCbghk=",
+    "./_framework/blazor.webassembly.js": "sha256-A59Tr9HqEhHMu8kU7kruLI9ayw5MRS6Lvc6z7jCbghk=",
+    "./_framework/dotnet.ebvidu89jr.js": "sha256-9mvuh3dfwxTXyGIwFe4aM539K34fO2e6XqRGu7hr5YA=",
+    "./_framework/dotnet.js": "sha256-9mvuh3dfwxTXyGIwFe4aM539K34fO2e6XqRGu7hr5YA=",
+    "./_framework/dotnet.native.js": "sha256-kjP4W0LhXWT7QcSantlkW83plFH5YmeqeEfjprxmQJA=",
+    "./_framework/dotnet.native.qp9hh4ks5v.js": "sha256-kjP4W0LhXWT7QcSantlkW83plFH5YmeqeEfjprxmQJA=",
+    "./_framework/dotnet.runtime.a6jcqbs390.js": "sha256-7i3usfTrnzC/9qWO4si5Bw4w7D9fUSnSBdhQ47blX2M=",
+    "./_framework/dotnet.runtime.js": "sha256-7i3usfTrnzC/9qWO4si5Bw4w7D9fUSnSBdhQ47blX2M="
+  }
+}</script>
+</head>
+
+<body>
+    <script>
+        window.Toolbelt = window.Toolbelt || {};
+        window.Toolbelt.Blazor = window.Toolbelt.Blazor || {};
+        window.Toolbelt.Blazor.getProperty = function (path) {
+            return path
+                .replace(/^window\./, '')
+                .split('.')
+                .reduce(function (target, part) {
+                    return target == null ? target : target[part];
+                }, window);
+        };
+
+        var pressedKeyMask = 0;
+        var pressedKeyValues = Object.create(null);
+
+        function getKeyMaskValue(keyCode) {
+            switch (keyCode) {
+                case 16: return 2 ** 0;  // shift
+                case 8: return 2 ** 1;   // backspace
+                case 18: return 2 ** 2;  // alt
+                case 13: return 2 ** 3;  // enter
+                case 32: return 2 ** 4;  // space
+                case 38: return 2 ** 5;  // arrowup
+                case 40: return 2 ** 6;  // arrowdown
+                case 37: return 2 ** 7;  // arrowleft
+                case 39: return 2 ** 8;  // arrowright
+                case 90: return 2 ** 9;  // z
+                case 88: return 2 ** 10; // x
+                case 67: return 2 ** 11; // c
+                case 86: return 2 ** 12; // v
+                case 65: return 2 ** 13; // a
+                case 83: return 2 ** 14; // s
+                case 68: return 2 ** 15; // d
+                case 70: return 2 ** 16; // f
+                case 71: return 2 ** 17; // g
+                case 81: return 2 ** 18; // q
+                case 87: return 2 ** 19; // w
+                case 69: return 2 ** 20; // e
+                case 82: return 2 ** 21; // r
+                case 84: return 2 ** 22; // t
+                case 49: return 2 ** 23; // 1
+                case 50: return 2 ** 24; // 2
+                case 51: return 2 ** 25; // 3
+                case 52: return 2 ** 26; // 4
+                case 53: return 2 ** 27; // 5
+                case 48: return 2 ** 28; // 0
+                case 57: return 2 ** 29; // 9
+                case 56: return 2 ** 30; // 8
+                case 55: return 2 ** 31; // 7
+                case 54: return 2 ** 32; // 6
+                case 80: return 2 ** 33; // p
+                case 79: return 2 ** 34; // o
+                case 73: return 2 ** 35; // i
+                case 85: return 2 ** 36; // u
+                case 89: return 2 ** 37; // y
+                case 76: return 2 ** 38; // l
+                case 75: return 2 ** 39; // k
+                case 74: return 2 ** 40; // j
+                case 72: return 2 ** 41; // h
+                case 77: return 2 ** 42; // m
+                case 78: return 2 ** 43; // n
+                case 66: return 2 ** 44; // b
+                default: return 0;
+            }
+        }
+
+        window.onkeyup = function (e) {
+            var keyMaskValue = getKeyMaskValue(e.keyCode);
+            if (keyMaskValue === 0) {
+                return;
+            }
+
+            if (pressedKeyValues[keyMaskValue]) {
+                delete pressedKeyValues[keyMaskValue];
+                pressedKeyMask -= keyMaskValue;
+            }
+
+            e.preventDefault();
+        }
+        window.onkeydown = function (e) {
+            var keyMaskValue = getKeyMaskValue(e.keyCode);
+            if (keyMaskValue === 0) {
+                return;
+            }
+
+            if (!pressedKeyValues[keyMaskValue]) {
+                pressedKeyValues[keyMaskValue] = true;
+                pressedKeyMask += keyMaskValue;
+            }
+
+            e.preventDefault();
+        }
+
+        window.getKeyMask = function () {
+            return pressedKeyMask;
+        }
+
+        window.getKempstonState = function () {
+            if (!navigator.getGamepads) {
+                return 0;
+            }
+
+            var pads = navigator.getGamepads();
+            if (!pads) {
+                return 0;
+            }
+
+            var gamepad = null;
+            for (var i = 0; i < pads.length; i++) {
+                if (pads[i]) {
+                    gamepad = pads[i];
+                    break;
+                }
+            }
+
+            if (!gamepad) {
+                return 0;
+            }
+
+            var state = 0;
+            var buttons = gamepad.buttons || [];
+            var axes = gamepad.axes || [];
+
+            if (buttons.length > 0 && buttons[0] && buttons[0].pressed) {
+                state |= 16;
+            }
+
+            if ((buttons.length > 12 && buttons[12] && buttons[12].pressed) || (axes.length > 1 && axes[1] > 0.5)) {
+                state |= 8;
+            }
+
+            if ((buttons.length > 13 && buttons[13] && buttons[13].pressed) || (axes.length > 1 && axes[1] < -0.5)) {
+                state |= 4;
+            }
+
+            if ((buttons.length > 14 && buttons[14] && buttons[14].pressed) || (axes.length > 0 && axes[0] < -0.5)) {
+                state |= 2;
+            }
+
+            if ((buttons.length > 15 && buttons[15] && buttons[15].pressed) || (axes.length > 0 && axes[0] > 0.5)) {
+                state |= 1;
+            }
+
+            return state;
+        }
+
+        window.__zxboxPerfDone = false;
+        window.__zxboxPerfResult = null;
+        window.__zxboxPerfResultJson = null;
+
+        var zxboxPerfRaf = {
+            active: false,
+            frameCount: 0,
+            startTime: 0,
+            hiddenTransitions: 0,
+            visibilityState: document.visibilityState
+        };
+
+        document.addEventListener("visibilitychange", function () {
+            zxboxPerfRaf.visibilityState = document.visibilityState;
+            if (zxboxPerfRaf.active && document.visibilityState === "hidden") {
+                zxboxPerfRaf.hiddenTransitions++;
+            }
+        });
+
+        function onPerfAnimationFrame(timestamp) {
+            if (!zxboxPerfRaf.active) {
+                return;
+            }
+
+            zxboxPerfRaf.frameCount++;
+            window.requestAnimationFrame(onPerfAnimationFrame);
+        }
+
+        window.startPerfRafSampling = function () {
+            window.__zxboxPerfDone = false;
+            window.__zxboxPerfResult = null;
+            window.__zxboxPerfResultJson = null;
+            zxboxPerfRaf.active = true;
+            zxboxPerfRaf.frameCount = 0;
+            zxboxPerfRaf.startTime = performance.now();
+            zxboxPerfRaf.hiddenTransitions = 0;
+            zxboxPerfRaf.visibilityState = document.visibilityState;
+            window.requestAnimationFrame(onPerfAnimationFrame);
+        };
+
+        window.stopPerfRafSampling = function () {
+            zxboxPerfRaf.active = false;
+            var elapsedSeconds = Math.max((performance.now() - zxboxPerfRaf.startTime) / 1000, 0);
+            return {
+                frameCount: zxboxPerfRaf.frameCount,
+                elapsedSeconds: elapsedSeconds,
+                fps: elapsedSeconds === 0 ? 0 : zxboxPerfRaf.frameCount / elapsedSeconds,
+                hiddenTransitions: zxboxPerfRaf.hiddenTransitions,
+                visibilityState: zxboxPerfRaf.visibilityState
+            };
+        };
+
+        window.setPerfResult = function (resultJson) {
+            window.__zxboxPerfResultJson = resultJson;
+            try {
+                window.__zxboxPerfResult = JSON.parse(resultJson);
+            }
+            catch {
+                window.__zxboxPerfResult = null;
+            }
+            window.__zxboxPerfDone = true;
+        };
+
+        // var canvas;
+        // var context;
+        // var imageData;
+        // window.InitCanvas = function InitCanvas() {
+
+        //     canvas = document.getElementById('emulatorCanvas');
+        //     context = canvas.getContext('2d');
+        //     context.mozImageSmoothingEnabled = false;
+        //     context.webkitImageSmoothingEnabled = false;
+        //     context.msImageSmoothingEnabled = false;
+        //     context.imageSmoothingEnabled = false;
+        //     imageData = context.createImageData(256 + 20 + 20, 192 + 20 + 20);
+        //     return true;
+        // }
+
+        // window.PaintCanvas = function PaintCanvas(dataPtr) {
+        //     imageData.data.set(Uint8ClampedArray.from(Module.HEAPU8.subarray(dataPtr, dataPtr + imageData.data.length)));
+        //     context.putImageData(imageData, 0, 0);
+        //     context.drawImage(canvas, 0, 0, canvas.width, canvas.height);
+        //     return true;
+        // }
+    </script>
+    <div id="app">
+        <div style="height:100vh;text-align:center;padding-top:200px;">Loading...</div>
+    </div>
+
+    <div id="blazor-error-ui">
+        An unhandled error has occurred.
+        <a href="" class="reload">Reload</a>
+        <a class="dismiss">🗙</a>
+    </div>
+    <script src="J.f3s0q1j80gavaScript.js"></script>
+    <script src="_framework/blazor.webassembly.958z1vx7fr.js"></script>
+
+</body>
+
+</html>
